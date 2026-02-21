@@ -1,4 +1,4 @@
-# AceStep15-gradio2comfy
+# scromfyUI-AceStep
 
 Advanced ACE-Step 1.5 music generation nodes for ComfyUI. 
 
@@ -14,7 +14,7 @@ This repository allows you to use the powerful ACE-Step 1.5 music generation mod
 ## Installation
 1. Clone this repository into your `ComfyUI/custom_nodes` folder:
    ```bash
-   git clone https://github.com/scruffynerf/AceStep15-gradio2comfy
+   git clone https://github.com/scruffynerf/scromfyUI-AceStep
    ```
 2. Install the dependencies:
    ```bash

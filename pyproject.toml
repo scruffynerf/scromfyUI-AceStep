@@ -1,5 +1,5 @@
 [project]
-name = "AceStep15-gradio2comfy"
+name = "scromfyUI-AceStep"
 version = "0.1.0"
 description = "Advanced ACE-Step 1.5 music generation nodes for ComfyUI"
 authors = [
@@ -15,7 +15,7 @@ readme = "README.md"
 keywords = ["comfyui", "custom-nodes", "music-generation", "ace-step"]
 
 [project.urls]
-Repository = "https://github.com/scruffynerf/AceStep15-gradio2comfy"
+Repository = "https://github.com/scruffynerf/scromfyUI-AceStep"
 
 [build-system]
 requires = ["setuptools>=61.0"]

@@ -293,7 +293,7 @@ Every node should have:
 ## Project File Structure
 
 ```text
-AceStep15-gradio2comfy/
+scromfyUI-AceStep/
 ├── __init__.py           # Dynamic node scanner
 ├── nodes/
 │   ├── includes/         # Shared utility modules
