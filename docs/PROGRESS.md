@@ -54,12 +54,13 @@ All 30 planned nodes are implemented and refactored into a scalable project stru
 - [x] `AceStepModeSelector` - `mode_selector_node.py`
 - [x] `AceStep5HzLMConfig` - `lm_config_node.py`
 - [x] `AceStepLoRAStatus` - `lora_status_node.py`
+- [x] `AceStepLoRALoader` - `lora_loader_node.py`
 
 ---
 
 ## Progress Statistics
 
-- **Total Nodes: 30/30 complete (100%)** ✅
+- **Total Nodes: 31/31 complete (100%)** ✅
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
 
@@ -77,7 +78,7 @@ scromfyUI-AceStep/
 │   │   ├── lyrics_utils.py
 │   │   ├── prompt_utils.py
 │   │   └── sampling_utils.py
-│   ├── *_node.py         # Individual node implementation (30 files)
+│   ├── *_node.py         # Individual node implementation (31 files)
 ├── docs/
 │   ├── NODE_SPECS.md     # Technical specifications
 │   └── PROGRESS.md       # This file

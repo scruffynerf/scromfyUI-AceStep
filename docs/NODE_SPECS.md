@@ -4,7 +4,7 @@ All nodes have been implemented and refactored into individual files within the 
 
 ## Implementation Overview
 
-- **Nodes**: 30 custom nodes implemented.
+- **Nodes**: 31 custom nodes implemented.
 - **Shared Logic**: Isolated in `nodes/includes/`.
 - **Dynamic Loading**: `__init__.py` automatically registers all `*_node.py` files.
 
@@ -60,6 +60,7 @@ All nodes have been implemented and refactored into individual files within the 
 28. **AceStep5HzLMConfig** (`lm_config_node.py`): LM parameter configuration.
 29. **AceStepCustomTimesteps** (`custom_timesteps_node.py`): Parse custom sigma schedules.
 30. **AceStepLoRAStatus** (`lora_status_node.py`): Display LoRA loading info.
+31. **AceStepLoRALoader** (`lora_loader_node.py`): Specialized LoRA loader for the ACE-Step 1.5 decoder.
 
 ---
 
