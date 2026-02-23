@@ -101,6 +101,14 @@ class AceStepConditioningMixerLoader:
             base_tune = "placeholder"
         else:
             base_tune = tune_tensor_file.replace("_tune.safetensors", "")
+
+        # Ensure lyrics is a zero tensor if missing (to avoid metadata errors)
+        if lyrics is None:
+            # Match batch size and device of tune_tensor
+            b = tune_tensor.shape[0]
+            d = tune_tensor.device
+            lyrics = torch.zeros((b, 1, 1024), device=d)
+            metadata["conditioning_lyrics"] = lyrics
             
         # Construct filename-safe info string: tune_pool(if any)_lyrics_codes
         def get_base(filename, suffix):

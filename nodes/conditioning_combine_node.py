@@ -38,6 +38,13 @@ class AceStepConditioningCombine:
             # We use [B, 1, 1024]
             tune_tensor = torch.zeros((batch_size, 1, 1024), device=device)
             
+        # Ensure lyrics_tensor is a zero tensor if missing (to avoid metadata errors)
+        if lyrics_tensor is None:
+            # Match batch size and device of tune_tensor
+            b = tune_tensor.shape[0]
+            d = tune_tensor.device
+            lyrics_tensor = torch.zeros((b, 1, 1024), device=d)
+
         metadata = {
             "pooled_output": pooled_output,
             "conditioning_lyrics": lyrics_tensor,
