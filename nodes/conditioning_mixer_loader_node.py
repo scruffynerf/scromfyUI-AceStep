@@ -76,6 +76,8 @@ class AceStepConditioningMixerLoader:
         lyrics = None
         if lyrics_file != "none":
             lyrics = load_file(os.path.join(base_path, lyrics_file)).get("lyrics")
+            if lyrics.dim() == 2:
+                lyrics = lyrics.unsqueeze(0)
             metadata["conditioning_lyrics"] = lyrics
             
         codes = None
@@ -84,30 +86,33 @@ class AceStepConditioningMixerLoader:
                 codes = json.load(f)
                 metadata["audio_codes"] = codes
         
-        # If no tune_tensor, generate a zero default [B, 1, 1024]
+        # Synchronize sequence lengths for missing components
+        batch_size = 1
+        seq_len = 1
+        device = "cpu"
+        
+        if tune_tensor is not None:
+            batch_size = tune_tensor.shape[0]
+            seq_len = tune_tensor.shape[1]
+            device = tune_tensor.device
+        elif lyrics is not None:
+            batch_size = lyrics.shape[0]
+            seq_len = lyrics.shape[1]
+            device = lyrics.device
+        elif pooled is not None:
+            batch_size = pooled.shape[0]
+            device = pooled.device
+
+        # If no tune_tensor, generate a zero default
         if tune_tensor is None:
-            # Infer batch size and device from metadata
-            batch_size = 1
-            device = "cpu"
-            if pooled is not None:
-                batch_size = pooled.shape[0]
-                device = pooled.device
-            elif lyrics is not None:
-                if lyrics.dim() == 3:
-                    batch_size = lyrics.shape[0]
-                device = lyrics.device
-            
-            tune_tensor = torch.zeros((batch_size, 1, 1024), device=device)
+            tune_tensor = torch.zeros((batch_size, seq_len, 1024), device=device)
             base_tune = "placeholder"
         else:
             base_tune = tune_tensor_file.replace("_tune.safetensors", "")
 
-        # Ensure lyrics is a zero tensor if missing (to avoid metadata errors)
+        # Ensure lyrics is a zero tensor if missing
         if lyrics is None:
-            # Match batch size and device of tune_tensor
-            b = tune_tensor.shape[0]
-            d = tune_tensor.device
-            lyrics = torch.zeros((b, 1, 1024), device=d)
+            lyrics = torch.zeros((batch_size, seq_len, 1024), device=device)
             metadata["conditioning_lyrics"] = lyrics
             
         # Construct filename-safe info string: tune_pool(if any)_lyrics_codes
