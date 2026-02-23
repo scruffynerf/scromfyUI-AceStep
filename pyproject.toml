@@ -9,7 +9,8 @@ dependencies = [
     "torch",
     "torchaudio",
     "numpy",
-    "librosa"
+    "librosa",
+    "lovely-tensors"
 ]
 readme = "README.md"
 keywords = ["comfyui", "custom-nodes", "music-generation", "ace-step"]
