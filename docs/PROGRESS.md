@@ -59,12 +59,13 @@ All 30 planned nodes are implemented and refactored into a scalable project stru
 - [x] `AceStepConditioningMixer` - `conditioning_mixer_node.py`
 - [x] `AceStepConditioningSave` - `conditioning_save_node.py`
 - [x] `AceStepConditioningLoad` - `conditioning_load_node.py`
+- [x] `AceStepConditioningMixerLoader` - `conditioning_mixer_loader_node.py`
 
 ---
 
 ## Progress Statistics
 
-- **Total Nodes: 35/35 complete (100%)** ✅
+- **Total Nodes: 36/36 complete (100%)** ✅
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
 
@@ -82,7 +83,7 @@ scromfyUI-AceStep/
 │   │   ├── lyrics_utils.py
 │   │   ├── prompt_utils.py
 │   │   └── sampling_utils.py
-│    ├── *_node.py         # Individual node implementation (35 files)
+│    ├── *_node.py         # Individual node implementation (36 files)
 ├── docs/
 │   ├── NODE_SPECS.md     # Technical specifications
 │   └── PROGRESS.md       # This file

@@ -1,9 +1,11 @@
 """AceStepConditioningSave node for ACE-Step"""
 import os
+import json
 import torch
+from safetensors.torch import save_file
 
 class AceStepConditioningSave:
-    """Save conditioning components to separate files"""
+    """Save conditioning components to separate files (safetensors for tensors, json for codes)"""
     
     @classmethod
     def INPUT_TYPES(s):
@@ -21,13 +23,7 @@ class AceStepConditioningSave:
     CATEGORY = "Scromfy/Ace-Step/advanced"
 
     def save(self, conditioning, save_path, filename_prefix):
-        if not os.path.isabs(save_path):
-            # Resolve relative to ComfyUI root if possible, 
-            # but usually it's better to just use absolute or let OS handle it.
-            # We'll ensure directory exists.
-            os.makedirs(save_path, exist_ok=True)
-        else:
-            os.makedirs(save_path, exist_ok=True)
+        os.makedirs(save_path, exist_ok=True)
 
         for i, item in enumerate(conditioning):
             # Handle list of conditionings (batch)
@@ -38,23 +34,24 @@ class AceStepConditioningSave:
             suffix = f"_{i}" if len(conditioning) > 1 else ""
             base_name = f"{filename_prefix}{suffix}"
             
-            # 1. Main Tensor
-            torch.save(main_tensor, os.path.join(save_path, f"{base_name}_main.pt"))
+            # 1. Main Tensor (safetensors)
+            save_file({"main": main_tensor}, os.path.join(save_path, f"{base_name}_main.safetensors"))
             
-            # 2. Pooled Output
+            # 2. Pooled Output (safetensors if tensor)
             pooled = metadata.get("pooled_output")
-            if pooled is not None:
-                torch.save(pooled, os.path.join(save_path, f"{base_name}_pooled.pt"))
+            if pooled is not None and isinstance(pooled, torch.Tensor):
+                save_file({"pooled": pooled}, os.path.join(save_path, f"{base_name}_pooled.safetensors"))
             
-            # 3. Conditioning Lyrics
+            # 3. Conditioning Lyrics (safetensors)
             lyrics = metadata.get("conditioning_lyrics")
-            if lyrics is not None:
-                torch.save(lyrics, os.path.join(save_path, f"{base_name}_lyrics.pt"))
+            if lyrics is not None and isinstance(lyrics, torch.Tensor):
+                save_file({"lyrics": lyrics}, os.path.join(save_path, f"{base_name}_lyrics.safetensors"))
                 
-            # 4. Audio Codes
+            # 4. Audio Codes (json)
             codes = metadata.get("audio_codes")
             if codes is not None:
-                torch.save(codes, os.path.join(save_path, f"{base_name}_codes.pt"))
+                with open(os.path.join(save_path, f"{base_name}_codes.json"), "w") as f:
+                    json.dump(codes, f)
                 
         return {}
 

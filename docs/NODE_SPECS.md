@@ -4,7 +4,7 @@ All nodes have been implemented and refactored into individual files within the 
 
 ## Implementation Overview
 
-- **Nodes**: 35 custom nodes implemented.
+- **Nodes**: 36 custom nodes implemented.
 - **Shared Logic**: Isolated in `nodes/includes/`.
 - **Dynamic Loading**: `__init__.py` automatically registers all `*_node.py` files.
 
@@ -65,6 +65,7 @@ All nodes have been implemented and refactored into individual files within the 
 33. **AceStepConditioningMixer** (`conditioning_mixer_node.py`): Selectively mix components (main tensor, pooled output, lyrics, audio codes) from two conditioning sources.
 34. **AceStepConditioningSave** (`conditioning_save_node.py`): Save individual conditioning components to separate files on disk.
 35. **AceStepConditioningLoad** (`conditioning_load_node.py`): Load and reconstruct conditioning from saved component files.
+36. **AceStepConditioningMixerLoader** (`conditioning_mixer_loader_node.py`): Granularly mix saved components from different files to create new conditioning.
 
 ---
 

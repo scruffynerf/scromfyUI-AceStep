@@ -3,3 +3,4 @@ torchaudio
 numpy
 librosa
 lovely-tensors
+safetensors

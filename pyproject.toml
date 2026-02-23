@@ -10,7 +10,8 @@ dependencies = [
     "torchaudio",
     "numpy",
     "librosa",
-    "lovely-tensors"
+    "lovely-tensors",
+    "safetensors"
 ]
 readme = "README.md"
 keywords = ["comfyui", "custom-nodes", "music-generation", "ace-step"]

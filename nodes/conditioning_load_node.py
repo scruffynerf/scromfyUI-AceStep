@@ -1,9 +1,11 @@
 """AceStepConditioningLoad node for ACE-Step"""
 import os
+import json
 import torch
+from safetensors.torch import load_file
 
 class AceStepConditioningLoad:
-    """Load conditioning components from separate files and reconstruct conditioning"""
+    """Load conditioning components from separate files (safetensors/json) and reconstruct conditioning"""
     
     @classmethod
     def INPUT_TYPES(s):
@@ -19,32 +21,30 @@ class AceStepConditioningLoad:
     CATEGORY = "Scromfy/Ace-Step/advanced"
 
     def load(self, load_path, filename_prefix):
-        # We assume single item load for now as per simple prefix logic
-        # If user wants batch, they could extend this or use multiple nodes.
-        
-        main_file = os.path.join(load_path, f"{filename_prefix}_main.pt")
+        main_file = os.path.join(load_path, f"{filename_prefix}_main.safetensors")
         if not os.path.exists(main_file):
             raise FileNotFoundError(f"Main conditioning file not found: {main_file}")
             
-        main_tensor = torch.load(main_file, weights_only=True)
+        main_tensor = load_file(main_file).get("main")
         metadata = {}
         
         # 1. Pooled Output
-        pooled_file = os.path.join(load_path, f"{filename_prefix}_pooled.pt")
+        pooled_file = os.path.join(load_path, f"{filename_prefix}_pooled.safetensors")
         if os.path.exists(pooled_file):
-            metadata["pooled_output"] = torch.load(pooled_file, weights_only=True)
+            metadata["pooled_output"] = load_file(pooled_file).get("pooled")
         else:
             metadata["pooled_output"] = None
             
         # 2. Conditioning Lyrics
-        lyrics_file = os.path.join(load_path, f"{filename_prefix}_lyrics.pt")
+        lyrics_file = os.path.join(load_path, f"{filename_prefix}_lyrics.safetensors")
         if os.path.exists(lyrics_file):
-            metadata["conditioning_lyrics"] = torch.load(lyrics_file, weights_only=True)
+            metadata["conditioning_lyrics"] = load_file(lyrics_file).get("lyrics")
             
         # 3. Audio Codes
-        codes_file = os.path.join(load_path, f"{filename_prefix}_codes.pt")
+        codes_file = os.path.join(load_path, f"{filename_prefix}_codes.json")
         if os.path.exists(codes_file):
-            metadata["audio_codes"] = torch.load(codes_file, weights_only=True)
+            with open(codes_file, "r") as f:
+                metadata["audio_codes"] = json.load(f)
             
         return ([[main_tensor, metadata]],)
 
