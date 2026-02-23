@@ -55,36 +55,59 @@ class AceStepConditioningMixerLoader:
         lyrics_file = pick_file(lyrics_file, "_lyrics.safetensors")
         audio_codes_file = pick_file(audio_codes_file, "_codes.json")
 
-        # 1. Tune Tensor (Required base)
-        if tune_tensor_file == "none":
-            raise ValueError("Mixer Loader requires at least a Tune Tensor file to establish the base conditioning.")
-            
-        tune_path = os.path.join(base_path, tune_tensor_file)
-        tune_tensor = load_file(tune_path).get("tune")
-        
+        # Determine Tune Tensor (Required base or generated default)
+        if tune_tensor_file != "none":
+            tune_path = os.path.join(base_path, tune_tensor_file)
+            tune_tensor = load_file(tune_path).get("tune")
+            # If it's 2D [L, D], unsqueeze to [1, L, D]
+            if tune_tensor.dim() == 2:
+                tune_tensor = tune_tensor.unsqueeze(0)
+        else:
+            tune_tensor = None
+
         metadata = {}
         
-        # 2. Pooled Output
+        # Load other components
+        pooled = None
         if pooled_output_file != "none":
-            metadata["pooled_output"] = load_file(os.path.join(base_path, pooled_output_file)).get("pooled")
-        else:
-            metadata["pooled_output"] = None
+            pooled = load_file(os.path.join(base_path, pooled_output_file)).get("pooled")
+            metadata["pooled_output"] = pooled
             
-        # 3. Conditioning Lyrics
+        lyrics = None
         if lyrics_file != "none":
-            metadata["conditioning_lyrics"] = load_file(os.path.join(base_path, lyrics_file)).get("lyrics")
+            lyrics = load_file(os.path.join(base_path, lyrics_file)).get("lyrics")
+            metadata["conditioning_lyrics"] = lyrics
             
-        # 4. Audio Codes
+        codes = None
         if audio_codes_file != "none":
             with open(os.path.join(base_path, audio_codes_file), "r") as f:
-                metadata["audio_codes"] = json.load(f)
+                codes = json.load(f)
+                metadata["audio_codes"] = codes
+        
+        # If no tune_tensor, generate a zero default [B, 1, 1024]
+        if tune_tensor is None:
+            # Infer batch size and device from metadata
+            batch_size = 1
+            device = "cpu"
+            if pooled is not None:
+                batch_size = pooled.shape[0]
+                device = pooled.device
+            elif lyrics is not None:
+                if lyrics.dim() == 3:
+                    batch_size = lyrics.shape[0]
+                device = lyrics.device
+            
+            tune_tensor = torch.zeros((batch_size, 1, 1024), device=device)
+            base_tune = "placeholder"
+        else:
+            base_tune = tune_tensor_file.replace("_tune.safetensors", "")
             
         # Construct filename-safe info string: tune_pool(if any)_lyrics_codes
         def get_base(filename, suffix):
             if filename == "none": return None
             return filename.replace(suffix, "")
 
-        base_tune = get_base(tune_tensor_file, "_tune.safetensors")
+        # base_tune already defined above in the new logic
         base_pool = get_base(pooled_output_file, "_pooled.safetensors")
         base_lyrics = get_base(lyrics_file, "_lyrics.safetensors")
         base_codes = get_base(audio_codes_file, "_codes.json")
