@@ -20,6 +20,10 @@ class AceStepConditioningLoad:
     FUNCTION = "load"
     CATEGORY = "Scromfy/Ace-Step/advanced"
 
+    @classmethod
+    def IS_CHANGED(s, load_path, filename_prefix):
+        return f"{load_path}_{filename_prefix}"
+
     def load(self, load_path, filename_prefix):
         main_file = os.path.join(load_path, f"{filename_prefix}_main.safetensors")
         if not os.path.exists(main_file):

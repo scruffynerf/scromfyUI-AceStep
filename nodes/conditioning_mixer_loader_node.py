@@ -31,6 +31,10 @@ class AceStepConditioningMixerLoader:
     FUNCTION = "load_and_mix"
     CATEGORY = "Scromfy/Ace-Step/advanced"
 
+    @classmethod
+    def IS_CHANGED(s, main_tensor_file, pooled_output_file, lyrics_file, audio_codes_file):
+        return f"{main_tensor_file}_{pooled_output_file}_{lyrics_file}_{audio_codes_file}"
+
     def load_and_mix(self, main_tensor_file, pooled_output_file, lyrics_file, audio_codes_file):
         base_path = "output/conditioning"
         
