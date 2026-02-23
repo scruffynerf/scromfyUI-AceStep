@@ -24,6 +24,7 @@ class AceStepConditioningMixerLoader:
                 "pooled_output_file": (get_conditioning_files("_pooled.safetensors"),),
                 "lyrics_file": (get_conditioning_files("_lyrics.safetensors"),),
                 "audio_codes_file": (get_conditioning_files("_codes.json"),),
+                "empty_mode": (["zeros", "ones", "random"], {"default": "zeros"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             }
         }
@@ -34,10 +35,10 @@ class AceStepConditioningMixerLoader:
     CATEGORY = "Scromfy/Ace-Step/advanced"
 
     @classmethod
-    def IS_CHANGED(s, tune_tensor_file, pooled_output_file, lyrics_file, audio_codes_file, seed):
-        return f"{tune_tensor_file}_{pooled_output_file}_{lyrics_file}_{audio_codes_file}_{seed}"
+    def IS_CHANGED(s, tune_tensor_file, pooled_output_file, lyrics_file, audio_codes_file, empty_mode, seed):
+        return f"{tune_tensor_file}_{pooled_output_file}_{lyrics_file}_{audio_codes_file}_{empty_mode}_{seed}"
 
-    def load_and_mix(self, tune_tensor_file, pooled_output_file, lyrics_file, audio_codes_file, seed):
+    def load_and_mix(self, tune_tensor_file, pooled_output_file, lyrics_file, audio_codes_file, empty_mode, seed):
         base_path = "output/conditioning"
         rng = random.Random(seed)
         
@@ -103,16 +104,28 @@ class AceStepConditioningMixerLoader:
             batch_size = pooled.shape[0]
             device = pooled.device
 
-        # If no tune_tensor, generate a zero default
+        # Helper to create empty tensors
+        def create_empty(b, l, d, dev, mode, s):
+            if mode == "zeros":
+                return torch.zeros((b, l, d), device=dev)
+            elif mode == "ones":
+                return torch.ones((b, l, d), device=dev)
+            elif mode == "random":
+                generator = torch.Generator(device=dev)
+                generator.manual_seed(s)
+                return torch.randn((b, l, d), device=dev, generator=generator)
+            return torch.zeros((b, l, d), device=dev)
+
+        # If no tune_tensor, generate a default
         if tune_tensor is None:
-            tune_tensor = torch.zeros((batch_size, seq_len, 1024), device=device)
+            tune_tensor = create_empty(batch_size, seq_len, 1024, device, empty_mode, seed)
             base_tune = "placeholder"
         else:
             base_tune = tune_tensor_file.replace("_tune.safetensors", "")
 
-        # Ensure lyrics is a zero tensor if missing
+        # Ensure lyrics is a tensor if missing
         if lyrics is None:
-            lyrics = torch.zeros((batch_size, seq_len, 1024), device=device)
+            lyrics = create_empty(batch_size, seq_len, 1024, device, empty_mode, seed + 1)
             metadata["conditioning_lyrics"] = lyrics
             
         # Construct filename-safe info string: tune_pool(if any)_lyrics_codes
