@@ -3,7 +3,7 @@ import torchaudio
 import folder_paths
 import os
 
-class PreviewAudio:
+class FlacPreviewAudio:
     """Preview audio in ComfyUI interface"""
     
     @classmethod
@@ -30,9 +30,9 @@ class PreviewAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "PreviewAudio": PreviewAudio,
+    "FlacPreviewAudio": FlacPreviewAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PreviewAudio": "Preview Audio",
+    "FlacPreviewAudio": "FlacPreview Audio",
 }
