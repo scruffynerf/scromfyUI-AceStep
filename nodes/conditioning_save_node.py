@@ -25,14 +25,39 @@ class AceStepConditioningSave:
     def save(self, conditioning, save_path, filename_prefix):
         os.makedirs(save_path, exist_ok=True)
 
+        # 1. Find the next available counter for the prefix to prevent overwriting
+        counter = 1
+        # We check for the existence of ANY of the potential files for this prefix
+        # We assume if the 'tune' file exists, the whole bundle exists or we shouldn't overwrite it.
+        while True:
+            candidate_base = f"{filename_prefix}_{counter:04d}"
+            # Check if any of our expected files exist with this base
+            exists = False
+            for ext in ["_tune.safetensors", "_pooled.safetensors", "_lyrics.safetensors", "_codes.json"]:
+                if os.path.exists(os.path.join(save_path, f"{candidate_base}{ext}")):
+                    exists = True
+                    break
+            if not exists:
+                break
+            counter += 1
+
         for i, item in enumerate(conditioning):
             # Handle list of conditionings (batch)
             tune_tensor = item[0]
             metadata = item[1]
             
-            # Use suffix for batch if more than 1
+            # Use suffix for batch if more than 1 (inner batch index)
+            # If batch > 1, we still use the same base counter prefix for the whole batch?
+            # Or should each item in the batch get its own unique number?
+            # Standard ComfyUI SaveImage handles batches by incrementing for each image.
+            # But here we are saving a "conditioning" which might be a list of parts.
+            
+            # Let's keep it simple: the whole "conditioning" object gets the counter.
+            # If it's a batch of 4, we might want _0, _1, _2, _3 or just increment the global counter.
+            # Usually, SaveImage saves multiple images as separate files with incrementing numbers.
+            
             suffix = f"_{i}" if len(conditioning) > 1 else ""
-            base_name = f"{filename_prefix}{suffix}"
+            base_name = f"{candidate_base}{suffix}"
             
             # 1. Tune Tensor (safetensors)
             save_file({"tune": tune_tensor}, os.path.join(save_path, f"{base_name}_tune.safetensors"))
