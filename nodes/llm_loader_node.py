@@ -52,19 +52,24 @@ class AceStepLLMLoader:
         elif precision == "bf16":
             dtype = torch.bfloat16
             
-        logger.info(f"Loading ACE-Step LLM from {model_path} on {device} (precision: {precision})")
-        
-        # Note: If the checkpoint is a single .safetensors file, AutoModel might need help 
-        # but usually LLMs in ComfyUI checkpoints are folders (diffusers/transformers style)
-        # or we might need a custom loader if they are standard single-file .safetensors.
-        # Assuming they are standard HF folders for now as ACE-Step uses them.
+        # Transformers AutoModel.from_pretrained expects a DIRECTORY for local paths.
+        # If model_path points to a file (like model.safetensors), we use its parent directory.
+        model_dir = os.path.dirname(model_path) if os.path.isfile(model_path) else model_path
+            
+        logger.info(f"Loading ACE-Step LLM from {model_dir} on {device} (precision: {precision})")
         
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+            # We use local_files_only=True to ensure we don't hit the hub
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_dir, 
+                trust_remote_code=True, 
+                local_files_only=True
+            )
             model = AutoModelForCausalLM.from_pretrained(
-                model_path, 
+                model_dir, 
                 torch_dtype=dtype, 
-                trust_remote_code=True
+                trust_remote_code=True,
+                local_files_only=True
             ).to(device)
             
             return ({"model": model, "tokenizer": tokenizer, "device": device},)
