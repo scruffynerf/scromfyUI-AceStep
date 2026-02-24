@@ -1,17 +1,20 @@
 """AceStepAudioCodesUnderstand node for ACE-Step"""
 import torch
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_LM_UNDERSTAND_INSTRUCTION = "Understand the given musical conditions and describe the audio semantics accordingly:"
 
 class AceStepAudioCodesUnderstand:
-    """Generatively reconstruct metadata and lyrics from Audio Codes using the 5Hz LLM"""
+    """Generatively reconstruct metadata and lyrics from Audio Codes using a standalone LLM"""
     
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "clip": ("CLIP",),
+                "llm": ("ACE_LLM",),
                 "audio_codes": ("LIST",),
                 "temperature": ("FLOAT", {"default": 0.3, "min": 0.0, "max": 2.0, "step": 0.01}),
                 "top_k": ("INT", {"default": 0, "min": 0, "max": 100}),
@@ -25,12 +28,15 @@ class AceStepAudioCodesUnderstand:
     FUNCTION = "understand"
     CATEGORY = "Scromfy/Ace-Step/text"
 
-    def understand(self, clip, audio_codes, temperature, top_k, top_p, max_new_tokens):
+    def understand(self, llm, audio_codes, temperature, top_k, top_p, max_new_tokens):
         if not audio_codes:
             return ("No audio codes provided.", "", {})
 
+        model = llm["model"]
+        tokenizer = llm["tokenizer"]
+        device = llm["device"]
+
         # 1. Format codes into the string format the LLM expects
-        # audio_codes might be a list of ints or tensors
         flat_codes = []
         for item in audio_codes:
             if isinstance(item, (int, float)):
@@ -46,38 +52,20 @@ class AceStepAudioCodesUnderstand:
         code_str = "".join([f"<|audio_code_{c}|>" for c in flat_codes])
         
         # 2. Build the chat prompt
-        # Qwen-style chat template: <|im_start|>system\n...\n<|im_end|>\n<|im_start|>user\n...\n<|im_end|>\n<|im_start|>assistant\n
         prompt = f"<|im_start|>system\n# Instruction\n{DEFAULT_LM_UNDERSTAND_INSTRUCTION}\n\n<|im_end|>\n"
         prompt += f"<|im_start|>user\n{code_str}<|im_end|>\n"
         prompt += f"<|im_start|>assistant\n"
         
-        # 3. Access the underlying model and tokenizer
-        # In ComfyUI, clip is a wrapper. We need the transformer model.
-        # This part is environment-dependent, but usually clip.tokenizer and clip.patcher.model exist.
-        tokenizer = clip.tokenizer
-        model_patcher = clip.patcher
-        model = model_patcher.model
-        device = model_patcher.load_device
-        
-        # 4. Tokenize the prompt
-        # We need to use the tokenizer's internal methods because it's a wrapper
-        # Accessing the underlying transformers tokenizer if possible
-        raw_tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
-        inputs = raw_tokenizer(prompt, return_tensors="pt").to(device)
+        # 3. Tokenize the prompt
+        inputs = tokenizer(prompt, return_tensors="pt").to(device)
         input_ids = inputs["input_ids"]
         
-        # 5. Generative Loop
-        # We'll do a simple sampling loop to avoid complex transformers dependencies
+        # 4. Generative Loop
         generated_ids = input_ids.clone()
-        
-        # Set model to eval mode
         model.eval()
         
         with torch.no_grad():
             for _ in range(max_new_tokens):
-                # Forward pass
-                # Note: ComfyUI's model wrapper might expect specific arguments
-                # For Qwen/CLIP models, we usually want the logits
                 outputs = model(generated_ids)
                 logits = outputs.logits if hasattr(outputs, "logits") else outputs[0]
                 next_token_logits = logits[:, -1, :]
@@ -111,34 +99,28 @@ class AceStepAudioCodesUnderstand:
                 generated_ids = torch.cat([generated_ids, next_token], dim=-1)
                 
                 # Check for EOS
-                if next_token.item() in [raw_tokenizer.eos_token_id, 151645]: # <|im_end|> is often 151645
+                if next_token.item() in [tokenizer.eos_token_id, 151645]: # <|im_end|> is often 151645
                     break
                     
-        # 6. Decode output
+        # 5. Decode output
         output_ids = generated_ids[0, input_ids.shape[1]:]
-        output_text = raw_tokenizer.decode(output_ids, skip_special_tokens=True)
+        output_text = tokenizer.decode(output_ids, skip_special_tokens=True)
         
-        # 7. Parse Metadata and Lyrics
-        # Simple extraction based on </think> tag and format
+        # 6. Parse Metadata and Lyrics
         metadata = {}
         lyrics = ""
         
-        # Extract everything after </think> as lyrics
         think_match = re.search(r'</think>', output_text)
         if think_match:
             lyrics = output_text[think_match.end():].strip()
-            # Clean up "# Lyric" header
             lyrics = re.sub(r'^#\s*Lyri[c|cs]?\s*\n', '', lyrics, flags=re.IGNORECASE).strip()
             
-            # Metadata is usually inside the <think> or before it
             pre_lyrics = output_text[:think_match.start()]
-            # Extract fields like "bpm: 120", "caption: ..."
             for field in ["bpm", "caption", "duration", "keyscale", "language", "timesignature"]:
                 m = re.search(rf'{field}:\s*(.*?)(?:\n|$)', pre_lyrics, re.IGNORECASE)
                 if m:
                     metadata[field] = m.group(1).strip()
         else:
-            # Fallback if no think tag
             lyrics = output_text
             
         return (output_text, lyrics, metadata)
