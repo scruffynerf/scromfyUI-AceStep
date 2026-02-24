@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 class AceStepTensorMixer:
-    """Mix two tensors with various modes and scaling options"""
+    """Consolidated Binary Toolbox for mixing and combining two tensors with optional masking"""
     
     @classmethod
     def INPUT_TYPES(s):
@@ -11,9 +11,19 @@ class AceStepTensorMixer:
             "required": {
                 "tensor_A": ("TENSOR",),
                 "tensor_B": ("TENSOR",),
-                "mode": (["linear_blend", "concatenate", "add", "multiply", "maximum", "minimum"], {"default": "linear_blend"}),
+                "mode": ([
+                    "blend", "lerp", "inject", "average", "difference_injection", 
+                    "dominant_recessive", "replace", "concatenate", "add", 
+                    "multiply", "maximum", "minimum"
+                ], {"default": "blend"}),
+                "alpha": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "ratio": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "scale_mode": (["none", "scale_B_to_A", "scale_A_to_B", "pad_to_match"], {"default": "none"}),
+                "weight": ("FLOAT", {"default": 1.0, "min": -2.0, "max": 2.0, "step": 0.01}),
+                "eps": ("FLOAT", {"default": 0.05, "min": 0.0, "max": 1.0, "step": 0.001}),
+                "scale_mode": (["scale_B_to_A", "scale_A_to_B", "pad_to_match", "none"], {"default": "scale_B_to_A"}),
+            },
+            "optional": {
+                "mask": ("MASK",),
             }
         }
     
@@ -21,59 +31,84 @@ class AceStepTensorMixer:
     FUNCTION = "mix"
     CATEGORY = "Scromfy/Ace-Step/processing"
 
-    def mix(self, tensor_A, tensor_B, mode, ratio, scale_mode):
-        # We assume tensors are [B, L, D] or [L, D]
-        # Usually ACE-Step conditioning tensors are [1, L, 1024]
-        
+    def mix(self, tensor_A, tensor_B, mode, alpha, ratio, weight, eps, scale_mode, mask=None):
         A = tensor_A.clone()
         B = tensor_B.clone()
         
-        # Check dimensions
-        if A.dim() != B.dim():
-             raise ValueError(f"Tensor dimensions mismatch: A={A.shape}, B={B.shape}")
-             
         # Sequence length dimension is usually index 1 if 3D, 0 if 2D
         L_idx = 1 if A.dim() == 3 else 0
         
-        # Scaling / Interpolation
+        # Scaling / Interpolation (Silent scaling by default)
         if scale_mode == "scale_B_to_A" and A.shape[L_idx] != B.shape[L_idx]:
             B = self.interpolate_tensor(B, A.shape[L_idx], L_idx)
         elif scale_mode == "scale_A_to_B" and A.shape[L_idx] != B.shape[L_idx]:
             A = self.interpolate_tensor(A, B.shape[L_idx], L_idx)
         elif scale_mode == "pad_to_match" and A.shape[L_idx] != B.shape[L_idx]:
             A, B = self.pad_tensors(A, B, L_idx)
+        elif scale_mode == "none" and A.shape[L_idx] != B.shape[L_idx] and mode != "concatenate":
+            # For non-concatenation modes, if shapes don't match and no scaling requested, 
+            # we still need to match for element-wise ops or it will crash.
+            # Defaulting to interpolate B to A as the "safest" silent fallback.
+            B = self.interpolate_tensor(B, A.shape[L_idx], L_idx)
             
-        if mode == "linear_blend":
-            out = A * (1.0 - ratio) + B * ratio
+        # Default mask is all ones
+        if mask is None:
+            mask = torch.ones((1, A.size(1), 1), device=A.device)
+            
+        # Core Operations
+        if mode == "blend":
+            # lerp(B, A, mask) -> mask == 1 -> A, mask == 0 -> B
+            out = mask * A + (1.0 - mask) * B
+        elif mode == "lerp":
+            # Blend A and B by alpha, only in masked area
+            blended = alpha * A + (1.0 - alpha) * B
+            out = mask * blended + (1.0 - mask) * A
+        elif mode == "inject":
+            # A + mask * B
+            out = A + mask * B
+        elif mode == "average":
+            # 0.5 * (A + B) only in masked area
+            res = 0.5 * (A + B)
+            out = mask * res + (1.0 - mask) * A
+        elif mode == "difference_injection":
+            # weight * (B - A) injected via mask
+            delta = weight * (B - A)
+            out = A + mask * delta
+        elif mode == "dominant_recessive":
+            # A + eps * B via mask
+            out = A + mask * (eps * B)
+        elif mode == "replace":
+            # Replace A with B where mask == 1
+            out = mask * B + (1.0 - mask) * A
         elif mode == "concatenate":
-            out = torch.cat([A, B], dim=L_idx)
+            # Join tensors sequentially (ignoring mask for base op, or should we?)
+            # Usually concat is structural, but we applies mask to B before concat
+            out = torch.cat([A, B * mask], dim=L_idx) if mask.shape[1] == B.shape[1] else torch.cat([A, B], dim=L_idx)
         elif mode == "add":
-            out = A + B
+            res = A + B
+            out = mask * res + (1.0 - mask) * A
         elif mode == "multiply":
-            out = A * B
+            res = A * B
+            out = mask * res + (1.0 - mask) * A
         elif mode == "maximum":
-            out = torch.max(A, B)
+            res = torch.max(A, B)
+            out = mask * res + (1.0 - mask) * A
         elif mode == "minimum":
-            out = torch.min(A, B)
+            res = torch.min(A, B)
+            out = mask * res + (1.0 - mask) * A
         else:
             out = A
             
         return (out,)
 
     def interpolate_tensor(self, t, target_len, L_idx):
-        # t is [B, L, D] or [L, D]
-        # F.interpolate expects [B, C, L] for 1D linear
         if t.dim() == 3:
-            # [B, L, D] -> [B, D, L]
             t = t.transpose(1, 2)
             t = F.interpolate(t, size=target_len, mode='linear', align_corners=False)
-            # [B, D, L] -> [B, L, D]
             t = t.transpose(1, 2)
         elif t.dim() == 2:
-            # [L, D] -> [1, D, L]
             t = t.unsqueeze(0).transpose(1, 2)
             t = F.interpolate(t, size=target_len, mode='linear', align_corners=False)
-            # [1, D, L] -> [L, D]
             t = t.squeeze(0).transpose(0, 1)
         return t
 
@@ -82,18 +117,12 @@ class AceStepTensorMixer:
         len_B = B.shape[L_idx]
         if len_A == len_B:
             return A, B
-            
         max_len = max(len_A, len_B)
         
         def pad_one(tensor, current_len, target_len, dim):
             if current_len >= target_len:
                 return tensor
             pad_size = target_len - current_len
-            # pad format: (left, right, top, bottom, ...)
-            # for [B, L, D] and dim 1, we want to pad L. 
-            # F.pad handles last dims first. 
-            # If we want to pad dim 1 of [B, L, D]:
-            # torch.cat might be easier
             pad_shape = list(tensor.shape)
             pad_shape[dim] = pad_size
             padding = torch.zeros(pad_shape, device=tensor.device, dtype=tensor.dtype)
@@ -108,5 +137,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepTensorMixer": "Tensor Mixer & Scaler",
+    "AceStepTensorMixer": "Tensor Mixer (Binary Toolbox)",
 }
