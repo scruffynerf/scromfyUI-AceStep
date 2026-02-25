@@ -66,8 +66,9 @@ class AceStepLatentToAudioCodes:
             # indices: [B, T_5hz, num_quantizers]
             _, indices = tokenizer.tokenize(x)
             
-            # Return as nested list to maintain [B, T, Q] structure as Python ints
-            audio_codes = indices.detach().cpu().tolist()
+            # Return as nested list [B, T*Q] to maintain flat indices per batch item
+            B = indices.shape[0]
+            audio_codes = indices.reshape(B, -1).detach().cpu().tolist()
 
         return (audio_codes,)
 
