@@ -17,6 +17,7 @@ class AceStepAudioCodesToLatent:
             "required": {
                 "audio_codes": ("LIST",),
                 "model": ("MODEL",),
+                "latent_scaling": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 10.0, "step": 0.01}),
             }
         }
     
@@ -97,6 +98,13 @@ class AceStepAudioCodesToLatent:
             # ComfyUI audio latent format: [B, C, T]
             samples = latents.transpose(1, 2) # [1, 64, T_25hz]
             
+            # Apply scaling (user suggested ~0.5 relative to DiT space)
+            if latent_scaling != 1.0:
+                samples = samples * latent_scaling
+
+            # ACE-Step VAE (Oobleck) prefers float32 according to user
+            samples = samples.to(torch.float32)
+
             # Log stats to debug silent audio (range check)
             logger.info(f"AudioCode Latents Stats - min: {samples.min().item():.4f}, max: {samples.max().item():.4f}, abs mean: {samples.abs().mean().item():.6f}")
 

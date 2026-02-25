@@ -18,12 +18,17 @@ class VAEDecodeAudio:
     CATEGORY = "Scromfy/Ace-Step/audio"
 
     def decode(self, vae, samples):
-        audio = vae.decode(samples["samples"]).movedim(-1, 1)
-        # Normalize audio to prevent clipping
-        std = torch.std(audio, dim=[1, 2], keepdim=True) * 5.0
-        std[std < 1.0] = 1.0
-        audio /= std
-        return ({"waveform": audio, "sample_rate": 44100}, )
+        # vae.decode returns a DecoderOutput object with .sample
+        # Oobleck .sample shape is [B, 2, T] (stereo waveform)
+        result = vae.decode(samples["samples"])
+        if hasattr(result, "sample"):
+            audio = result.sample
+        else:
+            audio = result
+            
+        # ComfyUI expects [B, C, T] for audio["waveform"]
+        # SaveAudio uses audio["waveform"] and iterates over dim 0
+        return ({"waveform": audio, "sample_rate": 48000}, )
 
 
 NODE_CLASS_MAPPINGS = {
