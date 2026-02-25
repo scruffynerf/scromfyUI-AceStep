@@ -83,9 +83,12 @@ class AceStepAudioCodesToLatent:
         # where L is number of quantizers.
         indices = indices.unsqueeze(0).unsqueeze(-1) # (1, T_5hz, 1)
 
+        # Get model dtype to avoid float32 vs bfloat16 mismatch
+        model_dtype = next(inner_model.parameters()).dtype
+
         with torch.no_grad():
             # get_output_from_indices returns (1, T_5hz, 2048) with project_out applied
-            quantized = quantizer.get_output_from_indices(indices)
+            quantized = quantizer.get_output_from_indices(indices, dtype=model_dtype)
             
             # detokenizer: transformer expansion 5Hz -> 25Hz
             latents = detokenizer(quantized)
