@@ -14,7 +14,7 @@ class AceStepLatentToAudioCodes:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "latent": (["LATENT", "SEMANTIC_HINTS"],),
+                "semantic_hints": ("SEMANTIC_HINTS",),
                 "model": ("MODEL",),
                 "latent_scaling": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 10.0, "step": 0.01}),
             }
@@ -26,14 +26,14 @@ class AceStepLatentToAudioCodes:
     CATEGORY = "Scromfy/Ace-Step/audio"
     
     @classmethod
-    def IS_CHANGED(s, latent, model, latent_scaling):
+    def IS_CHANGED(s, semantic_hints, model, latent_scaling):
         # Latents are tensors; hash by shape and absolute mean to detect changes efficiently
-        samples = latent.get("samples")
+        samples = semantic_hints.get("samples")
         if samples is not None:
             return f"{samples.shape}_{samples.abs().mean().item()}_{latent_scaling}"
         return f"none_{latent_scaling}"
 
-    def convert(self, latent, model, latent_scaling):
+    def convert(self, semantic_hints, model, latent_scaling):
         # 1. Access the model and components
         inner_model = model.model
         if hasattr(inner_model, "diffusion_model"):
