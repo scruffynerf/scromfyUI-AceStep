@@ -78,7 +78,8 @@ class AceStepAudioCodesToSemanticHints_Test:
             
             with torch.no_grad():
                 # Get embeddings from indices
-                quantized = tokenizer.quantizer.get_output_from_indices(indices, dtype=dtype)
+                quantized = tokenizer.quantizer.get_output_from_indices(indices)
+                quantized = quantized.to(dtype=dtype)
                 # Detokenize to 25Hz
                 lm_hints = detokenizer(quantized)
                 # [1, T, 64] -> [1, 64, T]
@@ -162,8 +163,9 @@ class AceStepSemanticHintsToAudioCodes_Test:
                 T_25hz = latent_25hz.shape[1]
 
             # Step 1: Reshape to patches [B, T_5hz, P, D]
+            # .contiguous() required because movedim produces a non-contiguous tensor
             T_5hz = T_25hz // pool_window
-            x = latent_25hz.view(B, T_5hz, pool_window, D)
+            x = latent_25hz.contiguous().view(B, T_5hz, pool_window, D)
             
             # Step 2: Project 64 -> hidden_size
             x = tokenizer.audio_acoustic_proj(x)
