@@ -94,8 +94,8 @@ class AceStepAudioCodesToLatent:
             latents = detokenizer(quantized)
             # latents: (1, T_25hz, 64)
 
-            # ComfyUI audio latent format: [B, C, 1, T]
-            samples = latents.transpose(1, 2).unsqueeze(2) # [1, 64, 1, T_25hz]
+            # ComfyUI audio latent format: [B, C, T]
+            samples = latents.transpose(1, 2) # [1, 64, T_25hz]
             
         return ({"samples": samples.cpu()},)
 

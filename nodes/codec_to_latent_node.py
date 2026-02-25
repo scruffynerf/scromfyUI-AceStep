@@ -44,7 +44,7 @@ class AceStepCodecToLatent:
                 with torch.no_grad():
                     quantized = quantizer.get_output_from_indices(indices)
                     latent_25hz = detokenizer(quantized)
-                    samples = latent_25hz.transpose(1, 2).unsqueeze(2) # [1, 64, 1, T_25]
+                    samples = latent_25hz.transpose(1, 2) # [1, 64, T_25]
                     
                 return ({"samples": samples.cpu()},)
             else:
