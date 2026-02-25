@@ -39,7 +39,7 @@ class AceStepAudioCodesToLatent:
         
         if not audio_codes:
             logger.warning("No audio codes provided")
-            return ({"samples": torch.zeros([1, 64, 1])},)
+            return (torch.zeros([1, 64, 1]),)
 
         # 1. Access the model and components
         inner_model = model.model
@@ -48,7 +48,7 @@ class AceStepAudioCodesToLatent:
             
         if not (hasattr(inner_model, "tokenizer") and hasattr(inner_model, "detokenizer")):
             logger.error("Model does not have required tokenizer/detokenizer attributes.")
-            return ({"samples": torch.zeros([1, 64, 1])},)
+            return (torch.zeros([1, 64, 1]),)
 
         tokenizer = inner_model.tokenizer
         quantizer = tokenizer.quantizer
@@ -104,7 +104,7 @@ class AceStepAudioCodesToLatent:
                 batch_samples.append(semantic_item)
 
         if not batch_samples:
-            return ({"samples": torch.zeros([1, 64, 1])},)
+            return (torch.zeros([1, 64, 1]),)
 
         # Concatenate batch items back together
         samples = torch.cat(batch_samples, dim=0)
