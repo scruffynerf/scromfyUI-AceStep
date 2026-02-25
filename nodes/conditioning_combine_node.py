@@ -1,5 +1,6 @@
 """AceStepConditioningCombine node for ACE-Step"""
 import torch
+import os
 
 class AceStepConditioningCombine:
     """Assemble separate components into a full ACE-Step conditioning"""
