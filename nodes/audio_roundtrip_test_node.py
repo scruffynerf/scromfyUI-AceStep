@@ -77,11 +77,14 @@ class AceStepAudioCodesToSemanticHints_Test:
             indices = torch.tensor(code_ids, dtype=torch.long, device=device).unsqueeze(0).unsqueeze(-1)
             
             with torch.no_grad():
-                # Get embeddings from indices
-                # get_output_from_indices does a float32 codebook lookup then feeds
-                # project_out which has bfloat16 weights — cast quantizer to match
-                tokenizer.quantizer.to(dtype=dtype)
-                quantized = tokenizer.quantizer.get_output_from_indices(indices)
+                # ComfyUI ops.py Linear keeps weights in bfloat16 but FSQ codebook
+                # lookup produces float32 — patch project_out to cast input dtype
+                _orig = tokenizer.quantizer.project_out.forward
+                tokenizer.quantizer.project_out.forward = lambda x, *a, **kw: _orig(x.to(dtype), *a, **kw)
+                try:
+                    quantized = tokenizer.quantizer.get_output_from_indices(indices)
+                finally:
+                    tokenizer.quantizer.project_out.forward = _orig
                 # Detokenize to 25Hz
                 lm_hints = detokenizer(quantized)
                 # [1, T, 64] -> [1, 64, T]
