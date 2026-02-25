@@ -112,10 +112,10 @@ class AceStepAudioCodesToSemanticHints:
             with torch.no_grad():
                 # get_output_from_indices returns (1, T, 2048)
                 # It handles the mapping from one integer to the multi-level FSQ vector
-                quantized = quantizer.get_output_from_indices(indices_tensor, dtype=dtype)
-                
+                # quantized = quantizer.get_output_from_indices(indices_tensor, dtype=dtype)
+
                 # detokenizer: (1, T_5hz, 2048) -> (1, T_25hz, 64)
-                lm_hints = detokenizer(quantized)
+                lm_hints = detokenizer(indices_tensor)
                 
                 # Convert to ComfyUI format: [1, T, 64] -> [1, 64, T]
                 semantic_item = lm_hints.movedim(-1, -2)
