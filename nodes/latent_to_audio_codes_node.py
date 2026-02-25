@@ -14,7 +14,7 @@ class AceStepLatentToAudioCodes:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "latent": ("LATENT",),
+                "latent": (["LATENT", "SEMANTIC_HINTS"],),
                 "model": ("MODEL",),
                 "latent_scaling": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 10.0, "step": 0.01}),
             }

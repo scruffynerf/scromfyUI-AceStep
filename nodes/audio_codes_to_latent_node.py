@@ -22,7 +22,7 @@ class AceStepAudioCodesToLatent:
             }
         }
     
-    RETURN_TYPES = ("LATENT",)
+    RETURN_TYPES = ("SEMANTIC_HINTS",)
     RETURN_NAMES = ("semantic_hints",)
     FUNCTION = "convert"
     CATEGORY = "Scromfy/Ace-Step/audio"
