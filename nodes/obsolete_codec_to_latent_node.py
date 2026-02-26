@@ -19,7 +19,7 @@ class AceStepCodecToLatent:
 
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "decode"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def decode(self, audio_codes, model):
         try:

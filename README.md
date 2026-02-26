@@ -29,6 +29,6 @@ Look for nodes under the `Scromfy/Ace-Step` category in the ComfyUI node menu. T
 - [NODE_SPECS.md](docs/NODE_SPECS.md) - Detailed node documentation.
 
 ## Credits
-- [ACE-Step-v1.5 lora loader](Neyroslav/ComfyUI-ACE-Step-1.5_LoRA_Loader
-) - adapting his code for this repo
+- [ACE-Step-v1.5 lora loader](https://github.com/Neyroslav/ComfyUI-ACE-Step-1.5_LoRA_Loader
+) - adapting his code for this repo, with his blessing
 - [JK-AceStep-Nodes](https://github.com/jeankassio/JK-AceStep-Nodes) - adapted some code from this repo

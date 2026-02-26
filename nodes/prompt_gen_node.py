@@ -19,7 +19,7 @@ class AceStepPromptGen:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("prompt",)
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/prompts"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def generate(self, style: str, random_variation: bool, seed: int):
         base_prompt = STYLE_PRESETS.get(style, "Generic electronic music")

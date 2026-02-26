@@ -34,7 +34,7 @@ class SaveAudio:
     RETURN_TYPES = ()
     FUNCTION = "save_audio"
     OUTPUT_NODE = True
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def save_audio(self, audio, filename_prefix="ACE-Step", format="flac", metadata="", prompt=None, extra_pnginfo=None):
         filename_prefix += self.prefix_append

@@ -21,7 +21,7 @@ class LoadAudio:
             }
         }
 
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "load"
 

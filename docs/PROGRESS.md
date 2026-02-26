@@ -2,7 +2,7 @@
 
 ## Node Implementation Status
 
-All 30 planned nodes are implemented and refactored into a scalable project structure.
+All 50+ planned nodes are implemented and refactored into a scalable project structure.
 
 ### ✅ Refactored Structure Summary
 - **Nodes**: Each node is in its own `nodes/*_node.py` file.
@@ -13,74 +13,89 @@ All 30 planned nodes are implemented and refactored into a scalable project stru
 
 ### ✅ Implementation Breakdown
 
-#### Audio I/O & Masking
-- [x] `LoadAudio` - `load_audio_node.py`
-- [x] `SaveAudio` - `save_audio_node.py`
-- [x] `PreviewAudio` - `preview_audio_node.py`
-- [x] `EmptyLatentAudio` - `empty_latent_audio_node.py`
-- [x] `VAEEncodeAudio` - `vae_encode_audio_node.py`
-- [x] `VAEDecodeAudio` - `vae_decode_audio_node.py`
-- [x] `AceStepAudioMask` - `mast_audio_node.py`
+#### Metadata & Analysis
+- [x] `AceStepAudioAnalyzer` - `audio_analyzer_node.py`
+- [x] `AceStepAudioCodesUnderstand` - `audio_codes_decode_node.py`
+- [x] `AceStepConditioningExplore` - `conditioning_view_node.py`
+- [x] `AceStepMetadataBuilder` - `metadata_builder_node.py`
+
+#### Mixers & Transformers
+- [x] `AceStepAudioCodesMixer` - `audio_codes_mixer_node.py`
+- [x] `AceStepAudioCodesUnaryOp` - `audio_codes_unary_op_node.py`
+- [x] `AceStepConditioningCombine` - `conditioning_combine_node.py`
+- [x] `AceStepConditioningMixer` - `conditioning_dual_mixer_node.py`
+- [x] `AceStepConditioningSplitter` - `conditioning_split_node.py`
+
+#### Mixing & Masking
+- [x] `AceStepAudioMask` - `audio_mask_node.py`
+- [x] `AceStepTensorMaskGenerator` - `tensor_mask_node.py`
+- [x] `AceStepTensorMixer` - `tensor_mixer_node.py`
+- [x] `AceStepTensorUnaryOp` - `tensor_unary_op_node.py`
+
+#### Advanced & Semantic
+- [x] `AceStepAudioCodesToSemanticHints` - `audio_codes_to_semantic_hints_node.py`
+- [x] `AceStepSemanticHintsToAudioCodes` - `semantic_hints_to_audio_codes_node.py`
+
+#### Audio & Effects
+- [x] `AceStepPostProcess` - `audio_post_process_node.py`
+
+#### Loaders & Timbre
+- [x] `AceStepAudioCodesLoader` - `load_audio_codes_node.py`
+- [x] `AceStepConditioningLoad` - `load_conditioning_node.py`
+- [x] `AceStepLLMLoader` - `load_llm_node.py`
+- [x] `AceStepLyricsTensorLoader` - `load_lyrics_tensor_node.py`
+- [x] `AceStepConditioningMixerLoader` - `load_mixed_conditioning_node.py`
+- [x] `AceStepTimbreTensorLoader` - `load_timbre_tensor_node.py`
 
 #### Lyrics Generation
+- [x] `AceStepLyricsFormatter` - `lyrics_formatter_node.py`
+- [x] `AceStepGeniusLyricsSearch` - `lyrics_genius_node.py`
+
+##### AI-Powered (Keys in `keys/*.txt`)
+- [x] `AceStepClaudeLyrics` - `lyrics_claude_node.py`
 - [x] `AceStepGeminiLyrics` - `lyrics_gemini_node.py`
 - [x] `AceStepGroqLyrics` - `lyrics_groq_node.py`
 - [x] `AceStepOpenAILyrics` - `lyrics_openai_node.py`
-- [x] `AceStepClaudeLyrics` - `lyrics_claude_node.py`
-- [x] `AceStepGeniusLyricsSearch` - `lyrics_genius_node.py`
 - [x] `AceStepPerplexityLyrics` - `lyrics_perplexity_node.py`
-- [x] `AceStepLyricsFormatter` - `lyrics_formatter_node.py`
-- [x] `SaveText` - `save_text_node.py`
 
-#### Prompts & Post-Processing
+#### Persistence (Save)
+- [x] `AceStepConditioningSave` - `save_conditioning_node.py`
+- [x] `AceStepTensorSave` - `save_tensor_node.py`
+
+#### Miscellaneous
+- [x] `AceStep5HzLMConfig` - `llm_config_node.py`
+- [x] `EmptyLatentAudio` - `empty_latent_audio_node.py`
+
+#### TBD / Uncategorized
+- [x] `AceStepInpaintSampler` - `inpaint_sampler_node.py`
+- [x] `AceStepLoadAudio` - `load_audio_node.py`
+- [x] `AceStepLoRALoader` - `load_lora_node.py`
+- [x] `AceStepLoRAStatus` - `lora_status_node.py`
+- [x] `AceStepModeSelector` - `mode_selector_node.py`
+- [x] `AceStepPreviewAudio` - `preview_audio_node.py`
 - [x] `AceStepPromptGen` - `prompt_gen_node.py`
 - [x] `AceStepRandomPrompt` - `random_prompt_node.py`
-- [x] `AceStepPostProcess` - `audio_post_process_node.py`
+- [x] `AceStepSaveAudio` - `save_audio_node.py`
+- [x] `AceStepSaveText` - `save_text_node.py`
+- [x] `AceStepVAEDecodeAudio` - `vae_decode_audio_node.py`
+- [x] `AceStepVAEEncodeAudio` - `vae_encode_audio_node.py`
 
-#### Sampling & Latents
-- [x] `AceStepKSampler` - `obsolete_ksampler_node.py`
-- [x] `AceStepKSamplerAdvanced` - `obsolete_ksampler_advanced_node.py`
-- [x] `AceStepInpaintSampler` - `inpaint_sampler_node.py`
-- [x] `AceStepCodecToLatent` - `codec_to_latent_node.py`
-- [x] `AceStepCustomTimesteps` - `obsolete_custom_timesteps_node.py`
-
-#### Audio Analysis & Codec
-- [x] `AceStepAudioAnalyzer` - `audio_analyzer_node.py`
-- [x] `AceStepAudioToCodec` - `audio_to_codec_node.py`
-
-#### Conditioning & Advanced
-- [x] `AceStepMetadataBuilder` - `metadata_builder_node.py`
+#### Obsolete
+- [x] `AceStepAudioCodesToSemanticHints` - `obsolete_audio_codes_to_latent_node.py`
+- [x] `AceStepAudioToCodec` - `obsolete_audio_to_codec_node.py`
 - [x] `AceStepCLIPTextEncode` - `obsolete_clip_text_encode_node.py`
+- [x] `AceStepCodecToLatent` - `obsolete_codec_to_latent_node.py`
 - [x] `AceStepConditioning` - `obsolete_conditioning_node.py`
-- [x] `AceStepModeSelector` - `mode_selector_node.py`
-- [x] `AceStep5HzLMConfig` - `lm_config_node.py`
-- [x] `AceStepLoRAStatus` - `lora_status_node.py`
-- [x] `AceStepLoRALoader` - `load_lora_node.py`
-- [x] `AceStepConditioningExplore` - `conditioning_view_node.py`
-- [x] `AceStepAudioCodesUnderstand` - `audio_codes_decode_node.py`
-- [x] `AceStepAudioCodesMixer` - `audio_codes_mixer_node.py`
-- [x] `AceStepConditioningSave` - `save_conditioning_node.py`
-- [x] `AceStepConditioningLoad` - `load_conditioning_node.py`
-- [x] `AceStepConditioningMixerLoader` - `load_mixed_conditioning_node.py`
-- [x] `AceStepTimbreTensorLoader` - `load_timbre_tensor_node.py`
-- [x] `AceStepLyricsTensorLoader` - `load_lyrics_tensor_node.py`
-- [x] `AceStepAudioCodesLoader` - `audio_codes_loader_node.py`
-- [x] `AceStepTensorMixer` - `tensor_mixer_node.py`
-- [x] `AceStepConditioningCombine` - `conditioning_combine_node.py`
-- [x] `AceStepConditioningSplitter` - `conditioning_split_node.py`
-- [x] `AceStepTensorMaskGenerator` - `tensor_mask_nodes.py`
-- [x] `AceStepTensorUnaryOp` - `tensor_unary_op_node.py`
-- [x] `AceStepTensorMixer` - `tensor_mixer_node.py`
-- [x] `AceStepTensorSave` - `save_tensor_node.py`
-- [x] `AceStepAudioCodesToSemanticHints` - `audio_codes_to_semantic_hints_node.py`
-- [x] `AceStepSemanticHintsToAudioCodes` - `semantic_hints_to_audio_codes_node.py`
-- [x] `AceStepAudioCodesUnaryOp` - `audio_codes_unary_op_node.py`
+- [x] `AceStepCustomTimesteps` - `obsolete_custom_timesteps_node.py`
+- [x] `AceStepKSamplerAdvanced` - `obsolete_ksampler_advanced_node.py`
+- [x] `AceStepKSampler` - `obsolete_ksampler_node.py`
+- [x] `AceStepLatentToAudioCodes` - `obsolete_latent_to_audio_codes_node.py`
 
 ---
 
 ## Progress Statistics
 
-- **Total Nodes: 46/46 complete (100%)** ✅
+- **Total Nodes: 54/54 complete (100%)** ✅
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
 
@@ -95,10 +110,11 @@ scromfyUI-AceStep/
 │   ├── includes/         # Shared utility modules
 │   │   ├── analysis_utils.py
 │   │   ├── audio_utils.py
+│   │   ├── fsq_utils.py
 │   │   ├── lyrics_utils.py
 │   │   ├── prompt_utils.py
 │   │   └── sampling_utils.py
-│    ├── *_node.py         # Individual node implementation (42 files)
+│    ├── *_node.py         # Individual node implementation (54 files)
 ├── docs/
 │   ├── NODE_SPECS.md     # Technical specifications
 │   └── PROGRESS.md       # This file

@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting
+from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
 
 class AceStepPerplexityLyrics:
     """Generate lyrics using Perplexity API"""
@@ -15,12 +15,6 @@ class AceStepPerplexityLyrics:
                     "default": "",
                     "multiline": True,
                     "placeholder": "Music style (e.g., Synthwave with female vocals)"
-                }),
-                "api_key": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "password": True,
-                    "placeholder": "Perplexity API Key"
                 }),
                 "model": ([
                     "llama-3.1-sonar-large-128k-online",
@@ -36,12 +30,12 @@ class AceStepPerplexityLyrics:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("lyrics",)
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/lyrics"
+    CATEGORY = "Scromfy/Ace-Step/lyrics/AI"
 
-    def generate(self, style: str, api_key: str, model: str, max_tokens: int, seed: int):
-        api_key = api_key.strip()
+    def generate(self, style: str, model: str, max_tokens: int, seed: int):
+        api_key = load_api_key("perplexity")
         if not api_key:
-            return ("[Perplexity] API key is missing.",)
+            return ("[Perplexity] API key is missing. Please add it to keys/perplexity_api_key.txt",)
 
         prompt = build_simple_prompt(style, seed)
         

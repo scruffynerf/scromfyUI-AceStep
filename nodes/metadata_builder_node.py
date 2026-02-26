@@ -19,7 +19,7 @@ class AceStepMetadataBuilder:
     RETURN_TYPES = ("DICT",)
     RETURN_NAMES = ("metadata",)
     FUNCTION = "build"
-    CATEGORY = "Scromfy/Ace-Step/text"
+    CATEGORY = "Scromfy/Ace-Step/metadata"
 
     def build(self, bpm, duration, keyscale, timesignature, language, instrumental):
         metadata = {

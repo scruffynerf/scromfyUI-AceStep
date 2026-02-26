@@ -19,7 +19,7 @@ class EmptyLatentAudio:
     
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/essential"
 
     def generate(self, seconds, batch_size):
         # ACE-Step audio latents: 44100 Hz / 2048 hop / 2 downscale

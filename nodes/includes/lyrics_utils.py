@@ -1,4 +1,23 @@
 """Lyrics generation utilities for ACE-Step"""
+import os
+import sys
+
+def load_api_key(service_name: str) -> str:
+    """Load API key from the keys directory for a specific service"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    key_file = f"{service_name.lower()}_api_key.txt"
+    key_path = os.path.join(base_dir, "keys", key_file)
+    
+    if not os.path.exists(key_path):
+        print(f"Error: API key for {service_name} not found at {key_path}", file=sys.stderr)
+        return ""
+        
+    try:
+        with open(key_path, "r") as f:
+            return f.read().strip()
+    except Exception as e:
+        print(f"Error reading API key for {service_name}: {e}", file=sys.stderr)
+        return ""
 
 ALLOWED_TAGS_INFO = (
     "Use ONLY these section tags in square brackets (no numbers): [Intro], [Verse], [Pre-Chorus], [Chorus], "

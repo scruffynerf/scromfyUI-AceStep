@@ -42,7 +42,7 @@ class AceStepAudioCodesMixer:
     RETURN_TYPES = ("LIST",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "mix"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/mixers"
 
     @classmethod
     def IS_CHANGED(s, audio_codes_A, audio_codes_B, mode, alpha, ratio, weight, eps, scale_mode, mask=None):

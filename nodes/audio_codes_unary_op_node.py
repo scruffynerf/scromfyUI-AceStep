@@ -20,6 +20,7 @@ class AceStepAudioCodesUnaryOp:
                 "audio_codes": ("LIST",),
                 "model": ("MODEL",),
                 "mode": (["gate", "scale_masked", "noise_masked", "fade_out"], {"default": "gate"}),
+                "length_pct": ("FLOAT", {"default": 100.0, "min": 0.1, "max": 1000.0, "step": 0.1}),
                 "strength": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
                 "sigma": ("FLOAT", {"default": 0.01, "min": 0.0, "max": 1.0, "step": 0.001}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
@@ -32,21 +33,21 @@ class AceStepAudioCodesUnaryOp:
     RETURN_TYPES = ("LIST",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "process"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/mixers"
 
     @classmethod
-    def IS_CHANGED(s, audio_codes, mode, strength, sigma, seed, mask=None):
+    def IS_CHANGED(s, audio_codes, mode, length_pct, strength, sigma, seed, mask=None):
         try:
             # Hash some samples and parameters
             sample = str(audio_codes[0][:5]) if audio_codes else "e"
-            info = f"{sample}_{mode}_{strength}_{sigma}_{seed}"
+            info = f"{sample}_{mode}_{length_pct}_{strength}_{sigma}_{seed}"
             if mask is not None:
                 info += f"_{mask.abs().mean().item():.4f}"
             return hashlib.md5(info.encode()).hexdigest()
         except:
             return "random"
 
-    def process(self, audio_codes, model, mode, strength, sigma, seed, mask=None):
+    def process(self, audio_codes, model, mode, length_pct, strength, sigma, seed, mask=None):
         inner_model = model.model
         if hasattr(inner_model, "diffusion_model"):
             inner_model = inner_model.diffusion_model
@@ -65,6 +66,16 @@ class AceStepAudioCodesUnaryOp:
 
         # Decode to 6D float space [1, T, 6]
         A = fsq_decode_indices(torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0), levels)
+
+        # Handle Length Scaling
+        if length_pct != 100.0:
+            curr_len = A.shape[1]
+            new_len = max(1, int(curr_len * (length_pct / 100.0)))
+            
+            # [1, L, 6] -> [1, 6, L]
+            A = A.transpose(1, 2)
+            A = torch.nn.functional.interpolate(A, size=new_len, mode='linear', align_corners=False)
+            A = A.transpose(1, 2)
 
         # Prepare mask
         target_len = A.shape[1]

@@ -17,7 +17,7 @@ class AceStepConditioningExplore:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("json_text",)
     FUNCTION = "extract"
-    CATEGORY = "Scromfy/Ace-Step/advanced"
+    CATEGORY = "Scromfy/Ace-Step/metadata"
 
     def extract(self, text_cond):
         # Conditioning is a list of lists: [[cond, {"pooled_output": ...}]]

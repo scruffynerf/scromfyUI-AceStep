@@ -18,7 +18,7 @@ class AceStepAudioToCodec:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "encode"
-    CATEGORY = "Scromfy/Ace-Step/analysis"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def encode(self, audio, model):
         """Encode audio to FSQ codes using the model's tokenizer"""

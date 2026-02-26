@@ -10,7 +10,7 @@ class FlacPreviewAudio:
     def INPUT_TYPES(s):
         return {"required": {"audio": ("AUDIO",), }}
 
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
     RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "preview_audio"

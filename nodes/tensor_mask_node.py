@@ -21,7 +21,7 @@ class AceStepTensorMaskGenerator:
     RETURN_TYPES = ("MASK",)
     RETURN_NAMES = ("mask",)
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/processing"
+    CATEGORY = "Scromfy/Ace-Step/mixing"
 
     def generate(self, context_tensor, mode, start, end, fraction, ramp_len, reverse):
         # Determine N from context_tensor [B, L, D] or [L, D]

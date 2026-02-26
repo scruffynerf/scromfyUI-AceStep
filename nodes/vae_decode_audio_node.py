@@ -15,7 +15,7 @@ class VAEDecodeAudio:
     
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "decode"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def decode(self, vae, samples):
         # vae.decode returns a DecoderOutput object with .sample

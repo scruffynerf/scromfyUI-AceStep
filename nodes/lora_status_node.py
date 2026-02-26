@@ -14,7 +14,7 @@ class AceStepLoRAStatus:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("status",)
     FUNCTION = "check_status"
-    CATEGORY = "Scromfy/Ace-Step/advanced"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def check_status(self, lora_name=""):
         if not lora_name:

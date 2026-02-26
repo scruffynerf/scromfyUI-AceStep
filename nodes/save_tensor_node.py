@@ -19,7 +19,7 @@ class AceStepTensorSave:
     RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "save"
-    CATEGORY = "Scromfy/Ace-Step/advanced"
+    CATEGORY = "Scromfy/Ace-Step/save"
 
     def save(self, tensor, save_type, save_path, filename_prefix):
         os.makedirs(save_path, exist_ok=True)

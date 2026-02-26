@@ -27,7 +27,7 @@ class SaveText:
     RETURN_NAMES = ("file_path",)
     FUNCTION = "save"
     OUTPUT_NODE = True
-    CATEGORY = "Scromfy/Ace-Step/io"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def _sanitize_prefix(self, prefix: str) -> str:
         """Clean up path/filename, preserve folder structure"""

@@ -22,7 +22,7 @@ class AceStepSemanticHintsToAudioCodes:
     RETURN_TYPES = ("LIST",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "convert"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/advanced"
 
     @classmethod
     def IS_CHANGED(s, semantic_hints, latent_scaling):

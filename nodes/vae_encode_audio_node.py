@@ -16,7 +16,7 @@ class VAEEncodeAudio:
     
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/TBD"
 
     def encode(self, vae, audio):
         sample_rate = audio["sample_rate"]

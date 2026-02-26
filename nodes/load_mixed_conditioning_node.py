@@ -32,7 +32,7 @@ class AceStepConditioningMixerLoader:
     RETURN_TYPES = ("CONDITIONING", "STRING")
     RETURN_NAMES = ("conditioning", "conditioning_info")
     FUNCTION = "load_and_mix"
-    CATEGORY = "Scromfy/Ace-Step/advanced"
+    CATEGORY = "Scromfy/Ace-Step/loaders"
 
     @classmethod
     def IS_CHANGED(s, timbre_tensor_file, pooled_output_file, lyrics_file, audio_codes_file, empty_mode, seed):

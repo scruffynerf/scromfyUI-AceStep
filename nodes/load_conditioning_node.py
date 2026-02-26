@@ -18,7 +18,7 @@ class AceStepConditioningLoad:
     
     RETURN_TYPES = ("CONDITIONING",)
     FUNCTION = "load"
-    CATEGORY = "Scromfy/Ace-Step/advanced"
+    CATEGORY = "Scromfy/Ace-Step/loaders"
 
     @classmethod
     def IS_CHANGED(s, load_path, filename_prefix):

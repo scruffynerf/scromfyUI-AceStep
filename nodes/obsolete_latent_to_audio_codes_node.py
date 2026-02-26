@@ -24,7 +24,7 @@ class AceStepLatentToAudioCodes:
     RETURN_TYPES = ("LIST",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "convert"
-    CATEGORY = "Scromfy/Ace-Step/audio"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
     
     @classmethod
     def IS_CHANGED(s, semantic_hints, model, latent_scaling):
