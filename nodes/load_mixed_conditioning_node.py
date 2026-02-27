@@ -6,12 +6,17 @@ import random
 from safetensors.torch import load_file
 
 def get_conditioning_files(suffix):
-    base_path = "output/conditioning"
-    if not os.path.exists(base_path):
-        return ["none", "random"]
-    
-    files = [f for f in os.listdir(base_path) if f.endswith(suffix)]
-    return sorted(files) + ["none", "random"]
+    output_path = "output/conditioning"
+    if os.path.exists(output_path):
+        newfiles = [f for f in os.listdir(output_path) if f.endswith(suffix)]
+    else:
+        newfiles = []
+    input_path = "input/conditioning"
+    if os.path.exists(input_path):
+        inputfiles = [f for f in os.listdir(input_path) if f.endswith(suffix)]
+    else:
+        inputfiles = []
+    return ["random", "none"] + sorted(newfiles + inputfiles)
 
 class AceStepConditioningMixerLoader:
     """Load and mix specific conditioning components from saved files (safetensors/json)"""
