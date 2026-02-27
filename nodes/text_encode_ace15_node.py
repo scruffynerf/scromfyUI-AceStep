@@ -121,7 +121,7 @@ class ACEStep15TaskTextEncodeNode:
     RETURN_TYPES = ("CONDITIONING",)
     RETURN_NAMES = ("conditioning",)
     FUNCTION = "encode"
-    CATEGORY = "conditioning"
+    CATEGORY = "Scromfy/Ace-Step/prompt"
 
     def encode(self, clip, text, task_type, track_name="", lyrics="", bpm=00,
                duration=0, keyscale="C major", timesignature="4/4", language="English", seed=0,
