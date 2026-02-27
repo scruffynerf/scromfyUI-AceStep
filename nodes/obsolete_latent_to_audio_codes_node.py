@@ -5,7 +5,7 @@ import comfy.model_management
 
 logger = logging.getLogger(__name__)
 
-class AceStepLatentToAudioCodes:
+class ObsoleteAceStepLatentToAudioCodes:
     """
     Convert 25Hz latents back to 5Hz audio codes (re-tokenization).
     Completes the roundtrip for audio manipulation.
@@ -83,9 +83,9 @@ class AceStepLatentToAudioCodes:
         return (audio_codes,)
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepLatentToAudioCodes": AceStepLatentToAudioCodes,
+    "ObsoleteAceStepLatentToAudioCodes": ObsoleteAceStepLatentToAudioCodes,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepLatentToAudioCodes": "Latent to Audio Codes",
+    "ObsoleteAceStepLatentToAudioCodes": "Obsolete Latent to Audio Codes",
 }

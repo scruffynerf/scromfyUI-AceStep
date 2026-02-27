@@ -1,7 +1,7 @@
 """AceStepCustomTimesteps node for ACE-Step"""
 import torch
 
-class AceStepCustomTimesteps:
+class ObsoleteAceStepCustomTimesteps:
     """Parse custom sigma schedule from string"""
     
     @classmethod
@@ -26,9 +26,9 @@ class AceStepCustomTimesteps:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepCustomTimesteps": AceStepCustomTimesteps,
+    "ObsoleteAceStepCustomTimesteps": ObsoleteAceStepCustomTimesteps,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepCustomTimesteps": "Custom Timesteps",
+    "ObsoleteAceStepCustomTimesteps": "Obsolete Custom Timesteps",
 }

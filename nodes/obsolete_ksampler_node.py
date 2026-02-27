@@ -5,7 +5,7 @@ import comfy.utils
 import comfy.model_management
 from .includes.sampling_utils import apply_shift
 
-class AceStepKSampler:
+class ObsoleteAceStepKSampler:
     """
     Audio-optimized KSampler for ACE-Step music generation
     
@@ -70,9 +70,9 @@ class AceStepKSampler:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepKSampler": AceStepKSampler,
+    "ObsoleteAceStepKSampler": ObsoleteAceStepKSampler,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepKSampler": "KSampler (Audio-Optimized)",
+    "ObsoleteAceStepKSampler": "Obsolete KSampler (Audio-Optimized)",
 }

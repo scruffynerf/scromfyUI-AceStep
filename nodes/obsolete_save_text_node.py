@@ -3,7 +3,7 @@ import os
 import re
 import folder_paths
 
-class SaveText:
+class ObsoleteSaveText:
     """Save text content to file with automatic numbering"""
     
     @classmethod
@@ -27,7 +27,7 @@ class SaveText:
     RETURN_NAMES = ("file_path",)
     FUNCTION = "save"
     OUTPUT_NODE = True
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def _sanitize_prefix(self, prefix: str) -> str:
         """Clean up path/filename, preserve folder structure"""
@@ -76,9 +76,9 @@ class SaveText:
 
 
 NODE_CLASS_MAPPINGS = {
-    "SaveText": SaveText,
+    "ObsoleteSaveText": ObsoleteSaveText,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SaveText": "Save Text",
+    "ObsoleteSaveText": "Obsolete Save Text",
 }

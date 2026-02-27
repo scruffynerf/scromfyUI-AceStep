@@ -1,6 +1,6 @@
 """AceStepCLIPTextEncode node for ACE-Step"""
 
-class AceStepCLIPTextEncode:
+class ObsoleteAceStepCLIPTextEncode:
     """Specialized CLIP text encoding that accepts metadata for ACE-Step"""
     
     @classmethod
@@ -36,9 +36,9 @@ class AceStepCLIPTextEncode:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepCLIPTextEncode": AceStepCLIPTextEncode,
+    "ObsoleteAceStepCLIPTextEncode": ObsoleteAceStepCLIPTextEncode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepCLIPTextEncode": "CLIP Text Encode (ACE-Step)",
+    "ObsoleteAceStepCLIPTextEncode": "Obsolete CLIP Text Encode (ACE-Step)",
 }

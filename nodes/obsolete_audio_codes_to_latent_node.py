@@ -6,7 +6,7 @@ import comfy.model_management
 
 logger = logging.getLogger(__name__)
 
-class AceStepAudioCodesToSemanticHints:
+class ObsoleteAceStepAudioCodesToSemanticHints:
     """
     Convert ACE-Step audio codes (5Hz) to Semantic Hints (25Hz).
     These hints describe the structural acoustic features (rhythm, melody, harmony)
@@ -167,9 +167,9 @@ class AceStepAudioCodesToSemanticHints:
         return (samples.cpu(),)
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepAudioCodesToSemanticHints": AceStepAudioCodesToSemanticHints,
+    "ObsoleteAceStepAudioCodesToSemanticHints": ObsoleteAceStepAudioCodesToSemanticHints,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepAudioCodesToSemanticHints": "Audio Codes to Semantic Hints",
+    "ObsoleteAceStepAudioCodesToSemanticHints": "Obsolete Audio Codes to Semantic Hints",
 }

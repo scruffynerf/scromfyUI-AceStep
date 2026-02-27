@@ -6,7 +6,7 @@ import io
 import json
 from .includes.audio_utils import create_vorbis_comment_block
 
-class SaveAudio:
+class ObsoleteSaveAudio:
     """Save audio with metadata support"""
     
     def __init__(self):
@@ -34,7 +34,7 @@ class SaveAudio:
     RETURN_TYPES = ()
     FUNCTION = "save_audio"
     OUTPUT_NODE = True
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def save_audio(self, audio, filename_prefix="ACE-Step", format="flac", metadata="", prompt=None, extra_pnginfo=None):
         filename_prefix += self.prefix_append
@@ -99,9 +99,9 @@ class SaveAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "SaveAudio": SaveAudio,
+    "ObsoleteSaveAudio": ObsoleteSaveAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SaveAudio": "Save Audio",
+    "ObsoleteSaveAudio": "Obsolete Save Audio",
 }

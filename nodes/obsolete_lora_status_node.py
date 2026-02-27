@@ -1,6 +1,6 @@
 """AceStepLoRAStatus node for ACE-Step"""
 
-class AceStepLoRAStatus:
+class ObsoleteAceStepLoRAStatus:
     """Display information about loaded LoRA"""
     
     @classmethod
@@ -14,7 +14,7 @@ class AceStepLoRAStatus:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("status",)
     FUNCTION = "check_status"
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def check_status(self, lora_name=""):
         if not lora_name:
@@ -23,9 +23,9 @@ class AceStepLoRAStatus:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepLoRAStatus": AceStepLoRAStatus,
+    "ObsoleteAceStepLoRAStatus": ObsoleteAceStepLoRAStatus,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepLoRAStatus": "LoRA Status",
+    "ObsoleteAceStepLoRAStatus": "Obsolete LoRA Status",
 }

@@ -1,6 +1,6 @@
 """AceStepConditioning node for ACE-Step"""
 
-class AceStepConditioning:
+class ObsoleteAceStepConditioning:
     """Combine text, lyrics, and timbre conditioning"""
     
     @classmethod
@@ -35,9 +35,9 @@ class AceStepConditioning:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepConditioning": AceStepConditioning,
+    "ObsoleteAceStepConditioning": ObsoleteAceStepConditioning,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepConditioning": "Combined Conditioning",
+    "ObsoleteAceStepConditioning": "Obsolete Combined Conditioning",
 }

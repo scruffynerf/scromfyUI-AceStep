@@ -1,7 +1,7 @@
 """VAEDecodeAudio node for ACE-Step"""
 import torch
 
-class VAEDecodeAudio:
+class ObsoleteVAEDecodeAudio:
     """Decode latent space to audio waveform"""
     
     @classmethod
@@ -15,7 +15,7 @@ class VAEDecodeAudio:
     
     RETURN_TYPES = ("AUDIO",)
     FUNCTION = "decode"
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def decode(self, vae, samples):
         # vae.decode returns a DecoderOutput object with .sample
@@ -32,9 +32,9 @@ class VAEDecodeAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "VAEDecodeAudio": VAEDecodeAudio,
+    "ObsoleteVAEDecodeAudio": ObsoleteVAEDecodeAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "VAEDecodeAudio": "VAE Decode (Audio)",
+    "ObsoleteVAEDecodeAudio": "Obsolete VAE Decode (Audio)",
 }

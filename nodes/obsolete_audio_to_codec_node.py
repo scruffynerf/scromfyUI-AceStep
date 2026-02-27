@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class AceStepAudioToCodec:
+class ObsoleteAceStepAudioToCodec:
     """Convert audio to FSQ codec tokens using ACE-Step model's tokenizer"""
     
     @classmethod
@@ -33,9 +33,9 @@ class AceStepAudioToCodec:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepAudioToCodec": AceStepAudioToCodec,
+    "ObsoleteAceStepAudioToCodec": ObsoleteAceStepAudioToCodec,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepAudioToCodec": "Audio to Codec",
+    "ObsoleteAceStepAudioToCodec": "Obsolete Audio to Codec",
 }

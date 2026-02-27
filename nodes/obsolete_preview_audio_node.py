@@ -3,14 +3,14 @@ import torchaudio
 import folder_paths
 import os
 
-class FlacPreviewAudio:
+class ObsoleteFlacPreviewAudio:
     """Preview audio in ComfyUI interface"""
     
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {"audio": ("AUDIO",), }}
 
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
     RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "preview_audio"
@@ -30,9 +30,9 @@ class FlacPreviewAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "FlacPreviewAudio": FlacPreviewAudio,
+    "ObsoleteFlacPreviewAudio": ObsoleteFlacPreviewAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "FlacPreviewAudio": "FlacPreview Audio",
+    "ObsoleteFlacPreviewAudio": "Obsolete FlacPreview Audio",
 }

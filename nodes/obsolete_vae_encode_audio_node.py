@@ -2,7 +2,7 @@
 import torch
 import torchaudio
 
-class VAEEncodeAudio:
+class ObsoleteVAEEncodeAudio:
     """Encode audio waveform to latent space"""
     
     @classmethod
@@ -16,7 +16,7 @@ class VAEEncodeAudio:
     
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode"
-    CATEGORY = "Scromfy/Ace-Step/TBD"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def encode(self, vae, audio):
         sample_rate = audio["sample_rate"]
@@ -31,9 +31,9 @@ class VAEEncodeAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "VAEEncodeAudio": VAEEncodeAudio,
+    "ObsoleteVAEEncodeAudio": ObsoleteVAEEncodeAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "VAEEncodeAudio": "VAE Encode (Audio)",
+    "ObsoleteVAEEncodeAudio": "Obsolete VAE Encode (Audio)",
 }

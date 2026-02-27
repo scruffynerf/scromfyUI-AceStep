@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class AceStepCodecToLatent:
+class ObsoleteAceStepCodecToLatent:
     """Convert FSQ codes back to latent representation using the model's detokenizer"""
     
     @classmethod
@@ -57,9 +57,9 @@ class AceStepCodecToLatent:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepCodecToLatent": AceStepCodecToLatent,
+    "ObsoleteAceStepCodecToLatent": ObsoleteAceStepCodecToLatent,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepCodecToLatent": "Codec to Latent",
+    "ObsoleteAceStepCodecToLatent": "Obsolete Codec to Latent",
 }
