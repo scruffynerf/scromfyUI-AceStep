@@ -123,9 +123,23 @@ class ScromfyACEStep15TaskTextEncodeNode:
     FUNCTION = "encode"
     CATEGORY = "Scromfy/Ace-Step/prompt"
 
-    def encode(self, clip, text, task_type, track_name="", lyrics="", bpm=00,
-               duration=0, keyscale="C major", timesignature="4/4", language="English", seed=0,
-               cfg_scale=2.0, temperature=0.85, top_p=0.9, top_k=0, min_p=0.0, llm_audio_codes=True):
+    def encode(self,
+               clip,
+               text,
+               lyrics="",
+               bpm=0,
+               duration=0,
+               keyscale="C major",
+               timesignature="4/4",
+               language="English",
+               llm_audio_codes=True,
+               seed=0,
+               cfg_scale=2.0,
+               temperature=0.85,
+               top_p=0.9,
+               top_k=0,
+               min_p=0.0,
+               ):
         # Convert display name to ISO code
         language_code = self.LANGUAGE_MAP.get(language, language)
 
@@ -141,8 +155,8 @@ class ScromfyACEStep15TaskTextEncodeNode:
                                 timesignature=int(timesig_code), 
                                 language=language_code, 
                                 keyscale=keyscale, 
-                                seed=seed, 
                                 generate_audio_codes=llm_audio_codes, 
+                                seed=seed, 
                                 cfg_scale=cfg_scale, 
                                 temperature=temperature, 
                                 top_p=top_p, 
