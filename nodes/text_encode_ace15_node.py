@@ -24,7 +24,7 @@ class ScromfyACEStep15TaskTextEncodeNode:
 
     # Time signature display name → code mapping
     TIMESIG_MAP = {
-        "Auto-detect": "",
+        "Auto-detect": "0",
         "2/4": "2",
         "3/4": "3",
         "4/4": "4",
@@ -145,14 +145,13 @@ class ScromfyACEStep15TaskTextEncodeNode:
 
         # Convert display name to numeric code
         timesig_code = self.TIMESIG_MAP.get(timesignature, timesignature)
-
         if bpm < 30: bpm = -1
 
         tokens = clip.tokenize(text, 
                                 lyrics=lyrics, 
                                 bpm=bpm, 
                                 duration=duration, 
-                                timesignature=int(timesig_code), 
+                                timesignature=timesig_code, 
                                 language=language_code, 
                                 keyscale=keyscale, 
                                 generate_audio_codes=llm_audio_codes, 
