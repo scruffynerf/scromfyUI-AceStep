@@ -1,6 +1,6 @@
 """AceStep Text Encode node for ACE-Step 1.5"""
 
-class ACEStep15TaskTextEncodeNode:
+class ScromfyACEStep15TaskTextEncodeNode:
     """
     Revised text encoder for ACE-Step 1.5 aka Scromfy
     """
