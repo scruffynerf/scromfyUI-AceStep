@@ -20,9 +20,9 @@ def load_api_key(service_name: str) -> str:
         return ""
 
 ALLOWED_TAGS_INFO = (
-    "Use ONLY these section tags in square brackets (no numbers): [Intro], [Verse], [Pre-Chorus], [Chorus], "
+    "Use ONLY a selection of these section tags in square brackets (no numbers): [Intro], [Verse], [Pre-Chorus], [Chorus], "
     "[Post-Chorus], [Bridge], [Breakdown], [Drop], [Hook], [Refrain], [Instrumental], [Solo], [Rap], [Outro]. "
-    "Do NOT add numbers to tags (e.g., use [Verse], not [Verse 1])."
+    "Include at least two verses. Do NOT add numbers to tags (e.g., use [Verse], not [Verse 1])."
 )
 
 BASE_INSTRUCTIONS = (
