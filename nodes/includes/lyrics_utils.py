@@ -26,17 +26,17 @@ ALLOWED_TAGS_INFO = (
 )
 
 BASE_INSTRUCTIONS = (
-    "You are a music lyricist. Generate song lyrics in the requested style. "
+    "You are a music lyricist. Generate song lyrics in the requested style and theme. "
     "Return ONLY the lyrics as plain text. Do not add titles, prefaces, markdown, code fences, or quotes. "
     f"{ALLOWED_TAGS_INFO} Never use parentheses for section labels. "
     "Keep it concise and coherent."
 )
 
 
-def build_simple_prompt(style: str, seed: int) -> str:
+def build_simple_prompt(style: str, seed: int, theme: str = "Love Song") -> str:
     """Simple prompt for basic lyrics generation"""
     base_style = style.strip() or "Generic song"
-    return f"Style: {base_style}. {BASE_INSTRUCTIONS} [Generation seed: {seed}]"
+    return f"Style: {base_style}. Song Theme: {theme} {BASE_INSTRUCTIONS}"
 
 
 def clean_markdown_formatting(text: str) -> str:
@@ -52,14 +52,14 @@ def clean_markdown_formatting(text: str) -> str:
     for line in cleaned.splitlines():
         stripped = line.strip()
         
-        # Convert (Verse 1) style to [Verse]
-        if stripped.startswith("(") and stripped.endswith(")") and len(stripped) <= 48:
-            inner = stripped[1:-1].strip()
-            if inner:
-                parts = inner.split()
-                if len(parts) >= 2 and parts[-1].isdigit():
-                    inner = " ".join(parts[:-1])
-                line = f"[{inner}]"
+        ## Convert (Verse 1) style to [Verse]
+        #if stripped.startswith("(") and stripped.endswith(")") and len(stripped) <= 48:
+        #    inner = stripped[1:-1].strip()
+        #    if inner:
+        #        parts = inner.split()
+        #        if len(parts) >= 2 and parts[-1].isdigit():
+        #            inner = " ".join(parts[:-1])
+        #        line = f"[{inner}]"
         
         # Clean [Verse 1] style to [Verse]
         if stripped.startswith("[") and stripped.endswith("]") and len(stripped) <= 64:

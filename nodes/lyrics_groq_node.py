@@ -14,6 +14,11 @@ class AceStepGroqLyrics:
                     "multiline": True,
                     "placeholder": "Music style (e.g., Synthwave with female vocals)"
                 }),
+                "theme": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "placeholder": "Music subject/theme (e.g., Love Ballad)"
+                }),
                 "model": ([
                     "allam-2-7b",
                     "canopylabs/orpheus-arabic-saudi",
@@ -46,12 +51,12 @@ class AceStepGroqLyrics:
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/lyrics/AI"
 
-    def generate(self, style: str, model: str, max_tokens: int, seed: int):
+    def generate(self, style: str, theme: str, model: str, max_tokens: int, seed: int):
         api_key = load_api_key("groq")
         if not api_key:
             return ("[Groq] API key is missing. Please add it to keys/groq_api_key.txt",)
 
-        prompt = build_simple_prompt(style, seed)
+        prompt = build_simple_prompt(style, seed, theme)
 
         try:
             client = Groq(api_key=api_key)
