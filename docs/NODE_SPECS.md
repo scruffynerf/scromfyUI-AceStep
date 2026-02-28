@@ -10,7 +10,10 @@ Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 ## Prompt & Encoding (Scromfy/Ace-Step/prompt)
 
 1. **ScromfyACEStep15TaskTextEncode** (`text_encode_ace15_node.py`): Full ACE-Step 1.5 text encoder with human-readable dropdowns for language, key signature, and time signature. Supports LLM audio code generation toggle.
-2. **AceStepPromptGen** (`prompt_gen_node.py`): Multi-category prompt generator with 8 dropdowns (style, mood, adjective, culture, genre, vocal, performer, instrument) — each offering none/random/random2 plus all items. Outputs individual category strings and a combined prompt.
+2. **AceStepPromptGen** (`prompt_gen_node.py`): Multi-category prompt generator that dynamically builds its inputs and outputs based on the contents of `prompt_components/`.
+    *   **Dropdowns**: Offers "none", "random", "random2", and specific items for every component found.
+    *   **Wildcards**: Supports recursive expansion of `__COMPONENT__` tokens (e.g., `__ADJECTIVES__`). It includes a fallback for pluralization (e.g., `__ADJECTIVE__` matches `ADJECTIVES.txt`).
+    *   **Dynamic Outputs**: Provides a combined prompt plus individual cleaned strings for every active component.
 3. **AceStepRandomPrompt** (`random_prompt_node.py`): Randomized music prompt generator.
 
 ## Metadata & Analysis (Scromfy/Ace-Step/metadata)
@@ -132,6 +135,19 @@ These are deprecated and will be removed in a future version.
 - **lyrics_utils.py**: Prompt builders and markdown cleaning.
 - **prompt_utils.py**: Style presets, genres, moods, adjectives, cultures, instruments, performers, vocal qualities.
 - **sampling_utils.py**: Noise schedule shift formulas.
+
+## AI Instructions (AIinstructions/)
+
+- **systemprompt.txt**: The master system prompt used for all AI lyric generation. Edit this to change the AI's "personality" or formatting rules.
+
+## Prompt Components (prompt_components/)
+
+- **STYLE_PRESETS.json**: Mapping of genre names to detailed stylistic descriptions.
+- **GENRES.txt, MOODS.txt, etc.**: Flat lists of categories used in prompt generation.
+- **TOTALIGNORE.list**: List of filenames to completely ignore.
+- **LOADBUTNOTSHOW.list**: List of filenames to load (for wildcards) but hide from the Node UI.
+- **REPLACE.list**: JSON mapping to swap one component file for another (e.g., `{"ADJECTIVES": "MYADJECTIVES"}`).
+- **Customization**: Users can add new `.txt` (lists) or `.json` (dicts) here; they will be auto-loaded and assigned as variables.
 
 ## Frontend Extensions (web/)
 

@@ -1,0 +1,9 @@
+solo
+duo
+trio
+quartet
+quintet
+choir
+orchestra
+band
+ensemble

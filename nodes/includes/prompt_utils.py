@@ -1,285 +1,116 @@
-"""Prompt generation utilities and presets for ACE-Step"""
+"""Prompt generation utilities and presets for ACE-Step.
+Now dynamically loads components from the 'prompt_components' directory.
+"""
+import os
+import json
+import sys
 
-STYLE_PRESETS = {
-    "Synthwave": "Synthwave with vintage analog synths, lo-fi drums, neon pad atmospheres, retro 80s aesthetic",
-    "Retrowave": "Retrowave with analog synth layers, pulsing bassline, 80s drum kit samples, warm pad chords",
-    "Electronic": "Electronic dance with punchy sidechain kick, filtered saw bass, lush pad atmospheres, crisp hi-hats",
-    "Trance": "Trance with arpeggiated synth lines, hypnotic bassline, breakbeat patterns, euphoric builds",
-    "Techno": "Minimal techno with repetitive kick patterns, industrial percussion, deep sub bass, subtle synth layers",
-    "House": "Deep house with soulful samples, warm bassline, jazzy chords, vocal intimacy",
-    "Dubstep": "Dubstep with heavy wobble bass, syncopated snares, dub-influenced delays, explosive drops",
-    "Trap": "Trap with booming 808 sub bass slides, rapid hi-hat rolls, sparse atmospheric synth melodies, snare snaps",
-    "Future Bass": "Future bass with chopped vocals, complex chords, soft wobble bass, glitchy rhythms, emotional melodic content",
-    "Lo-fi Hip Hop": "Lo-fi hip hop with vinyl crackle, jazzy piano chords, dusty drum samples, warm bass, chill vibes",
-    "Ambient": "Ambient music with flowing pad textures, minimalist melodies, atmospheric soundscapes, meditative space",
-    "Vaporwave": "Vaporwave with ambient samples, lo-fi aesthetics, slowed jazz, consumer culture samples, nostalgic melancholy",
-    "Cyberpunk": "Cyberpunk electronic with futuristic synths, distorted vocals, heavy bass, neon aesthetics, dystopian atmosphere",
-    "Rock": "Rock with power chords, driving drums, electric guitar solos, punchy bass",
-    "Metal": "Metal with heavy distorted guitars, double bass drums, aggressive vocals, intense energy",
-    "Punk": "Punk with fast power chords, raw shouted vocals, simple drums, rebellious energy",
-    "Jazz": "Jazz with swing rhythms, saxophone solos, walking bass, piano comping, brushed drums",
-    "Blues": "Blues with guitar bends, walking upright bass, brushed snare, harmonica wails",
-    "Country": "Country with acoustic guitar, steel guitar slides, fiddle, storytelling vocals",
-    "Pop": "Pop with catchy hooks, electronic production, polished vocals, dance beats",
-}
+# Cache to store loaded components
+_COMPONENTS = {}
+_HIDDEN_COMPONENTS = set()
 
-GENRES = [
-    "rock",
-    "ambient",
-    "avant-garde",
-    "blues",
-    "children's",
-    "chillwave",
-    "christian",
-    "classical",
-    "country",
-    "dance",
-    "dubstep",
-    "edm",
-    "electronic",
-    "experimental",
-    "folk",
-    "funk",
-    "hiphop",
-    "house",
-    "indie",
-    "jazz",
-    "latin",
-    "lo-fi",
-    "metal",
-    "oldies",
-    "pop",
-    "punk",
-    "r&b",
-    "rap",
-    "reggae",
-    "religious",
-    "soul",
-    "soundtrack",
-    "synthwave",
-    "techno",
-    "trance",
-    "trap",
-    "world"
-]
+def _load_components():
+    """Scan the prompt_components directory and load all txt/json files."""
+    global _HIDDEN_COMPONENTS
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    components_dir = os.path.join(base_dir, "prompt_components")
+    
+    if not os.path.exists(components_dir):
+        print(f"Warning: prompt_components directory not found at {components_dir}", file=sys.stderr)
+        return
 
-MOODS = [
-    "energetic",
-    "mellow",
-    "dark",
-    "uplifting",
-    "emotional",
-    "atmospheric",
-    "driving",
-    "intense",
-    "calm",
-    "mysterious",
-    "nostalgic",
-    "futuristic",
-    "dreamy",
-    "aggressive",
-    "peaceful"
-]
+    # Load ignore/hide/replace lists first
+    total_ignore = set()
+    load_but_not_show = set()
+    replace_map = {}  # Key: original name to skip, Value: new name to use
+    reverse_replace = {} # Value: filename to look for, Key: name to assign
+    
+    ignore_path = os.path.join(components_dir, "TOTALIGNORE.list")
+    hide_path = os.path.join(components_dir, "LOADBUTNOTSHOW.list")
+    replace_path = os.path.join(components_dir, "REPLACE.list")
+    
+    def read_list_file(p):
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                return {ln.strip() for ln in f if ln.strip() and not ln.startswith("#")}
+        return set()
 
-ADJECTIVES = [
-    "abstract",
-    "acid",
-    "acoustic",
-    "21st century",
-    "christian",
-    "dark",
-    "deep",
-    "experimental",
-    "melodic",
-    "minimal",
-    "modern",
-    "progressive",
-    "vintage",
-    "traditional",
-    "technical",
-    "symphonic",
-    "post-",
-    "old school",
-    "gothic"
-]   
+    total_ignore = read_list_file(ignore_path)
+    load_but_not_show = read_list_file(hide_path)
+    
+    if os.path.exists(replace_path):
+        try:
+            with open(replace_path, "r", encoding="utf-8") as f:
+                raw_map = json.load(f)
+                # Filter out examples and ensure the replacement file actually exists
+                # This prevents skipping the 'Original' if the 'Replacement' doesn't exist
+                for k, v in raw_map.items():
+                    if k.startswith("EXAMPLE_") or v.startswith("EXAMPLE_"):
+                        continue
+                        
+                    # Find if any file (txt or json) matches the replacement name v
+                    has_replacement = any(
+                        os.path.exists(os.path.join(components_dir, f"{v}{ext}"))
+                        for ext in [".txt", ".json"]
+                    )
+                    
+                    if has_replacement:
+                        replace_map[k] = v
+                        reverse_replace[v] = k
+        except Exception as e:
+            print(f"Error reading REPLACE.list: {e}", file=sys.stderr)
 
-CULTURES = [
-    "aarhus",
-    "aberdeen",
-    "adelaide",
-    "afghan",
-    "african",
-    "afrikaans",
-    "afro",
-    "alabama",
-    "alaska",
-    "albanian",
-    "alberta",
-    "albuquerque",
-    "appalachian",
-    "arab",
-    "argentine",
-    "arkansas",
-    "armenian",
-    "athens",
-    "aussie",
-    "australian",
-    "austrian",
-    "balkan",
-    "baltic",
-    "baltimore",
-    "belfast",
-    "belgian",
-    "boston",
-    "brazilian",
-    "british",
-    "bulgarian",
-    "canadian",
-    "celtic",
-    "chicago",
-    "chilean",
-    "chinese",
-    "colombian",
-    "croatian",
-    "cuban",
-    "czech",
-    "danish",
-    "detroit",
-    "dutch",
-    "ecuadorian",
-    "edinburgh",
-    "estonian",
-    "finnish",
-    "french",
-    "german",
-    "ghanaian",
-    "greek",
-    "guatemalan",
-    "hamburg",
-    "hawaiian",
-    "hungarian",
-    "icelandic",
-    "indian",
-    "indonesian",
-    "irish",
-    "israeli",
-    "italian",
-    "japanese",
-    "korean",
-    "latin",
-    "latvian",
-    "lithuanian",
-    "luxembourgian",
-    "macedonian",
-    "malaysian",
-    "memphis",
-    "mexican",
-    "miami",
-    "nashville",
-    "native american",
-    "nordic",
-    "norwegian",
-    "nz",
-    "pakistani",
-    "palestinian",
-    "panamanian",
-    "persian",
-    "peruvian",
-    "pinoy",
-    "polish",
-    "portuguese",
-    "psychedelic",
-    "puerto rican",
-    "punjabi",
-    "quebec",
-    "romanian",
-    "russian",
-    "scandinavian",
-    "scottish",
-    "singaporean",
-    "slovak",
-    "slovenian",
-    "spanish",
-    "swedish",
-    "swiss",
-    "taiwanese",
-    "texas",
-    "thai",
-    "toronto",
-    "turkish",
-    "uk",
-    "ukrainian",
-    "vancouver",
-    "venezuelan",
-    "vietnamese",
-    "virgin islands",
-    "washington",
-    "wellington",
-    "welsh",
-    "west virginia",
-    "western mass",
-    "western saharan",
-    "windsor",
-    "winnipeg",
-    "wisconsin",
-    "wyoming",
-    "york",
-    "yugoslav",
-    "zambian",
-    "zurich"
-]
+    _HIDDEN_COMPONENTS = load_but_not_show
 
-INSTRUMENTS = [
-    "synthesizer",
-    "guitar",
-    "piano",
-    "drums",
-    "bass",
-    "strings",
-    "brass",
-    "saxophone",
-    "violin",
-    "organ",
-    "808 drums",
-    "analog synth",
-    "electric guitar",
-    "acoustic guitar"
-]
+    for filename in os.listdir(components_dir):
+        if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list"):
+            continue
+            
+        name, ext = os.path.splitext(filename)
+        
+        # 1. Check Total Ignore
+        if filename in total_ignore or name in total_ignore:
+            continue
+            
+        # 2. Check if this file is the "Original" being replaced by something else
+        if name in replace_map:
+            continue
+            
+        # 3. Determine actual assignment name (handle replacement)
+        assign_name = reverse_replace.get(name, name)
+            
+        full_path = os.path.join(components_dir, filename)
+        if not os.path.isfile(full_path):
+            continue
+            
+        ext = ext.lower()
+        
+        try:
+            if ext == ".json":
+                with open(full_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    _COMPONENTS[assign_name] = data
+                    globals()[assign_name] = data
+            elif ext == ".txt":
+                with open(full_path, "r", encoding="utf-8") as f:
+                    lines = [ln.strip() for ln in f if ln.strip()]
+                    _COMPONENTS[assign_name] = lines
+                    globals()[assign_name] = lines
+        except Exception as e:
+            print(f"Error loading prompt component {filename}: {e}", file=sys.stderr)
 
-PERFORMERS = [
-    "solo",
-    "duo",
-    "trio",
-    "quartet",
-    "quintet",
-    "choir",
-    "orchestra",
-    "band",
-    "ensemble"
-]
+# Initialize on import
+_load_components()
 
-VOCAL_QUALITIES = [
-    "male",
-    "female",
-    "child",
-    "adult",
-    "old",
-    "young",
-    "deep",
-    "high",
-    "soft",
-    "loud",
-    "clear",
-    "raspy",
-    "breathy",
-    "powerful",
-    "delicate",
-    "energetic",
-    "calm",
-    "mysterious",
-    "nostalgic",
-    "futuristic",
-    "dreamy",
-    "aggressive",
-    "peaceful"
-]
+def get_available_components():
+    """Return a list of all dynamically loaded component names (including hidden)."""
+    return sorted(list(_COMPONENTS.keys()))
+
+def get_visible_components():
+    """Return component names that should be shown in the UI."""
+    all_comps = get_available_components()
+    return [c for c in all_comps if c not in _HIDDEN_COMPONENTS]
+
+def get_component(name, default=None):
+    """Safely retrieve a component by name."""
+    return _COMPONENTS.get(name, default)

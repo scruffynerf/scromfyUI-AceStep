@@ -135,6 +135,11 @@ scromfyUI-AceStep/
 │   └── radio_player.js   # RadioPlayer frontend widget
 ├── keys/
 │   └── README.md         # API key setup instructions
+├── AIinstructions/
+│   └── systemprompt.txt  # System prompt for AI lyricists
+├── prompt_components/
+│   ├── STYLE_PRESETS.json # Style descriptions
+│   └── *.txt            # Other category lists
 ├── docs/
 │   ├── NODE_SPECS.md     # Technical specifications
 │   └── PROGRESS.md       # This file

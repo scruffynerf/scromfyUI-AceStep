@@ -1,0 +1,22 @@
+{
+    "Synthwave": "Synthwave with vintage analog synths, lo-fi drums, neon pad atmospheres, retro 80s aesthetic",
+    "Retrowave": "Retrowave with analog synth layers, pulsing bassline, 80s drum kit samples, warm pad chords",
+    "Electronic": "Electronic dance with punchy sidechain kick, filtered saw bass, lush pad atmospheres, crisp hi-hats",
+    "Trance": "Trance with arpeggiated synth lines, hypnotic bassline, breakbeat patterns, euphoric builds",
+    "Techno": "Minimal techno with repetitive kick patterns, industrial percussion, deep sub bass, subtle synth layers",
+    "House": "Deep house with soulful samples, warm bassline, jazzy chords, vocal intimacy",
+    "Dubstep": "Dubstep with heavy wobble bass, syncopated snares, dub-influenced delays, explosive drops",
+    "Trap": "Trap with booming 808 sub bass slides, rapid hi-hat rolls, sparse atmospheric synth melodies, snare snaps",
+    "Future Bass": "Future bass with chopped vocals, complex chords, soft wobble bass, glitchy rhythms, emotional melodic content",
+    "Lo-fi Hip Hop": "Lo-fi hip hop with vinyl crackle, jazzy piano chords, dusty drum samples, warm bass, chill vibes",
+    "Ambient": "Ambient music with flowing pad textures, minimalist melodies, atmospheric soundscapes, meditative space",
+    "Vaporwave": "Vaporwave with ambient samples, lo-fi aesthetics, slowed jazz, consumer culture samples, nostalgic melancholy",
+    "Cyberpunk": "Cyberpunk electronic with futuristic synths, distorted vocals, heavy bass, neon aesthetics, dystopian atmosphere",
+    "Rock": "Rock with power chords, driving drums, electric guitar solos, punchy bass",
+    "Metal": "Metal with heavy distorted guitars, double bass drums, aggressive vocals, intense energy",
+    "Punk": "Punk with fast power chords, raw shouted vocals, simple drums, rebellious energy",
+    "Jazz": "Jazz with swing rhythms, saxophone solos, walking bass, piano comping, brushed drums",
+    "Blues": "Blues with guitar bends, walking upright bass, brushed snare, harmonica wails",
+    "Country": "Country with acoustic guitar, steel guitar slides, fiddle, storytelling vocals",
+    "Pop": "Pop with catchy hooks, electronic production, polished vocals, dance beats"
+}

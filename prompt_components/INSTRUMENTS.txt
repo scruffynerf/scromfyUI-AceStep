@@ -1,0 +1,46 @@
+808 drums
+acoustic guitar
+analog synth
+banjo
+bass
+bassoon
+brass
+cello
+choir
+clarinet
+congas
+double bass
+drum machine
+drums
+electric guitar
+electric piano
+fiddle
+flute
+french horn
+guitar
+harp
+harpsichord
+harmonica
+mandolin
+marimba
+mellotron
+oboe
+organ
+percussion
+piano
+recorder
+rhodes
+saxophone
+sitar
+strings
+synthesizer
+tabla
+tambourine
+trombone
+trumpet
+tuba
+ukulele
+violin
+vocoder
+wurlitzer
+xylophone

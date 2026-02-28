@@ -1,25 +1,50 @@
-"""AceStepPromptGen node for ACE-Step – exposes every category from prompt_utils"""
+"""AceStepPromptGen node for ACE-Step – dynamically uses all components from prompt_utils"""
 import random
-from .includes.prompt_utils import (
-    STYLE_PRESETS, GENRES, MOODS, ADJECTIVES,
-    CULTURES, INSTRUMENTS, PERFORMERS, VOCAL_QUALITIES,
-)
+import re
+from .includes.prompt_utils import get_available_components, get_component
 
-# Each category: (list, input_name, output_name, label used in combined prompt)
-_CATEGORIES = [
-    (sorted(STYLE_PRESETS.keys()), "style",         "style_text",      "Style"),
-    (MOODS,                        "mood",           "mood_text",       "Mood"),
-    (ADJECTIVES,                   "adjective",      "adjective_text",  "Adjective"),
-    (CULTURES,                     "culture",        "culture_text",    "Culture"),
-    (GENRES,                       "genre",          "genre_text",      "Genre"),
-    (VOCAL_QUALITIES,              "vocal_quality",  "vocal_text",      "Vocal"),
-    (PERFORMERS,                   "performer",      "performer_text",  "Performer"),
-    (INSTRUMENTS,                  "instrument",     "instrument_text", "Instrument"),
-]
 
 def _choices_for(items):
     """Build the dropdown list: none, random, random2, then all items."""
-    return ["none", "random", "random2"] + list(items)
+    if isinstance(items, dict):
+        items = items.keys()
+    return ["none", "random", "random2"] + sorted(list(items))
+
+
+def expand_wildcards(text, rng, max_depth=5):
+    """Recursively expand __VARIABLE__ wildcards using available prompt components."""
+    if not isinstance(text, str) or "__" not in text:
+        return text
+
+    pattern = r"__([A-Z0-9_]+)__"
+
+    def replace(match):
+        comp_name = match.group(1)
+        # Try exact, then try with 'S' suffix for plural filenames
+        items = get_component(comp_name)
+        if items is None:
+            items = get_component(comp_name + "S")
+        if items is None:
+            items = get_component(comp_name + "ES")
+            
+        if items is None:
+            return match.group(0)
+
+        # Pick a random item
+        if isinstance(items, dict):
+            # For dicts, pick a key and then use its value
+            key = rng.choice(list(items.keys()))
+            return str(items[key])
+        elif isinstance(items, list):
+            return str(rng.choice(items))
+        return str(items)
+
+    for _ in range(max_depth):
+        new_text = re.sub(pattern, replace, text)
+        if new_text == text:
+            break
+        text = new_text
+    return text
 
 
 class AceStepPromptGen:
@@ -27,60 +52,84 @@ class AceStepPromptGen:
     @classmethod
     def INPUT_TYPES(cls):
         inputs = {}
-        for items, input_name, _, _ in _CATEGORIES:
-            inputs[input_name] = (_choices_for(items),)
+        # Only show visible components in the UI
+        for name in get_visible_components():
+            items = get_component(name)
+            inputs[name] = (_choices_for(items), {"default": "none"})
         inputs["seed"] = ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF})
         return {"required": inputs}
 
-    RETURN_TYPES  = tuple(["STRING"] * (1 + len(_CATEGORIES)))
-    RETURN_NAMES  = tuple(
-        ["prompt"] + [cat[2] for cat in _CATEGORIES]
-    )
+    # ComfyUI usually expects these as static tuples on the class
+    # We use visible components here
+    _comps = get_visible_components()
+    RETURN_TYPES = tuple(["STRING"] * (1 + len(_comps)))
+    RETURN_NAMES = tuple(["combined_prompt"] + [f"{name.lower()}_text" for name in _comps])
+    
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/prompt"
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
         # Force re-execution when any random choice is involved
-        return any(v in ("random", "random2") for v in kwargs.values())
+        return any(str(v).startswith("random") for v in kwargs.values())
 
     def generate(self, seed: int, **kwargs):
         rng = random.Random(seed)
         results = {}
+        # Filter logic: generate results for all visible components
+        visible_comps = get_visible_components()
 
-        for items, input_name, output_name, label in _CATEGORIES:
-            choice = kwargs.get(input_name, "none")
-            items_list = list(items)
+        for name in visible_comps:
+            choice = kwargs.get(name, "none")
+            items = get_component(name)
+            out_name = f"{name.lower()}_text"
+
+            def resolve_item(c):
+                # If it's a dict like STYLE_PRESETS, resolve key -> value
+                if isinstance(items, dict):
+                    return str(items.get(c, c))
+                return str(c)
 
             if choice == "none":
-                results[output_name] = ""
+                results[out_name] = ""
             elif choice == "random":
-                picked = rng.choice(items_list)
-                results[output_name] = STYLE_PRESETS.get(picked, picked) if input_name == "style" else picked
-            elif choice == "random2":
-                if len(items_list) >= 2:
-                    picks = rng.sample(items_list, 2)
+                keys = list(items.keys()) if isinstance(items, dict) else list(items)
+                if keys:
+                    picked = rng.choice(keys)
+                    resolved = resolve_item(picked)
+                    results[out_name] = expand_wildcards(resolved, rng)
                 else:
-                    picks = [rng.choice(items_list)]
-                if input_name == "style":
-                    picks = [STYLE_PRESETS.get(p, p) for p in picks]
-                results[output_name] = ", ".join(picks)
+                    results[out_name] = ""
+            elif choice == "random2":
+                keys = list(items.keys()) if isinstance(items, dict) else list(items)
+                if len(keys) >= 2:
+                    picks = rng.sample(keys, 2)
+                elif keys:
+                    picks = [rng.choice(keys)]
+                else:
+                    picks = []
+                    
+                resolved_picks = [expand_wildcards(resolve_item(p), rng) for p in picks]
+                results[out_name] = ", ".join(resolved_picks)
             else:
-                # Explicit selection — for STYLE_PRESETS expand the key to full text
-                results[output_name] = STYLE_PRESETS.get(choice, choice) if input_name == "style" else choice
+                # Explicit selection
+                resolved = resolve_item(choice)
+                results[out_name] = expand_wildcards(resolved, rng)
 
-        # Build combined prompt from non-empty parts
+        # Build combined prompt from non-empty parts in the same sorted order
         parts = []
-        for _, _, output_name, _ in _CATEGORIES:
-            val = results[output_name]
+        for name in visible_comps:
+            val = results[f"{name.lower()}_text"]
             if val:
                 parts.append(val)
         combined = " ".join(parts)
 
-        # Return order: prompt first, then each category in _CATEGORIES order
-        return tuple(
-            [combined] + [results[cat[2]] for cat in _CATEGORIES]
-        )
+        # Return order: prompt first, then each visible category
+        out_list = [combined]
+        for name in visible_comps:
+            out_list.append(results[f"{name.lower()}_text"])
+            
+        return tuple(out_list)
 
 
 NODE_CLASS_MAPPINGS = {

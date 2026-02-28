@@ -19,24 +19,35 @@ def load_api_key(service_name: str) -> str:
         print(f"Error reading API key for {service_name}: {e}", file=sys.stderr)
         return ""
 
-ALLOWED_TAGS_INFO = (
-    "Use ONLY a selection of these section tags in square brackets (no numbers): [Intro], [Verse], [Pre-Chorus], [Chorus], "
-    "[Post-Chorus], [Bridge], [Breakdown], [Drop], [Hook], [Refrain], [Instrumental], [Solo], [Rap], [Outro]. "
-    "Include at least two verses. Do NOT add numbers to tags (e.g., use [Verse], not [Verse 1])."
-)
+_SYSTEM_PROMPT_CACHE = None
 
-BASE_INSTRUCTIONS = (
-    "You are a music lyricist. Generate song lyrics in the requested style and theme. "
-    "Return ONLY the lyrics as plain text. Do not add titles, prefaces, markdown, code fences, or quotes. "
-    f"{ALLOWED_TAGS_INFO} Never use parentheses for section labels. "
-    "Keep it concise and coherent."
-)
+def load_system_prompt() -> str:
+    """Load the system prompt from AIinstructions/systemprompt.txt"""
+    global _SYSTEM_PROMPT_CACHE
+    if _SYSTEM_PROMPT_CACHE is not None:
+        return _SYSTEM_PROMPT_CACHE
+        
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    prompt_path = os.path.join(base_dir, "AIinstructions", "systemprompt.txt")
+    
+    if not os.path.exists(prompt_path):
+        # Fallback to a very minimal version if file is missing
+        return "You are a music lyricist. Generate lyrics in the requested style and theme."
+        
+    try:
+        with open(prompt_path, "r") as f:
+            _SYSTEM_PROMPT_CACHE = f.read().strip()
+            return _SYSTEM_PROMPT_CACHE
+    except Exception as e:
+        print(f"Error reading system prompt: {e}", file=sys.stderr)
+        return "You are a music lyricist. Generate lyrics in the requested style and theme."
 
 
 def build_simple_prompt(style: str, seed: int, theme: str = "Love Song") -> str:
     """Simple prompt for basic lyrics generation"""
     base_style = style.strip() or "Generic song"
-    return f"Style: {base_style}. Song Theme: {theme} {BASE_INSTRUCTIONS}"
+    system_instructions = load_system_prompt()
+    return f"Style: {base_style}. Song Theme: {theme}. {system_instructions}"
 
 
 def clean_markdown_formatting(text: str) -> str:
