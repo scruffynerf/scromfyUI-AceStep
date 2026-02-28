@@ -69,6 +69,8 @@ class AceStepLyricsBPMCalculator:
 
         # 2. Duration fixed by pacing (WPM)
         duration = round((w_count / wpm) * 60.0, 1) + 5.0
+        if duration < 120.0:
+            duration = 120.0
 
         # 3. Calculate BPM range based on Bar Density (Bars / Line)
         # Using the formula: BPM = (Bars * Beats * 60) / Duration
@@ -90,5 +92,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepLyricsBPMCalculator": "Lyrics BPM Calculator",
+    "AceStepLyricsBPMCalculator": "Lyrics Duration/BPM Calculator",
 }
