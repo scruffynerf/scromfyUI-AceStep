@@ -8,7 +8,7 @@ class ScromfyACEStep15TaskTextEncodeNode:
     # Valid keyscales from ACE-Step 1.5 reference (constants.py):
     # 7 notes × 5 accidentals ('', '#', 'b', '♯', '♭') × 2 modes = 70 combinations
     # We use ASCII only ('#', 'b') plus 'Db/Eb/Gb/Ab/Bb' enharmonic spellings = 56 unique
-    KEYSCALE_NOTES = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+    KEYSCALE_NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
     KEYSCALE_ACCIDENTALS = ['', '#', 'b']
     KEYSCALE_MODES = ['major', 'minor']
 
@@ -98,9 +98,9 @@ class ScromfyACEStep15TaskTextEncodeNode:
             },
             "optional": {
                 "lyrics": ("STRING", {"multiline": True, "default": ""}),
-                "bpm": ("INT", {"default": 0, "min": 0, "max": 300, "step": 1.0}),
-                "duration": ("FLOAT", {"default": 0, "min": 0, "max": 600.0, "step": 0.1}),
-                "keyscale": (s.VALID_KEYSCALES, {"default": "C major"}),
+                "bpm": ("INT", {"default": 100, "min": 0, "max": 300, "step": 1.0, "display": "slider"}),
+                "duration": ("FLOAT", {"default": -1, "min": -1, "max": 600.0, "step": 1.0, "display": "slider"}),
+                "keyscale": (s.VALID_KEYSCALES, {"default": "C major"})
                 "timesignature": (s.VALID_TIME_SIGNATURES, {"default": "4/4"}),
                 "language": (s.VALID_LANGUAGES, {"default": "English"}),
                 "llm_audio_codes": ("BOOLEAN", {"default": True}),
@@ -147,7 +147,7 @@ class ScromfyACEStep15TaskTextEncodeNode:
         timesig_code = self.TIMESIG_MAP.get(timesignature, timesignature)
 
         if bpm < 30: bpm = -1
-        
+
         if keyscale == "Auto-detect": keyscale = ""
 
         tokens = clip.tokenize(text, 
