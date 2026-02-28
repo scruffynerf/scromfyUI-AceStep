@@ -27,15 +27,18 @@ async def scan_folder(request: web.Request) -> web.Response:
 
     files.sort(key=lambda p: p.stat().st_mtime)
 
-    tracks = [
-        {
+    tracks = []
+    for p in files:
+        lrc_path = p.with_suffix(".lrc")
+        has_lrc = lrc_path.exists()
+        
+        tracks.append({
             "filename": p.name,
             "path": str(p),
             "mtime": p.stat().st_mtime,
             "url": f"/radio_player/audio?path={p}",
-        }
-        for p in files
-    ]
+            "lrc_url": f"/radio_player/lrc?path={lrc_path}" if has_lrc else None,
+        })
 
     return web.json_response({"tracks": tracks})
 
@@ -62,6 +65,19 @@ async def serve_audio(request: web.Request) -> web.Response:
     }
     mime = mime_map.get(file_path.suffix.lower(), "application/octet-stream")
     return web.FileResponse(file_path, headers={"Content-Type": mime})
+
+
+@routes.get("/radio_player/lrc")
+async def serve_lrc(request: web.Request) -> web.Response:
+    path = request.rel_url.query.get("path", "").strip()
+    if not path:
+        return web.Response(status=400, text="No path specified")
+
+    file_path = Path(path)
+    if not file_path.is_file():
+        return web.Response(status=404, text=f"File not found: {path}")
+
+    return web.FileResponse(file_path, headers={"Content-Type": "text/plain; charset=utf-8"})
 
 
 # ---------------------------------------------------------------------------
