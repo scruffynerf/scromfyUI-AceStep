@@ -1,7 +1,7 @@
 """AceStepPromptGen node for ACE-Step – dynamically uses all components from prompt_utils"""
 import random
 import re
-from .includes.prompt_utils import get_available_components, get_component
+from .includes.prompt_utils import get_available_components, get_visible_components, get_component
 
 
 def _choices_for(items):
