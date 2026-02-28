@@ -2,7 +2,7 @@
 
 ## Node Implementation Status
 
-All nodes are implemented and refactored. **58 node files** — 44 active, 14 obsolete.
+All nodes are implemented and refactored. **59 node files** — 45 active, 14 obsolete.
 
 ### ✅ Refactored Structure Summary
 - **Nodes**: Each node is in its own `nodes/*_node.py` file.
@@ -62,6 +62,7 @@ All nodes are implemented and refactored. **58 node files** — 44 active, 14 ob
 - [x] `AceStepLyricsFormatter` — `lyrics_formatter_node.py`
 - [x] `AceStepGeniusLyricsSearch` — `lyrics_genius_search_node.py`
 - [x] `AceStepRandomLyrics` — `lyrics_genius_random_node.py`
+- [x] `AceStepLyricsBPMCalculator` — `lyrics_duration_node.py`
 
 ##### AI-Powered (Keys in `keys/*.txt`)
 - [x] `AceStepClaudeLyrics` — `lyrics_claude_node.py`
@@ -106,9 +107,9 @@ All nodes are implemented and refactored. **58 node files** — 44 active, 14 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 58/58 complete (100%)** ✅
-- **Active Nodes: 44** ✅
-- **Obsolete Nodes: 15** (deprecated, to be removed)
+- **Total Nodes: 59/59 complete (100%)** ✅
+- **Active Nodes: 45** ✅
+- **Obsolete Nodes: 14** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
 - **Frontend Extensions: 1** (`web/radio_player.js`) ✅

@@ -3,7 +3,7 @@
 All nodes live in `nodes/` and are auto-registered by `__init__.py`.
 Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 
-**58 node files total** — 44 active, 14 obsolete.
+**59 node files total** — 45 active, 14 obsolete.
 
 ---
 
@@ -64,16 +64,17 @@ Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 29. **AceStepLyricsFormatter** (`lyrics_formatter_node.py`): Auto-format lyrics with required section tags.
 30. **AceStepGeniusLyricsSearch** (`lyrics_genius_search_node.py`): Fetch lyrics by artist + title from Genius.com.
 31. **AceStepRandomLyrics** (`lyrics_genius_random_node.py`): Pick a random Genius song and fetch its lyrics.
+32. **AceStepLyricsBPMCalculator** (`lyrics_duration_node.py`): Estimate duration and suggested BPM ranges (Low/Mid/High) based on line count and word count. Filter [tags] automatically.
 
 ### AI-Powered Lyrics (Scromfy/Ace-Step/lyrics/AI)
 
 API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 
-32. **AceStepClaudeLyrics** (`lyrics_claude_node.py`): Anthropic Claude API.
-33. **AceStepGeminiLyrics** (`lyrics_gemini_node.py`): Google Gemini API.
-34. **AceStepGroqLyrics** (`lyrics_groq_node.py`): Groq API.
-35. **AceStepOpenAILyrics** (`lyrics_openai_node.py`): OpenAI API.
-36. **AceStepPerplexityLyrics** (`lyrics_perplexity_node.py`): Perplexity API.
+33. **AceStepClaudeLyrics** (`lyrics_claude_node.py`): Anthropic Claude API.
+34. **AceStepGeminiLyrics** (`lyrics_gemini_node.py`): Google Gemini API.
+35. **AceStepGroqLyrics** (`lyrics_groq_node.py`): Groq API (uses official `groq` library).
+36. **AceStepOpenAILyrics** (`lyrics_openai_node.py`): OpenAI API.
+37. **AceStepPerplexityLyrics** (`lyrics_perplexity_node.py`): Perplexity API.
 
 ## Persistence / Save (Scromfy/Ace-Step/save)
 
