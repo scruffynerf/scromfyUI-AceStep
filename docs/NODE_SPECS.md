@@ -90,13 +90,18 @@ API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 
 42. **AceStep5HzLMConfig** (`llm_config_node.py`): LLM parameter configuration.
 
-## Radio (Scromfy/Ace-Step/Radio)
-
 43. **RadioPlayer** (`radio_node.py`): In-UI audio player that scans an output folder and plays tracks with polling. Frontend in `web/radio_player.js`.
+
+## Transcription (Scromfy/Ace-Step/Whisper)
+
+44. **Faster Whisper Loader** (`faster_whisper_node.py`): Load Systran's optimized Whisper models. Supports CPU/GPU and precision settings.
+45. **Faster Whisper Transcribe** (`faster_whisper_node.py`): High-speed transcription with VAD and word-timestamps.
+    *   **Inputs**: Supports **AUDIO** (ComfyUI tensors) or **FILEPATH** (strings).
+    *   **Outputs**: Raw segments and pre-formatted **SRT**, **VTT**, and **LRC** strings.
 
 ## TBD / Uncategorized (Scromfy/Ace-Step/TBD)
 
-44. **AceStepInpaintSampler** (`inpaint_sampler_node.py`): Specialized sampler for audio inpainting.
+47. **AceStepInpaintSampler** (`inpaint_sampler_node.py`): Specialized sampler for audio inpainting.
 45. **AceStepLoadAudio** (`load_audio_node.py`): Load audio files with auto-resampling.
 46. **AceStepModeSelector** (`mode_selector_node.py`): 4-in-1 mode routing.
 47. **AceStepRandomPrompt** (`random_prompt_node.py`): Randomized music prompts.
@@ -135,6 +140,7 @@ These are deprecated and will be removed in a future version.
 - **lyrics_utils.py**: Prompt builders and markdown cleaning.
 - **prompt_utils.py**: Style presets, genres, moods, adjectives, cultures, instruments, performers, vocal qualities.
 - **sampling_utils.py**: Noise schedule shift formulas.
+- **whisper_utils.py**: Model discovery, language mappings, and subtitle/LRC formatting logic.
 
 ## AI Instructions (AIinstructions/)
 

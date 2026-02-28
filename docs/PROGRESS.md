@@ -79,8 +79,14 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 #### Miscellaneous
 - [x] `AceStep5HzLMConfig` — `llm_config_node.py`
 
-#### Radio
+#### Radio & Lyrics Sync
 - [x] `RadioPlayer` — `radio_node.py` + `web/radio_player.js`
+- [x] `Lyricer` Integration — `web/lyricer.js` + `web/radio_player.css`
+
+#### Transcription (Whisper)
+- [x] `AceStepLoadFasterWhisperModel` — `faster_whisper_node.py`
+- [x] `AceStepFasterWhisperTranscription` — `faster_whisper_node.py`
+- [x] `AceStepSaveText` — `faster_whisper_node.py`
 
 #### TBD / Uncategorized
 - [x] `AceStepInpaintSampler` — `inpaint_sampler_node.py`
@@ -108,8 +114,8 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 62/62 complete (100%)** ✅
-- **Active Nodes: 47** ✅
+- **Total Nodes: 65/65 complete (100%)** ✅
+- **Active Nodes: 50** ✅
 - **Obsolete Nodes: 15** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
@@ -132,6 +138,8 @@ scromfyUI-AceStep/
 │   │   └── sampling_utils.py
 │   └── *_node.py         # Individual node files (58 total)
 ├── web/
+│   ├── lyricer.js        # Sync engine for lyrics
+│   ├── radio_player.css  # Radio UI styling
 │   └── radio_player.js   # RadioPlayer frontend widget
 ├── keys/
 │   └── README.md         # API key setup instructions
@@ -142,7 +150,8 @@ scromfyUI-AceStep/
 │   └── *.txt            # Other category lists
 ├── docs/
 │   ├── NODE_SPECS.md     # Technical specifications
-│   └── PROGRESS.md       # This file
+│   ├── PROGRESS.md       # This file
+│   └── walkthrough.md    # New feature walkthroughs
 ```
 
 ---
