@@ -3,7 +3,7 @@
 All nodes live in `nodes/` and are auto-registered by `__init__.py`.
 Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 
-**60 node files total** — 45 active, 15 obsolete (46 active node types).
+**60 node files total** — 45 active, 15 obsolete (47 active node types).
 
 ---
 
