@@ -100,7 +100,7 @@ class ScromfyACEStep15TaskTextEncodeNode:
                 "lyrics": ("STRING", {"multiline": True, "default": ""}),
                 "bpm": ("INT", {"default": 100, "min": 0, "max": 300, "step": 1.0, "display": "slider"}),
                 "duration": ("FLOAT", {"default": -1, "min": -1, "max": 600.0, "step": 1.0, "display": "slider"}),
-                "keyscale": (s.VALID_KEYSCALES, {"default": "C major"})
+                "keyscale": (s.VALID_KEYSCALES, {"default": "C major"}),
                 "timesignature": (s.VALID_TIME_SIGNATURES, {"default": "4/4"}),
                 "language": (s.VALID_LANGUAGES, {"default": "English"}),
                 "llm_audio_codes": ("BOOLEAN", {"default": True}),
@@ -128,7 +128,7 @@ class ScromfyACEStep15TaskTextEncodeNode:
                text,
                lyrics="",
                bpm=0,
-               duration=0,
+               duration=-1.0,
                keyscale="C major",
                timesignature="4/4",
                language="English",
