@@ -2,7 +2,7 @@
 
 ## Node Implementation Status
 
-All nodes are implemented and refactored. **59 node files** — 45 active, 14 obsolete.
+All nodes are implemented and refactored. **60 node files** — 46 active, 14 obsolete.
 
 ### ✅ Refactored Structure Summary
 - **Nodes**: Each node is in its own `nodes/*_node.py` file.
@@ -70,6 +70,7 @@ All nodes are implemented and refactored. **59 node files** — 45 active, 14 ob
 - [x] `AceStepGroqLyrics` — `lyrics_groq_node.py`
 - [x] `AceStepOpenAILyrics` — `lyrics_openai_node.py`
 - [x] `AceStepPerplexityLyrics` — `lyrics_perplexity_node.py`
+- [x] `AceStepGenericAILyrics` — `lyrics_generic_ai_node.py`
 
 #### Persistence (Save)
 - [x] `AceStepConditioningSave` — `save_conditioning_node.py`
@@ -107,8 +108,8 @@ All nodes are implemented and refactored. **59 node files** — 45 active, 14 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 59/59 complete (100%)** ✅
-- **Active Nodes: 45** ✅
+- **Total Nodes: 60/60 complete (100%)** ✅
+- **Active Nodes: 46** ✅
 - **Obsolete Nodes: 14** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅

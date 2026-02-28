@@ -16,6 +16,11 @@ class AceStepClaudeLyrics:
                     "multiline": True,
                     "placeholder": "Music style (e.g., Synthwave with female vocals)"
                 }),
+                "theme": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "placeholder": "Music subject/theme (e.g., Love Ballad)"
+                }),
                 "model": ([
                     "claude-3-5-sonnet-20241022",
                     "claude-3-5-haiku-20241022",
@@ -31,12 +36,12 @@ class AceStepClaudeLyrics:
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/lyrics/AI"
 
-    def generate(self, style: str, model: str, max_tokens: int, seed: int):
+    def generate(self, style: str, theme: str, model: str, max_tokens: int, seed: int):
         api_key = load_api_key("claude")
         if not api_key:
             return ("[Claude] API key is missing. Please add it to keys/claude_api_key.txt",)
 
-        prompt = build_simple_prompt(style, seed)
+        prompt = build_simple_prompt(style, seed, theme)
         
         url = "https://api.anthropic.com/v1/messages"
         payload = {

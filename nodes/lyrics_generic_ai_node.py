@@ -1,16 +1,20 @@
-"""AceStepPerplexityLyrics node for ACE-Step"""
+"""AceStepGenericAILyrics node for ACE-Step"""
 import json
 import urllib.error
 import urllib.request
 from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
 
-class AceStepPerplexityLyrics:
-    """Generate lyrics using Perplexity API"""
+class AceStepGenericAILyrics:
+    """Generate lyrics using a generic OpenAI-compatible API (e.g. Ollama, LM Studio)"""
     
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
+                "api_url": ("STRING", {
+                    "default": "http://localhost:11434/v1/chat/completions",
+                    "placeholder": "http://localhost:11434/v1/chat/completions"
+                }),
                 "style": ("STRING", {
                     "default": "",
                     "multiline": True,
@@ -21,14 +25,12 @@ class AceStepPerplexityLyrics:
                     "multiline": True,
                     "placeholder": "Music subject/theme (e.g., Love Ballad)"
                 }),
-                "model": ([
-                    "llama-3.1-sonar-large-128k-online",
-                    "llama-3.1-sonar-small-128k-online",
-                    "llama-3.1-sonar-large-128k-chat",
-                    "llama-3.1-sonar-small-128k-chat",
-                ], {"default": "llama-3.1-sonar-small-128k-chat"}),
-                "max_tokens": ("INT", {"default": 1024, "min": 256, "max": 4096, "step": 128}),
+                "model": ("STRING", {"default": "llama3"}),
+                "max_tokens": ("INT", {"default": 1024, "min": 256, "max": 8192, "step": 128}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": "no-key-required"}),
             }
         }
 
@@ -37,25 +39,21 @@ class AceStepPerplexityLyrics:
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/lyrics/AI"
 
-    def generate(self, style: str, theme: str, model: str, max_tokens: int, seed: int):
-        api_key = load_api_key("perplexity")
-        if not api_key:
-            return ("[Perplexity] API key is missing. Please add it to keys/perplexity_api_key.txt",)
-
+    def generate(self, api_url: str, style: str, theme: str, model: str, max_tokens: int, seed: int, api_key: str = "no-key-required"):
         prompt = build_simple_prompt(style, seed, theme)
         
-        url = "https://api.perplexity.ai/chat/completions"
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.9,
             "max_tokens": max_tokens,
             "top_p": 0.95,
+            "seed": seed
         }
         
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
-            url,
+            api_url,
             data=data,
             headers={
                 "Content-Type": "application/json",
@@ -64,13 +62,13 @@ class AceStepPerplexityLyrics:
         )
         
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 response_body = resp.read()
         except urllib.error.HTTPError as e:
             error_detail = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
-            return (f"[Perplexity] HTTPError: {e.code} {error_detail}",)
+            return (f"[Generic AI] HTTPError: {e.code} {error_detail}",)
         except Exception as e:
-            return (f"[Perplexity] Error: {e}",)
+            return (f"[Generic AI] Error: {e}",)
 
         try:
             parsed = json.loads(response_body)
@@ -84,13 +82,13 @@ class AceStepPerplexityLyrics:
         except:
             pass
         
-        return ("[Perplexity] Empty or invalid response.",)
+        return ("[Generic AI] Empty or invalid response.",)
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepPerplexityLyrics": AceStepPerplexityLyrics,
+    "AceStepGenericAILyrics": AceStepGenericAILyrics,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepPerplexityLyrics": "Perplexity Lyrics",
+    "AceStepGenericAILyrics": "GenericAI Lyrics",
 }

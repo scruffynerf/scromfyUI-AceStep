@@ -3,7 +3,7 @@
 All nodes live in `nodes/` and are auto-registered by `__init__.py`.
 Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 
-**59 node files total** — 45 active, 14 obsolete.
+**60 node files total** — 46 active, 14 obsolete.
 
 ---
 
@@ -75,6 +75,7 @@ API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 35. **AceStepGroqLyrics** (`lyrics_groq_node.py`): Groq API (uses official `groq` library).
 36. **AceStepOpenAILyrics** (`lyrics_openai_node.py`): OpenAI API.
 37. **AceStepPerplexityLyrics** (`lyrics_perplexity_node.py`): Perplexity API.
+38. **AceStepGenericAILyrics** (`lyrics_generic_ai_node.py`): OpenAI-compatible API (Ollama, LM Studio, etc.) with custom `api_url`.
 
 ## Persistence / Save (Scromfy/Ace-Step/save)
 

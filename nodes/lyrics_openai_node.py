@@ -16,6 +16,11 @@ class AceStepOpenAILyrics:
                     "multiline": True,
                     "placeholder": "Music style (e.g., Synthwave with female vocals)"
                 }),
+                "theme": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "placeholder": "Music subject/theme (e.g., Love Ballad)"
+                }),
                 "model": ([
                     "gpt-4o",
                     "gpt-4o-mini",
@@ -32,12 +37,12 @@ class AceStepOpenAILyrics:
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/lyrics/AI"
 
-    def generate(self, style: str, model: str, max_tokens: int, seed: int):
+    def generate(self, style: str, theme: str, model: str, max_tokens: int, seed: int):
         api_key = load_api_key("openai")
         if not api_key:
             return ("[OpenAI] API key is missing. Please add it to keys/openai_api_key.txt",)
 
-        prompt = build_simple_prompt(style, seed)
+        prompt = build_simple_prompt(style, seed, theme)
         
         url = "https://api.openai.com/v1/chat/completions"
         payload = {
