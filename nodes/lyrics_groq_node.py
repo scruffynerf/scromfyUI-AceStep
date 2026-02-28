@@ -1,7 +1,5 @@
 """AceStepGroqLyrics node for ACE-Step"""
-import json
-import urllib.error
-import urllib.request
+from groq import Groq
 from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
 
 class AceStepGroqLyrics:
@@ -36,7 +34,7 @@ class AceStepGroqLyrics:
                     "openai/gpt-oss-safeguard-20b",
                     "qwen/qwen3-32b",
                     "whisper-large-v3-turbo",
-"whisper-large-v3",
+                    "whisper-large-v3",
                 ], {"default": "llama-3.3-70b-versatile"}),
                 "max_tokens": ("INT", {"default": 1024, "min": 256, "max": 8192, "step": 128}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
@@ -54,48 +52,27 @@ class AceStepGroqLyrics:
             return ("[Groq] API key is missing. Please add it to keys/groq_api_key.txt",)
 
         prompt = build_simple_prompt(style, seed)
-        
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.9,
-            "max_tokens": max_tokens,
-            "top_p": 0.95,
-        }
-        
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-        )
-        
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                response_body = resp.read()
-        except urllib.error.HTTPError as e:
-            error_detail = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
-            return (f"[Groq] HTTPError: {e.code} {error_detail}",)
-        except Exception as e:
-            return (f"[Groq] Error: {e}",)
 
         try:
-            parsed = json.loads(response_body)
-            choices = parsed.get("choices", [])
-            if choices:
-                message = choices[0].get("message", {})
-                text = message.get("content", "").strip()
-                text = clean_markdown_formatting(text)
-                if text:
-                    return (text,)
-        except:
-            pass
-        
-        return ("[Groq] Empty or invalid response.",)
+            client = Groq(api_key=api_key)
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model=model,
+                temperature=0.9,
+                max_tokens=max_tokens,
+                top_p=0.95,
+                seed=seed,
+            )
+
+            text = chat_completion.choices[0].message.content.strip()
+            text = clean_markdown_formatting(text)
+            if text:
+                return (text,)
+
+            return ("[Groq] Empty response.",)
+
+        except Exception as e:
+            return (f"[Groq] Error: {e}",)
 
 
 NODE_CLASS_MAPPINGS = {
