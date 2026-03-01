@@ -207,20 +207,19 @@ function buildWebampWidget(node) {
             // If local directory has files, load ONLY those. 
             // Otherwise, let Webamp fall back to default presets.
             if (localViz.length > 0) {
-                console.log(`[WebampRadio] Loading ${localViz.length} local visualizers...`);
+                console.log(`[WebampRadio] Batch loading ${localViz.length} visualizers...`);
                 options.__butterchurnOptions.requireButterchurnPresets = async () => {
-                    const presetList = {};
-                    const loadPromises = localViz.map(async (v) => {
-                        try {
-                            const r = await fetch(v.url);
-                            if (r.ok) {
-                                const data = await r.json();
-                                presetList[v.name] = data;
-                            }
-                        } catch (e) { console.warn(`Failed to load viz: ${v.name}`); }
-                    });
-                    await Promise.all(loadPromises);
-                    return presetList;
+                    try {
+                        const r = await fetch("/webamp_visualizers/bundle");
+                        if (r.ok) {
+                            const bundle = await r.json();
+                            console.log(`[WebampRadio] Successfully loaded ${Object.keys(bundle).length} presets into Milkdrop.`);
+                            return bundle;
+                        }
+                    } catch (e) {
+                        console.error("[WebampRadio] Error loading visualizer bundle:", e);
+                    }
+                    return {};
                 };
             }
 

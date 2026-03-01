@@ -62,6 +62,21 @@ async def serve_webamp_visualizer(request: web.Request) -> web.Response:
     return web.FileResponse(preset_path, headers={"Content-Type": "application/json"})
 
 
+@routes.get("/webamp_visualizers/bundle")
+async def bundle_webamp_visualizers(request: web.Request) -> web.Response:
+    """Return all visualizer presets as one large dictionary."""
+    import json
+    _VISUALIZERS_DIR.mkdir(exist_ok=True)
+    bundle = {}
+    for p in sorted(_VISUALIZERS_DIR.glob("*.json")):
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                bundle[p.stem.replace("_", " ")] = json.load(f)
+        except Exception as e:
+            print(f"Error loading visualizer {p.name}: {e}")
+    return web.json_response(bundle)
+
+
 @routes.get("/radio_player/scan")
 async def scan_folder(request: web.Request) -> web.Response:
     folder = request.rel_url.query.get("folder", "").strip()
