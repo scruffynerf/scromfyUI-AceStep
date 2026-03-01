@@ -149,5 +149,14 @@ def get_visible_components():
     return sort_weighted(visible)
 
 def get_component(name, default=None):
-    """Safely retrieve a component by name."""
-    return _COMPONENTS.get(name, default)
+    """Safely retrieve a component by name, case-insensitively."""
+    if not name:
+        return default
+    if name in _COMPONENTS:
+        return _COMPONENTS[name]
+    # Check lowercase/uppercase variations for robustness
+    if name.upper() in _COMPONENTS:
+        return _COMPONENTS[name.upper()]
+    if name.lower() in _COMPONENTS:
+        return _COMPONENTS[name.lower()]
+    return default

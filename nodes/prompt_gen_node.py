@@ -5,11 +5,24 @@ from .includes.prompt_utils import get_available_components, get_visible_compone
 
 
 def _choices_for(items):
-    """Build the dropdown list: none, random, random2, then all items (deduplicated for UI)."""
+    """Build the dropdown list: none, random, random2, then all items (deduplicated and friendly formatting)."""
     if isinstance(items, dict):
         items = items.keys()
-    # Use set() to deduplicate for the UI while keeping the source list weighted for random picks
-    return ["none", "random", "random2"] + sorted(list(set(items)))
+    
+    raw_set = set(items)
+    # Natural sort based on clean name
+    sorted_raw = sorted(list(raw_set), key=lambda x: str(x).strip("_").lower())
+    
+    choices = []
+    for item in sorted_raw:
+        s = str(item)
+        if s.startswith("__") and s.endswith("__") and len(s) > 4:
+            # Transform __WILDCARD__ to (wildcard) for UI (lowercase to match others)
+            choices.append(f"({s[2:-2].lower()})")
+        else:
+            choices.append(s)
+            
+    return ["none", "random", "random2"] + choices
 
 
 def expand_wildcards(text, rng, max_depth=5):
@@ -113,8 +126,11 @@ class AceStepPromptGen:
                 resolved_picks = [expand_wildcards(resolve_item(p), rng) for p in picks]
                 results[out_name] = ", ".join(resolved_picks)
             else:
-                # Explicit selection
-                resolved = resolve_item(choice)
+                # Explicit selection - map friendly (WILDCARD) back to __WILDCARD__
+                if choice.startswith("(") and choice.endswith(")") and len(choice) > 2:
+                    resolved = f"__{choice[1:-1]}__"
+                else:
+                    resolved = resolve_item(choice)
                 results[out_name] = expand_wildcards(resolved, rng)
 
         # Build combined prompt from non-empty parts in the same sorted order
