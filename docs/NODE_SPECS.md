@@ -149,15 +149,21 @@ These are deprecated and will be removed in a future version.
 
 ## AI Instructions (AIinstructions/)
 
-- **systemprompt.txt**: The master system prompt used for all AI lyric generation. Edit this to change the AI's "personality" or formatting rules.
+- **systemprompt.default.txt**: The master system prompt used for all AI lyric generation.
+- **systemprompt.txt**: User-created override. If this file exists, it will be used instead of the default. This allows you to change the AI's "personality" or formatting rules without modifying the repository defaults.
 
 ## Prompt Components (prompt_components/)
 
 - **STYLE_PRESETS.json**: Mapping of genre names to detailed stylistic descriptions.
 - **GENRES.txt, MOODS.txt, etc.**: Flat lists of categories used in prompt generation.
-- **TOTALIGNORE.list**: List of filenames to completely ignore.
-- **LOADBUTNOTSHOW.list**: List of filenames to load (for wildcards) but hide from the Node UI.
-- **REPLACE.list**: JSON mapping to swap one component file for another (e.g., `{"ADJECTIVES": "MYADJECTIVES"}`).
+- **WEIGHTS.default.json**: Master default weights for UI sorting.
+- **WEIGHTS.json**: User-created override for component weights.
+- **TOTALIGNORE.default.list**: Master default ignore list.
+- **TOTALIGNORE.list**: User-created override for ignoring files.
+- **LOADBUTNOTSHOW.default.list**: Master default "hide from UI" list.
+- **LOADBUTNOTSHOW.list**: User-created override for hidden components.
+- **REPLACE.default.list**: Master default replacement map.
+- **REPLACE.list**: User-created override for component mapping.
 - **Customization**: Users can add new `.txt` (lists) or `.json` (dicts) here; they will be auto-loaded and assigned as variables.
 
 ## Frontend Extensions (web/)

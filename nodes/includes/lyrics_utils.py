@@ -1,6 +1,6 @@
-"""Lyrics generation utilities for ACE-Step"""
 import os
 import sys
+import re
 
 def load_api_key(service_name: str) -> str:
     """Load API key from the keys directory for a specific service"""
@@ -22,24 +22,27 @@ def load_api_key(service_name: str) -> str:
 _SYSTEM_PROMPT_CACHE = None
 
 def load_system_prompt() -> str:
-    """Load the system prompt from AIinstructions/systemprompt.txt"""
-    global _SYSTEM_PROMPT_CACHE
-    if _SYSTEM_PROMPT_CACHE is not None:
-        return _SYSTEM_PROMPT_CACHE
-        
+    """Load the system prompt from AIinstructions/systemprompt.txt (user) or systemprompt.default.txt (fallback)"""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    prompt_path = os.path.join(base_dir, "AIinstructions", "systemprompt.txt")
+    ai_instr_dir = os.path.join(base_dir, "AIinstructions")
     
-    if not os.path.exists(prompt_path):
-        # Fallback to a very minimal version if file is missing
+    user_prompt_path = os.path.join(ai_instr_dir, "systemprompt.txt")
+    default_prompt_path = os.path.join(ai_instr_dir, "systemprompt.default.txt")
+    
+    # Prioritize user prompt, then default prompt
+    if os.path.exists(user_prompt_path):
+        target_path = user_prompt_path
+    elif os.path.exists(default_prompt_path):
+        target_path = default_prompt_path
+    else:
+        # Fallback to a very minimal version if both files are missing
         return "You are a music lyricist. Generate lyrics in the requested style and theme."
         
     try:
-        with open(prompt_path, "r") as f:
-            _SYSTEM_PROMPT_CACHE = f.read().strip()
-            return _SYSTEM_PROMPT_CACHE
+        with open(target_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
     except Exception as e:
-        print(f"Error reading system prompt: {e}", file=sys.stderr)
+        print(f"Error reading system prompt from {target_path}: {e}", file=sys.stderr)
         return "You are a music lyricist. Generate lyrics in the requested style and theme."
 
 
@@ -51,9 +54,12 @@ def build_simple_prompt(style: str, seed: int, theme: str = "Love Song") -> str:
 
 
 def clean_markdown_formatting(text: str) -> str:
-    """Remove markdown formatting and normalize section tags"""
+    """Remove markdown formatting, <think> blocks, and normalize section tags"""
     cleaned = text.strip()
     
+    # Remove <think>...</think> blocks (often leaked by R1/DeepSeek)
+    cleaned = re.sub(r'<think>.*?</think>', '', cleaned, flags=re.DOTALL | re.IGNORECASE).strip()
+
     # Remove code fences
     if cleaned.startswith("```") and cleaned.endswith("```"):
         cleaned = cleaned.strip("`").strip()

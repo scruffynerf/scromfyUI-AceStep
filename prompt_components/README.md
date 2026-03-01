@@ -18,9 +18,9 @@ You can use `__FILENAME__` (double underscores) inside any text file or JSON val
 
 ---
 
-## 🛠️ Control Files
+## 🛠️ Control Files (Safe Overrides)
 
-Three special files allow you to manage how components are loaded and displayed:
+The following files allow you to manage how components are loaded and displayed. Each has a **`.default`** version provided by the extension. **Do not modify the `.default` files**, as they may be overwritten during updates. Instead, create a version without `.default` to apply your own settings.
 
 ### 1. `TOTALIGNORE.list` (TXT)
 Files listed here are completely ignored by the system. Use this to disable repo-default lists without deleting them.

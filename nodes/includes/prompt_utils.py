@@ -26,10 +26,26 @@ def _load_components():
     reverse_replace = {}
     weights = {} # Component Name -> float Weight
     
-    ignore_path = os.path.join(components_dir, "TOTALIGNORE.list")
-    hide_path = os.path.join(components_dir, "LOADBUTNOTSHOW.list")
-    replace_path = os.path.join(components_dir, "REPLACE.list")
-    weights_path = os.path.join(components_dir, "WEIGHTS.json")
+    def get_path(filename):
+        user_p = os.path.join(components_dir, filename)
+        if os.path.exists(user_p):
+            return user_p
+        
+        # Determine default filename mapping
+        ext = os.path.splitext(filename)[1]
+        base = os.path.splitext(filename)[0]
+        # WEIGHTS defaults to .json, REPLACE/IGNORE/HIDE default to .list
+        # But we'll try to find any .default files that match the base name
+        default_p = os.path.join(components_dir, f"{base}.default{ext}")
+        if os.path.exists(default_p):
+            return default_p
+            
+        return user_p
+
+    ignore_path = get_path("TOTALIGNORE.list")
+    hide_path = get_path("LOADBUTNOTSHOW.list")
+    replace_path = get_path("REPLACE.list")
+    weights_path = get_path("WEIGHTS.json")
     
     def read_list_file(p):
         if os.path.exists(p):
@@ -59,13 +75,13 @@ def _load_components():
             with open(weights_path, "r", encoding="utf-8") as f:
                 weights = json.load(f)
         except Exception as e:
-            print(f"Error reading WEIGHTS.json: {e}", file=sys.stderr)
+            print(f"Error reading weights from {weights_path}: {e}", file=sys.stderr)
 
     _HIDDEN_COMPONENTS = load_but_not_show
     _COMPONENT_WEIGHTS = weights
 
     for filename in os.listdir(components_dir):
-        if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list", "WEIGHTS.json", "README.md"):
+        if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list", "WEIGHTS.json", "README.md") or ".default." in filename:
             continue
             
         name, ext = os.path.splitext(filename)
