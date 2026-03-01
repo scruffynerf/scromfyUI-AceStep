@@ -195,6 +195,43 @@ function buildWebampWidget(node) {
 
             webamp = new WebampClass(options);
 
+            // Force window positions after render to ensure the 150px buffer is respected,
+            // even if a skin tries to override it or if state was cached.
+            async function clampWindowPositions() {
+                try {
+                    // Give Webamp a moment to actually render the windows into the DOM
+                    await new Promise(r => setTimeout(r, 500));
+                    if (!webamp) return;
+
+                    const state = webamp.store.getState();
+                    const windows = state.windows?.genWindows || {};
+                    const updates = {};
+
+                    // Positions to force (same as initialWindowLayout)
+                    const layout = {
+                        main: { x: 20, y: 150 },
+                        equalizer: { x: 20, y: 266 },
+                        playlist: { x: 20, y: 382 },
+                        milkdrop: { x: 295, y: 150 }
+                    };
+
+                    for (const [id, pos] of Object.entries(layout)) {
+                        updates[id] = { x: pos.x, y: pos.y };
+                    }
+
+                    // Dispatch directly to the internal Redux store
+                    webamp.store.dispatch({
+                        type: "UPDATE_WINDOW_POSITIONS",
+                        positions: updates,
+                        absolute: true
+                    });
+
+                    console.log("[WebampRadio] Windows clamped to 150px top buffer");
+                } catch (err) {
+                    console.warn("[WebampRadio] Failed to clamp window positions:", err);
+                }
+            }
+
             window.addEventListener('lyricerclick', function (e) {
                 const target = e.target.closest(`#${lyricsDiv.id}`);
                 if (target && e.detail.time >= 0 && webamp) {
@@ -203,6 +240,7 @@ function buildWebampWidget(node) {
             });
 
             await webamp.renderWhenReady(webampHost);
+            clampWindowPositions();
 
             if (syncInterval) clearInterval(syncInterval);
             if (diagInterval) clearInterval(diagInterval);

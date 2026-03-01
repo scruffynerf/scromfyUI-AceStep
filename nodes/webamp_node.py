@@ -17,7 +17,8 @@ class AceStepWebAmpRadio(RadioPlayerNode):
     def INPUT_TYPES(cls):
         base = RadioPlayerNode.INPUT_TYPES()
         base["required"]["skin"] = (cls._get_skin_choices(), {
-            "tooltip": "Select a skin from web/webamp_skins/, or use skin_url for a custom address",
+            "default": "(none)",
+            "tooltip": "Select a skin from webamp_skins/, or use skin_url for a custom address",
         })
         base["optional"]["skin_url"] = ("STRING", {
             "default": "",
