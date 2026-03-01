@@ -90,3 +90,43 @@
     transform: scale(1.05);
     padding: 8px 15px;
 }
+
+/* Visualizer Controls */
+.webamp-viz-controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(74, 222, 128, 0.15);
+}
+
+.webamp-viz-btn {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    color: #4ade80;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.webamp-viz-btn:hover {
+    background: rgba(74, 222, 128, 0.2);
+    border-color: #4ade80;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+    transform: translateY(-1px);
+}
+
+.webamp-viz-btn:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}

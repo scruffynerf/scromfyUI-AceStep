@@ -64,6 +64,16 @@ function buildWebampWidget(node) {
     container.className = "webamp-node-container";
     container.id = `webamp-node-ui-${node.id}`;
 
+    const webampHost = document.createElement("div");
+    webampHost.id = `webamp-host-${node.id}`;
+    webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;";
+    container.appendChild(webampHost);
+
+    // Visualizer Controls Div (added above lyrics)
+    const vizControls = document.createElement("div");
+    vizControls.className = "webamp-viz-controls";
+    container.appendChild(vizControls);
+
     const lyricsDiv = document.createElement("div");
     lyricsDiv.id = `webamp-lyrics-${node.id}`;
     lyricsDiv.className = "webamp-lyrics-display";
@@ -73,12 +83,6 @@ function buildWebampWidget(node) {
         <b>Preparing Webamp...</b>
     </div>`;
     container.appendChild(lyricsDiv);
-
-    // Zero-size anchor div placed INSIDE the node container
-    const webampHost = document.createElement("div");
-    webampHost.id = `webamp-host-${node.id}`;
-    webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;";
-    container.appendChild(webampHost);
 
     let webamp = null;
     let knownPaths = new Set();
@@ -275,10 +279,84 @@ function buildWebampWidget(node) {
                     console.log("[WebampRadio] Layout initialized");
 
                     // Inject presets after small delay to ensure Butterchurn is initialized
-                    setTimeout(injectLocalPresets, 2000);
+                    setTimeout(() => {
+                        injectLocalPresets();
+                        buildVizButtons();
+                    }, 2000);
                 } catch (err) {
                     console.warn("[WebampRadio] Failed to initialize layout:", err);
                 }
+            }
+
+            function buildVizButtons() {
+                if (!webamp) return;
+                vizControls.innerHTML = "";
+
+                const buttons = [
+                    {
+                        label: "⏮️", title: "Previous Preset (Backspace)", action: () => {
+                            const s = webamp.store.getState().milkdrop;
+                            const len = (s.presets || []).length;
+                            if (len === 0) return;
+                            const idx = ((s.currentPresetIndex || 0) - 1 + len) % len;
+                            webamp.store.dispatch({ type: "SELECT_PRESET_AT_INDEX", index: idx });
+                        }
+                    },
+                    {
+                        label: "⏭️", title: "Next Preset (Space)", action: () => {
+                            const s = webamp.store.getState().milkdrop;
+                            const len = (s.presets || []).length;
+                            if (len === 0) return;
+                            const idx = ((s.currentPresetIndex || 0) + 1) % len;
+                            webamp.store.dispatch({ type: "SELECT_PRESET_AT_INDEX", index: idx });
+                        }
+                    },
+                    {
+                        label: "⚡", title: "Immediate Next (H)", action: () => {
+                            const s = webamp.store.getState().milkdrop;
+                            const len = (s.presets || []).length;
+                            if (len === 0) return;
+                            const idx = ((s.currentPresetIndex || 0) + 1) % len;
+                            webamp.store.dispatch({ type: "SELECT_PRESET_AT_INDEX", index: idx, transitionType: "IMMEDIATE" });
+                        }
+                    },
+                    {
+                        label: "🔀", title: "Toggle Randomize (R)", action: () => {
+                            webamp.store.dispatch({ type: "TOGGLE_RANDOMIZE_PRESETS" });
+                        }
+                    },
+                    {
+                        label: "🔄", title: "Toggle Cycle (Scroll Lock / F14)", action: () => {
+                            webamp.store.dispatch({ type: "TOGGLE_PRESET_CYCLING" });
+                        }
+                    },
+                    {
+                        label: "📋", title: "Toggle Preset List (L)", action: () => {
+                            webamp.store.dispatch({ type: "TOGGLE_PRESET_OVERLAY" });
+                        }
+                    },
+                    {
+                        label: "ℹ️", title: "Show Track Title (T)", action: () => {
+                            const state = webamp.store.getState();
+                            const trackId = state.playlist?.currentTrack;
+                            const track = state.tracks?.[trackId];
+                            const title = track ? trackLabel(track.defaultName || "Ace-Step") : "Ace-Step Radio";
+                            webamp.store.dispatch({ type: "SCHEDULE_MILKDROP_MESSAGE", message: title });
+                        }
+                    }
+                ];
+
+                buttons.forEach(btn => {
+                    const b = document.createElement("button");
+                    b.className = "webamp-viz-btn";
+                    b.innerHTML = btn.label;
+                    b.title = btn.title;
+                    b.onclick = (e) => {
+                        e.preventDefault();
+                        btn.action();
+                    };
+                    vizControls.appendChild(b);
+                });
             }
 
             window.addEventListener('lyricerclick', function (e) {
