@@ -17,6 +17,13 @@ class AceStepWebAmpRadio(RadioPlayerNode):
             "multiline": False,
             "placeholder": "Artist name shown in playlist",
         })
+        base["optional"]["lyrics_font_size"] = ("FLOAT", {
+            "default": 13.0,
+            "min": 8.0,
+            "max": 32.0,
+            "step": 0.5,
+            "display": "slider",
+        })
         return base
 
     RETURN_TYPES = ()
@@ -24,7 +31,8 @@ class AceStepWebAmpRadio(RadioPlayerNode):
     FUNCTION = "run"
     CATEGORY = "Scromfy/Ace-Step/Radio"
 
-    def run(self, folder: str, skin_url: str = "", poll_interval_seconds: float = 60.0, artist_name: str = "Ace-Step AI"):
+    def run(self, folder: str, skin_url: str = "", poll_interval_seconds: float = 60.0,
+            artist_name: str = "Ace-Step AI", lyrics_font_size: float = 13.0):
         return {}
 
 NODE_CLASS_MAPPINGS = {
