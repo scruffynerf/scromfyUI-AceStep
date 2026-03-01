@@ -20,7 +20,7 @@ class AceStepAudioMask:
 
     RETURN_TYPES = ("MASK",)
     FUNCTION = "create_mask"
-    CATEGORY = "Scromfy/Ace-Step/mixing"
+    CATEGORY = "Scromfy/Ace-Step/mixers"
 
     def create_mask(self, audio, mode, start_seconds, end_seconds, fraction, ramp_seconds, reverse):
         waveform = audio["waveform"]

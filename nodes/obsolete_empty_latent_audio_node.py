@@ -1,9 +1,9 @@
-"""EmptyLatentAudio node for ACE-Step"""
+"""ObsoleteEmptyLatentAudio node for ACE-Step"""
 import torch
 import comfy.model_management
 
-class EmptyLatentAudio:
-    """Create empty audio latent space for generation"""
+class ObsoleteEmptyLatentAudio:
+    """[OBSOLETE] Create empty audio latent space for generation (Use core EmptyLatentAudio instead)"""
     
     def __init__(self):
         self.device = comfy.model_management.intermediate_device()
@@ -19,7 +19,7 @@ class EmptyLatentAudio:
     
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/essential"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def generate(self, seconds, batch_size):
         # ACE-Step audio latents: 44100 Hz / 2048 hop / 2 downscale
@@ -29,9 +29,9 @@ class EmptyLatentAudio:
 
 
 NODE_CLASS_MAPPINGS = {
-    "EmptyLatentAudio": EmptyLatentAudio,
+    "ObsoleteEmptyLatentAudio": ObsoleteEmptyLatentAudio,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "EmptyLatentAudio": "Empty Latent Audio",
+    "ObsoleteEmptyLatentAudio": "Empty Latent Audio (Obsolete)",
 }

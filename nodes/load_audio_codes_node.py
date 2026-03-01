@@ -25,7 +25,7 @@ class AceStepAudioCodesLoader:
     RETURN_TYPES = ("LIST", "STRING")
     RETURN_NAMES = ("audio_codes", "filename")
     FUNCTION = "load"
-    CATEGORY = "Scromfy/Ace-Step/loaders"
+    CATEGORY = "Scromfy/Ace-Step/load"
 
     @classmethod
     def IS_CHANGED(s, audio_codes_file, seed):

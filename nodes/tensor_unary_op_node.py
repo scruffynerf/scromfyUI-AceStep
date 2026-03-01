@@ -22,7 +22,7 @@ class AceStepTensorUnaryOp:
     
     RETURN_TYPES = ("TENSOR",)
     FUNCTION = "process"
-    CATEGORY = "Scromfy/Ace-Step/mixing"
+    CATEGORY = "Scromfy/Ace-Step/mixers"
 
     def process(self, tensor_A, mode, length_pct, strength, sigma, seed, mask=None):
         A = tensor_A.clone()

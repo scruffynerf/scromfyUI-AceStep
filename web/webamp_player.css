@@ -107,11 +107,11 @@
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(74, 222, 128, 0.4);
     color: #4ade80;
-    border-radius: 4px;
-    width: 32px;
-    height: 32px;
+    border-radius: 8px;
+    width: 64px;
+    height: 64px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 32px;
     display: flex;
     align-items: center;
     justify-content: center;

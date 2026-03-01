@@ -31,7 +31,7 @@ class AceStepLLMLoader:
     RETURN_TYPES = ("ACE_LLM",)
     RETURN_NAMES = ("llm",)
     FUNCTION = "load"
-    CATEGORY = "Scromfy/Ace-Step/loaders"
+    CATEGORY = "Scromfy/Ace-Step/load"
 
     def load(self, model_name, device, precision):
         if not folder_paths:

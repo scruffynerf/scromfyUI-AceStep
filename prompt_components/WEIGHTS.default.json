@@ -6,5 +6,6 @@
     "CULTURES": 60,
     "VOCAL_QUALITIES": 50,
     "PERFORMERS": 40,
-    "INSTRUMENTS": 30
+    "INSTRUMENTS": 30,
+    "KEYSCALE": 20
 }

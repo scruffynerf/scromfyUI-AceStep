@@ -67,25 +67,23 @@ A user can:
 
 **Metadata & Analysis** (4 nodes): `AceStepAudioAnalyzer`, `AceStepAudioCodesUnderstand`, `AceStepConditioningExplore`, `AceStepMetadataBuilder`
 
-**Mixers & Transformers** (5 nodes): `AceStepAudioCodesMixer`, `AceStepAudioCodesUnaryOp`, `AceStepConditioningCombine`, `AceStepConditioningMixer`, `AceStepConditioningSplitter`
-
-**Mixing & Masking** (4 nodes): `AceStepAudioMask`, `AceStepTensorMaskGenerator`, `AceStepTensorMixer`, `AceStepTensorUnaryOp`
+**Mixers** (9 nodes): `AceStepAudioCodesMixer`, `AceStepAudioCodesUnaryOp`, `AceStepConditioningCombine`, `AceStepConditioningMixer`, `AceStepConditioningSplitter`, `AceStepAudioMask`, `AceStepTensorMaskGenerator`, `AceStepTensorMixer`, `AceStepTensorUnaryOp`
 
 **Advanced & Semantic** (2 nodes): `AceStepAudioCodesToSemanticHints`, `AceStepSemanticHintsToAudioCodes`
 
 **Audio & Effects** (1 node): `AceStepPostProcess`
 
-**Loaders** (6 nodes): `AceStepAudioCodesLoader`, `AceStepConditioningLoad`, `AceStepLLMLoader`, `AceStepLyricsTensorLoader`, `AceStepConditioningMixerLoader`, `AceStepTimbreTensorLoader`
+**Load** (7 nodes): `AceStepAudioCodesLoader`, `AceStepConditioningLoad`, `AceStepLLMLoader`, `AceStepLyricsTensorLoader`, `AceStepConditioningMixerLoader`, `AceStepTimbreTensorLoader`, `AceStepLoRALoader`
 
 **Lyrics** (7 nodes): `AceStepLyricsFormatter`, `AceStepGeniusLyricsSearch`, `AceStepClaudeLyrics`, `AceStepGeminiLyrics`, `AceStepGroqLyrics`, `AceStepOpenAILyrics`, `AceStepPerplexityLyrics`
 
 **Persistence** (2 nodes): `AceStepConditioningSave`, `AceStepTensorSave`
 
-**Misc & Essential** (2 nodes): `AceStep5HzLMConfig`, `EmptyLatentAudio`
+**Misc & Essential** (1 node): `AceStep5HzLMConfig`
 
 **TBD / Uncategorized** (12 nodes): `AceStepInpaintSampler`, `LoadAudio`, `AceStepLoRALoader`, `AceStepLoRAStatus`, `AceStepModeSelector`, `PreviewAudio`, `AceStepPromptGen`, `AceStepRandomPrompt`, `SaveAudio`, `SaveText`, `VAEDecodeAudio`, `VAEEncodeAudio`
 
-**Obsolete** (9 nodes): All prefixed with `obsolete_` in filename.
+**Obsolete** (16 nodes): All prefixed with `obsolete_` in filename.
 
 ### Phase 4: Documentation & Examples
 - Create 4 example workflows (one per mode)

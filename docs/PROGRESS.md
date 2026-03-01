@@ -2,12 +2,15 @@
 
 ## Node Implementation Status
 
-All nodes are implemented and refactored. **60 node files** — 45 active, 15 obsolete.
+All nodes are implemented and refactored. **62 node files** — 46 active, 16 obsolete.
 
 ### ✅ Refactored Structure Summary
 - **Nodes**: Each node is in its own `nodes/*_node.py` file.
-- **Shared Logic**: Isolated in `nodes/includes/` (audio, lyrics, prompts, sampling, analysis, FSQ).
-- **Frontend**: `web/radio_player.js` for the RadioPlayer widget.
+- **Shared Logic**: Isolated in `nodes/includes/` (audio, lyrics, prompts, sampling, analysis, FSQ, whisper).
+- **Frontend**: 
+    - `web/radio_player.js` for the RadioPlayer widget.
+    - `web/webamp_player.js` for the WebAmpRadio widget.
+    - `web/lyricer.js` for synced lyrics display.
 - **Registration**: Dynamic loading via `__init__.py` scanner + `WEB_DIRECTORY`.
 
 ---
@@ -16,7 +19,7 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 
 #### Prompt & Encoding
 - [x] `ScromfyACEStep15TaskTextEncode` — `text_encode_ace15_node.py`
-- [x] `AceStepPromptGen` — `prompt_gen_node.py`
+- [x] `AceStepPromptGen` — `prompt_gen_node.py` (Dynamic wildcard generator)
 - [x] `AceStepRandomPrompt` — `random_prompt_node.py`
 
 #### Metadata & Analysis
@@ -25,14 +28,12 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 - [x] `AceStepConditioningExplore` — `conditioning_view_node.py`
 - [x] `AceStepMetadataBuilder` — `metadata_builder_node.py`
 
-#### Mixers & Transformers
+#### Mixers
 - [x] `AceStepAudioCodesMixer` — `audio_codes_mixer_node.py`
 - [x] `AceStepAudioCodesUnaryOp` — `audio_codes_unary_op_node.py`
 - [x] `AceStepConditioningCombine` — `conditioning_combine_node.py`
 - [x] `AceStepConditioningMixer` — `conditioning_dual_mixer_node.py`
 - [x] `AceStepConditioningSplitter` — `conditioning_split_node.py`
-
-#### Mixing & Masking
 - [x] `AceStepAudioMask` — `audio_mask_node.py`
 - [x] `AceStepTensorMaskGenerator` — `tensor_mask_node.py`
 - [x] `AceStepTensorMixer` — `tensor_mixer_node.py`
@@ -47,14 +48,14 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 
 #### Essential
 - [x] `AceStepConditioningZeroOut` — `conditioning_zero_out_node.py`
-- [x] `EmptyLatentAudio` — `empty_latent_audio_node.py`
 
-#### Loaders
+#### Load
 - [x] `AceStepAudioCodesLoader` — `load_audio_codes_node.py`
 - [x] `AceStepConditioningLoad` — `load_conditioning_node.py`
 - [x] `AceStepLLMLoader` — `load_llm_node.py`
-- [x] `AceStepLoRALoader` — `load_lora_node.py`
-- [x] `AceStepLyricsTensorLoader` — `load_lyrics_tensor_node.py`
+- [x] `ObsoleteAceStepLoRAStatus` — `obsolete_lora_status_node.py`
+- [x] `ObsoleteEmptyLatentAudio` — `obsolete_empty_latent_audio_node.py`
+- [x] [REMOVED] `ObsoleteFlacPreviewAudio` — `obsolete_preview_audio_node.py`
 - [x] `AceStepConditioningMixerLoader` — `load_mixed_conditioning_node.py`
 - [x] `AceStepTimbreTensorLoader` — `load_timbre_tensor_node.py`
 
@@ -70,58 +71,42 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 - [x] `AceStepGroqLyrics` — `lyrics_groq_node.py`
 - [x] `AceStepOpenAILyrics` — `lyrics_openai_node.py`
 - [x] `AceStepPerplexityLyrics` — `lyrics_perplexity_node.py`
-- [x] `AceStepGenericAILyrics` — `lyrics_generic_ai_node.py`
+- [x] `AceStepGenericAILyrics` — `lyrics_generic_ai_node.py` (Ollama/R1 support)
 
 #### Persistence (Save)
-    - [x] Scromfy Save Audio (MP3, Opus, FLAC) (`save_audio_node.py`)
-    - [x] [REMOVED] Obsolete Preview Audio (`obsolete_preview_audio_node.py`)
+- [x] `Scromfy Save Audio` (MP3, Opus, FLAC) — `save_audio_node.py`
 - [x] `AceStepConditioningSave` — `save_conditioning_node.py`
 - [x] `AceStepTensorSave` — `save_tensor_node.py`
 
-#### Miscellaneous
-- [x] `AceStep5HzLMConfig` — `llm_config_node.py`
-
-#### Radio & Lyrics Sync
-- [x] `RadioPlayer` — `radio_node.py` + `web/radio_player.js`
-- [x] `AceStepWebAmpRadio` — `webamp_node.py` + `web/webamp_player.js`
-- [x] `Lyricer` Integration — `web/lyricer.js` + `web/radio_player.css`
+#### Radio & Visualizers
+- [x] `RadioPlayer` — `radio_node.py`
+- [x] `AceStepWebAmpRadio` — `webamp_node.py`
+    - [x] Large library optimization (500+ presets)
+    - [x] Hot-swapping skins & visualizers
+    - [x] In-node control bar (Next/Prev/Shuffle/Cycle/Overlay/Info)
+    - [x] Integrated Butterchurn v3 beta engine
 
 #### Transcription (Whisper)
 - [x] `AceStepLoadFasterWhisperModel` — `faster_whisper_node.py`
 - [x] `AceStepFasterWhisperTranscription` — `faster_whisper_node.py`
-- [x] `AceStepSaveSubtitleLyrics` — `faster_whisper_node.py`
+- [x] `AceStepSaveSubtitleLyrics` — `faster_whisper_node.py` (.lrc support)
 
-#### TBD / Uncategorized
+#### Miscellaneous
+- [x] `AceStep5HzLMConfig` — `llm_config_node.py`
 - [x] `AceStepInpaintSampler` — `inpaint_sampler_node.py`
 - [x] `AceStepLoadAudio` — `load_audio_node.py`
 - [x] `AceStepModeSelector` — `mode_selector_node.py`
-
-#### Obsolete (15 nodes)
-- [x] `ObsoleteAceStepAudioCodesToSemanticHints` — `obsolete_audio_codes_to_latent_node.py`
-- [x] `ObsoleteAceStepAudioToCodec` — `obsolete_audio_to_codec_node.py`
-- [x] `ObsoleteAceStepCLIPTextEncode` — `obsolete_clip_text_encode_node.py`
-- [x] `ObsoleteAceStepCodecToLatent` — `obsolete_codec_to_latent_node.py`
-- [x] `ObsoleteAceStepConditioning` — `obsolete_conditioning_node.py`
-- [x] `ObsoleteAceStepCustomTimesteps` — `obsolete_custom_timesteps_node.py`
-- [x] `ObsoleteAceStepKSamplerAdvanced` — `obsolete_ksampler_advanced_node.py`
-- [x] `ObsoleteAceStepKSampler` — `obsolete_ksampler_node.py`
-- [x] `ObsoleteAceStepLatentToAudioCodes` — `obsolete_latent_to_audio_codes_node.py`
-- [x] `ObsoleteAceStepLoRAStatus` — `obsolete_lora_status_node.py`
-- [x] [REMOVED] `ObsoleteFlacPreviewAudio` — `obsolete_preview_audio_node.py`
-- [x] `ObsoleteSaveText` — `obsolete_save_text_node.py`
-- [x] `ObsoleteVAEDecodeAudio` — `obsolete_vae_decode_audio_node.py`
-- [x] `ObsoleteVAEEncodeAudio` — `obsolete_vae_encode_audio_node.py`
 
 ---
 
 ## Progress Statistics
 
-- **Total Nodes: 65/65 complete (100%)** ✅
-- **Active Nodes: 50** ✅
-- **Obsolete Nodes: 15** (deprecated, to be removed)
+- **Total Nodes: 62/62 complete (100%)** ✅
+- **Active Nodes: 46** ✅
+- **Obsolete Nodes: 16** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
-- **Frontend Extensions: 1** (`web/radio_player.js`) ✅
+- **Frontend Extensions: 3** (Radio, WebAmp, Lyricer) ✅
 
 ---
 
@@ -132,36 +117,32 @@ scromfyUI-AceStep/
 ├── __init__.py           # Dynamic node scanner + WEB_DIRECTORY
 ├── nodes/
 │   ├── includes/         # Shared utility modules
-│   │   ├── analysis_utils.py
-│   │   ├── audio_utils.py
 │   │   ├── fsq_utils.py
 │   │   ├── lyrics_utils.py
 │   │   ├── prompt_utils.py
-│   │   └── sampling_utils.py
-│   └── *_node.py         # Individual node files (58 total)
+│   │   ├── sampling_utils.py
+│   │   └── whisper_utils.py
+│   └── *_node.py         # Individual node files
 ├── web/
 │   ├── lyricer.js        # Sync engine for lyrics
 │   ├── radio_player.css  # Radio UI styling
 │   ├── radio_player.js   # RadioPlayer frontend widget
 │   ├── webamp_player.css # WebAmp UI styling
-│   └── webamp_player.js  # WebAmpRadio frontend widget
+│   ├── webamp_player.js  # WebAmpRadio frontend widget
+│   ├── webamp.butterchurn.mjs # Local WebAmp/Butterchurn bundle
+│   └── butterchurn.v3.js # Local Butterchurn engine (v3 beta)
 ├── keys/
 │   └── README.md         # API key setup instructions
 ├── AIinstructions/
-│   └── systemprompt.txt  # System prompt for AI lyricists
+│   ├── systemprompt.default.txt # Master system prompt
+│   └── systemprompt.txt  # User-created override
 ├── prompt_components/
-│   ├── STYLE_PRESETS.json # Style descriptions
+│   ├── WEIGHTS.default.json # Default UI priorities
 │   └── *.txt            # Other category lists
-├── docs/
-│   ├── NODE_SPECS.md     # Technical specifications
-│   ├── PROGRESS.md       # This file
-│   └── walkthrough.md    # New feature walkthroughs
+├── webamp_skins/         # Drop .wsz files here
+├── webamp_visualizers/   # Drop .json presets here
+└── docs/
+    ├── NODE_SPECS.md     # Technical specifications
+    ├── PROGRESS.md       # This file
+    └── walkthrough.md    # New feature walkthroughs
 ```
-
----
-
-## Next Steps
-
-1. [ ] Create example workflows for all major generation modes.
-2. [ ] Performance optimization for long audio generations.
-3. [ ] Final verification with a large-scale music production workflow.

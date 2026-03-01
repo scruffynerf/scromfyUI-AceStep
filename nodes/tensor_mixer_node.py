@@ -29,7 +29,7 @@ class AceStepTensorMixer:
     
     RETURN_TYPES = ("TENSOR",)
     FUNCTION = "mix"
-    CATEGORY = "Scromfy/Ace-Step/mixing"
+    CATEGORY = "Scromfy/Ace-Step/mixers"
 
     def mix(self, tensor_A, tensor_B, mode, alpha, ratio, weight, eps, scale_mode, mask=None):
         A = tensor_A.clone()

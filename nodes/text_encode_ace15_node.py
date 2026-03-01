@@ -1,26 +1,12 @@
 """AceStep Text Encode node for ACE-Step 1.5"""
+from .includes.prompt_utils import get_keyscales
 
 class ScromfyACEStep15TaskTextEncodeNode:
     """
     Revised text encoder for ACE-Step 1.5 aka Scromfy
     """
 
-    # Valid keyscales from ACE-Step 1.5 reference (constants.py):
-    # 7 notes × 5 accidentals ('', '#', 'b', '♯', '♭') × 2 modes = 70 combinations
-    # We use ASCII only ('#', 'b') plus 'Db/Eb/Gb/Ab/Bb' enharmonic spellings = 56 unique
-    KEYSCALE_NOTES = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-    KEYSCALE_ACCIDENTALS = ['', '#', 'b']
-    KEYSCALE_MODES = ['major', 'minor']
-
-    VALID_KEYSCALES = ["Auto-detect"]
-    for note in KEYSCALE_NOTES:
-        for acc in KEYSCALE_ACCIDENTALS:
-            for mode in KEYSCALE_MODES:
-                if note == 'C' and mode == 'major' and acc != '':
-                    continue
-                if note == 'A' and mode == 'minor' and acc != '':
-                    continue
-                VALID_KEYSCALES.append(f"{note}{acc} {mode}")
+    VALID_KEYSCALES = get_keyscales()
 
     # Time signature display name → code mapping
     TIMESIG_MAP = {

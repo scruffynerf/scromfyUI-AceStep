@@ -8,6 +8,25 @@ import sys
 # Cache to store loaded components
 _COMPONENTS = {}
 _HIDDEN_COMPONENTS = set()
+_COMPONENT_WEIGHTS = {}
+
+def get_keyscales():
+    """Generate the standard ACE-Step 1.5 keyscale list."""
+    notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+    accidentals = ['', '#', 'b']
+    modes = ['major', 'minor']
+    
+    keyscales = ["Auto-detect"]
+    for note in notes:
+        for acc in accidentals:
+            for mode in modes:
+                # Basic theory overrides to match ACE-Step constants.py
+                if note == 'C' and mode == 'major' and acc != '':
+                    continue
+                if note == 'A' and mode == 'minor' and acc != '':
+                    continue
+                keyscales.append(f"{note}{acc} {mode}")
+    return keyscales
 
 def _load_components():
     """Scan the prompt_components directory and load all txt/json files."""
@@ -125,6 +144,9 @@ def _load_components():
                     globals()[assign_name] = lines
         except Exception as e:
             print(f"Error loading prompt component {filename}: {e}", file=sys.stderr)
+
+    # Inject built-in Keyscale component
+    _COMPONENTS["KEYSCALE"] = get_keyscales()
 
 # Initialize global caches
 _COMPONENT_WEIGHTS = {}
