@@ -17,12 +17,9 @@ function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
 }
 
-// Extract the `path` query param from a URL like:
-//   http://localhost:8188/radio_player/audio?path=./output/audio/foo.flac
-// Returns just the `path` value which is stable across relative vs absolute URL forms
+// Extract the `path` query param from audio URL – stable across relative/absolute forms
 function getPathParam(url) {
     try {
-        // Both relative and absolute URLs work here
         const u = new URL(url, window.location.href);
         return u.searchParams.get("path") || url;
     } catch {
@@ -46,21 +43,17 @@ function buildWebampWidget(node) {
     </div>`;
     container.appendChild(lyricsDiv);
 
-    // Zero-size container for WebAmp floating windows
+    // Zero-size anchor for WebAmp floating windows
     const webampHost = document.createElement("div");
     webampHost.id = `webamp-host-${node.id}`;
-    webampHost.style.position = "absolute";
-    webampHost.style.top = "0";
-    webampHost.style.left = "0";
-    webampHost.style.width = "0";
-    webampHost.style.height = "0";
+    webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;";
     container.appendChild(webampHost);
 
     let webamp = null;
     let knownPaths = new Set();
-    // Key: `path` param from the audio URL (stable reference)
     let trackByPath = new Map();
     let polling = null;
+    let syncInterval = null;
     let isInitializing = false;
     let lastPathKey = null;
     let lastTime = -1;
@@ -75,12 +68,8 @@ function buildWebampWidget(node) {
         } catch (e) {
             console.warn("[WebampRadio] Local bundle failed, trying CDN...");
         }
-        try {
-            const m = await import("https://cdn.jsdelivr.net/npm/webamp@2.2.0/built/webamp.butterchurn-bundle.min.mjs");
-            return m.default || m.Webamp;
-        } catch (e) {
-            throw new Error("Could not load Webamp: " + e.message);
-        }
+        const m = await import("https://cdn.jsdelivr.net/npm/webamp@2.2.0/built/webamp.butterchurn-bundle.min.mjs");
+        return m.default || m.Webamp;
     }
 
     async function fetchLrc(lrcUrl) {
@@ -91,14 +80,71 @@ function buildWebampWidget(node) {
         try {
             const res = await fetch(lrcUrl);
             if (res.ok) {
-                const text = await res.text();
-                lrc.setLrc(text);
-                console.log("[WebampRadio] Lyrics loaded OK");
+                lrc.setLrc(await res.text());
+                console.log("[WebampRadio] Lyrics loaded for", lrcUrl);
             } else {
-                lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>No lyrics found</div>";
+                lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>No lyrics file found</div>";
             }
         } catch (e) {
             lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>Error loading lyrics</div>";
+        }
+    }
+
+    // Called periodically to sync state from the webamp store
+    function syncState() {
+        if (!webamp) return;
+        try {
+            const state = webamp.store.getState();
+
+            // --- Time sync ---
+            const currentTime = state.media?.timeElapsed;
+            if (currentTime !== undefined && Math.abs(currentTime - lastTime) > 0.05) {
+                lastTime = currentTime;
+                lrc.move(currentTime);
+            }
+
+            // --- Track sync ---
+            const playlistState = state.playlist;
+            if (!playlistState) return;
+
+            // In WebAmp 2.x, tracks may be an array OR an object keyed by id
+            // currentTrack may be an index or an id string
+            const { tracks, currentTrack } = playlistState;
+            if (tracks === undefined || currentTrack === undefined || currentTrack === null) return;
+
+            let track = null;
+            if (Array.isArray(tracks)) {
+                track = tracks[currentTrack];
+            } else {
+                // Object map – try direct key lookup first, then iterate
+                track = tracks[currentTrack];
+                if (!track) {
+                    // currentTrack might be an order index – grab from `order` array
+                    const order = playlistState.trackOrder || playlistState.order;
+                    if (order && order[currentTrack] !== undefined) {
+                        track = tracks[order[currentTrack]];
+                    }
+                }
+            }
+
+            if (!track || !track.url) return;
+
+            const pathKey = getPathParam(track.url);
+            if (pathKey === lastPathKey) return;
+
+            lastPathKey = pathKey;
+            console.log("[WebampRadio] Track switched, path key:", pathKey);
+
+            const t = trackByPath.get(pathKey);
+            if (t) {
+                fetchLrc(t.lrc_url);
+            } else {
+                console.warn("[WebampRadio] No trackMap entry for path key:", pathKey);
+                console.log("[WebampRadio] trackByPath keys:", [...trackByPath.keys()]);
+                lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>♪ ${trackLabel(track.metaData?.title || track.url)}</div>`;
+            }
+        } catch (e) {
+            // ignore transient errors
         }
     }
 
@@ -128,40 +174,13 @@ function buildWebampWidget(node) {
 
             webamp = new WebampClass(options);
 
-            webamp.store.subscribe(() => {
+            // Dump state shape once after init for diagnostics
+            setTimeout(() => {
+                if (!webamp) return;
                 const state = webamp.store.getState();
-
-                // --- Time sync ---
-                const currentTime = state.media?.timeElapsed;
-                if (currentTime !== undefined && Math.abs(currentTime - lastTime) > 0.05) {
-                    lastTime = currentTime;
-                    lrc.move(currentTime);
-                }
-
-                // --- Track sync (using stable path key) ---
-                const tracks = state.playlist?.tracks;
-                const currentIdx = state.playlist?.currentTrack;
-
-                if (tracks && currentIdx !== null && currentIdx !== undefined) {
-                    const track = tracks[currentIdx];
-                    if (track) {
-                        // Normalize: extract path param, which is stable
-                        const pathKey = getPathParam(track.url);
-                        if (pathKey !== lastPathKey) {
-                            lastPathKey = pathKey;
-                            console.log("[WebampRadio] Track changed, path key:", pathKey);
-
-                            const t = trackByPath.get(pathKey);
-                            if (t) {
-                                fetchLrc(t.lrc_url);
-                            } else {
-                                console.warn("[WebampRadio] Track not in map. Path key:", pathKey, "| Map keys:", [...trackByPath.keys()].slice(0, 3));
-                                lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>♪ ${trackLabel(track.metaData.title || "Unknown")}</div>`;
-                            }
-                        }
-                    }
-                }
-            });
+                console.log("[WebampRadio] Redux state keys:", Object.keys(state));
+                console.log("[WebampRadio] playlist state:", JSON.stringify(state.playlist, null, 2));
+            }, 2000);
 
             window.addEventListener('lyricerclick', function (e) {
                 const target = e.target.closest(`#${lyricsDiv.id}`);
@@ -171,6 +190,11 @@ function buildWebampWidget(node) {
             });
 
             await webamp.renderWhenReady(webampHost);
+
+            // Start polling the store – more reliable than subscribe for state diffs
+            if (syncInterval) clearInterval(syncInterval);
+            syncInterval = setInterval(syncState, 333);
+
             lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready – play a track to see lyrics</div>";
 
         } catch (e) {
@@ -191,18 +215,17 @@ function buildWebampWidget(node) {
             for (const t of data.tracks) {
                 if (!knownPaths.has(t.path)) {
                     knownPaths.add(t.path);
-                    // Key by the same `path` param we'll extract from WebAmp's store URL
                     const pathKey = getPathParam(t.url);
                     trackByPath.set(pathKey, t);
-
+                    console.log("[WebampRadio] Registered track key:", pathKey, "lrc:", t.lrc_url);
                     newTracks.push({
                         url: t.url,
                         metaData: { title: trackLabel(t.filename), artist: "Ace-Step AI" }
                     });
                 } else {
                     const pathKey = getPathParam(t.url);
-                    const existing = trackByPath.get(pathKey);
-                    if (existing) existing.lrc_url = t.lrc_url;
+                    const ex = trackByPath.get(pathKey);
+                    if (ex) ex.lrc_url = t.lrc_url;
                 }
             }
 
@@ -226,7 +249,8 @@ function buildWebampWidget(node) {
 
     container._stop = function () {
         if (polling) clearInterval(polling);
-        polling = null;
+        if (syncInterval) clearInterval(syncInterval);
+        polling = syncInterval = null;
         if (webamp) {
             try { webamp.dispose(); } catch (e) { }
             webamp = null;
