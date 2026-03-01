@@ -77,15 +77,31 @@ def _load_components():
         except Exception as e:
             print(f"Error reading weights from {weights_path}: {e}", file=sys.stderr)
 
-    _HIDDEN_COMPONENTS = load_but_not_show
+    global _HIDDEN_COMPONENTS, _COMPONENT_WEIGHTS, _COMPONENTS
+    
+    _HIDDEN_COMPONENTS = set()
+    for item in load_but_not_show:
+        _HIDDEN_COMPONENTS.add(item.lower())
+        if '.' in item:
+            _HIDDEN_COMPONENTS.add(os.path.splitext(item)[0].lower())
+
+    # We also lowercase total_ignore for robust checking
+    lower_ignore = {item.lower() for item in total_ignore}
+    for item in total_ignore:
+        if '.' in item:
+            lower_ignore.add(os.path.splitext(item)[0].lower())
+
     _COMPONENT_WEIGHTS = weights
+    
+    # Reset components cache
+    _COMPONENTS = {}
 
     for filename in os.listdir(components_dir):
         if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list", "WEIGHTS.json", "README.md") or ".default." in filename:
             continue
             
         name, ext = os.path.splitext(filename)
-        if filename in total_ignore or name in total_ignore:
+        if filename.lower() in lower_ignore or name.lower() in lower_ignore:
             continue
         if name in replace_map:
             continue
@@ -110,7 +126,7 @@ def _load_components():
         except Exception as e:
             print(f"Error loading prompt component {filename}: {e}", file=sys.stderr)
 
-# Global caches for weighted sorting
+# Initialize global caches
 _COMPONENT_WEIGHTS = {}
 
 def sort_weighted(names):
@@ -118,7 +134,7 @@ def sort_weighted(names):
     # Weight defaults to 0 if not listed. Higher weight comes first.
     return sorted(names, key=lambda x: (-_COMPONENT_WEIGHTS.get(x, 0), x))
 
-# Initialize on import
+# Initial load
 _load_components()
 
 def get_available_components():
@@ -128,7 +144,8 @@ def get_available_components():
 def get_visible_components():
     """Return component names that should be shown in the UI, sorted by weight."""
     all_comps = _COMPONENTS.keys()
-    visible = [c for c in all_comps if c not in _HIDDEN_COMPONENTS]
+    # Case-insensitive check against hidden list
+    visible = [c for c in all_comps if c.lower() not in _HIDDEN_COMPONENTS]
     return sort_weighted(visible)
 
 def get_component(name, default=None):
