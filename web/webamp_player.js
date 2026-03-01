@@ -48,6 +48,14 @@ function buildWebampWidget(node) {
     </div>`;
     container.appendChild(lyricsDiv);
 
+    // Zero-size anchor div placed INSIDE the node container.
+    // WebAmp renders its floating windows relative to the viewport regardless,
+    // but this anchors its DOM element so it doesn't pollute the body.
+    const webampHost = document.createElement("div");
+    webampHost.id = `webamp-host-${node.id}`;
+    webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;";
+    container.appendChild(webampHost);
+
     let webamp = null;
     let knownPaths = new Set();
     let trackByPath = new Map();
@@ -106,12 +114,10 @@ function buildWebampWidget(node) {
             const pathKey = getPathParam(track.url);
             if (pathKey === lastPathKey) return;
             lastPathKey = pathKey;
-            console.log("[WebampRadio] Track switched:", pathKey);
             const t = trackByPath.get(pathKey);
             if (t) {
                 fetchLrc(t.lrc_url);
             } else {
-                console.warn("[WebampRadio] No match for path key:", pathKey);
                 lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>&#9834; ${trackLabel(track.defaultName || String(currentTrackId))}</div>`;
             }
         } catch (e) { }
@@ -137,10 +143,6 @@ function buildWebampWidget(node) {
         try {
             const WebampClass = await loadWebampLibrary();
 
-            // Compute initial window positions: 20px from left, 150px from top
-            const initialX = 20;
-            const initialY = 150;
-
             const options = {
                 initialTracks: [],
                 availableSkins: [
@@ -152,12 +154,12 @@ function buildWebampWidget(node) {
                     { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
                 ],
                 zIndex: 100,
-                // Set initial window positions so Winamp opens below browser chrome
+                // Open windows with 150px top buffer so they can't hide behind browser tabs
                 __initialWindowLayout: {
-                    main: { position: { x: initialX, y: initialY } },
-                    equalizer: { position: { x: initialX, y: initialY + 116 } },
-                    playlist: { position: { x: initialX, y: initialY + 232 } },
-                    milkdrop: { position: { x: initialX + 275, y: initialY } }
+                    main: { position: { x: 20, y: 150 } },
+                    equalizer: { position: { x: 20, y: 266 } },
+                    playlist: { position: { x: 20, y: 382 } },
+                    milkdrop: { position: { x: 295, y: 150 } }
                 },
                 __butterchurnOptions: {
                     importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
@@ -178,8 +180,8 @@ function buildWebampWidget(node) {
                 }
             });
 
-            // Render floating into document.body (no host anchoring)
-            await webamp.renderWhenReady(document.body);
+            // Render into the in-node host div — NOT document.body
+            await webamp.renderWhenReady(webampHost);
 
             if (syncInterval) clearInterval(syncInterval);
             if (diagInterval) clearInterval(diagInterval);
@@ -187,7 +189,6 @@ function buildWebampWidget(node) {
             diagInterval = setInterval(diagnosticDump, 15000);
 
             applyFontSize(lyricsDiv, fontSize || 13);
-
             lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready – play a track to see lyrics</div>";
 
         } catch (e) {
@@ -277,28 +278,17 @@ app.registerExtension({
                 );
             }
 
-            // Update font size live without restarting
             if (fontW) {
                 const o = fontW.callback;
                 fontW.callback = function () {
                     o?.apply(this, arguments);
-                    const lyricsDiv = root.querySelector(".webamp-lyrics-display");
-                    if (lyricsDiv) applyFontSize(lyricsDiv, fontW.value || 13);
+                    const ld = root.querySelector(".webamp-lyrics-display");
+                    if (ld) applyFontSize(ld, fontW.value || 13);
                 };
             }
-
-            if (folderW) {
-                const o = folderW.callback;
-                folderW.callback = function () { o?.apply(this, arguments); restartPolling(); };
-            }
-            if (skinW) {
-                const o = skinW.callback;
-                skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); };
-            }
-            if (artistW) {
-                const o = artistW.callback;
-                artistW.callback = function () { o?.apply(this, arguments); restartPolling(); };
-            }
+            if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
+            if (skinW) { const o = skinW.callback; skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            if (artistW) { const o = artistW.callback; artistW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
 
             restartPolling();
         }, 300);
