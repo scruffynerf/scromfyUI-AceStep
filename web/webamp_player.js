@@ -46,7 +46,7 @@ async function fetchAvailableSkins() {
     }
 }
 
-// Fetch available visualizers from the server
+// Fetch available visualizers from the server (names only)
 async function fetchAvailableVisualizers() {
     try {
         const res = await fetch("/webamp_visualizers/list");
@@ -198,31 +198,42 @@ function buildWebampWidget(node) {
                     milkdrop: { position: { x: 375, y: 150 } }
                 },
                 __butterchurnOptions: {
-                    importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
-                    // Only load default bundle if we have NO local viz
-                    ...(localViz.length === 0 ? {
-                        importPresets: () => import("https://unpkg.com/butterchurn-presets@^2?module")
-                    } : {})
+                    importButterchurn: () => {
+                        console.log("[WebampRadio] WebAmp is importing Butterchurn...");
+                        return import("https://unpkg.com/butterchurn@^2?module");
+                    },
+
+                    // Hook version A: importPresets (expects a module-like object)
+                    importPresets: async () => {
+                        console.log("[WebampRadio] Hook (importPresets) triggered.");
+                        if (localViz.length > 0) {
+                            try {
+                                const r = await fetch("/webamp_visualizers/bundle");
+                                if (r.ok) {
+                                    const bundle = await r.json();
+                                    console.log(`[WebampRadio] Bundle fetched via importPresets: ${Object.keys(bundle).length} presets.`);
+                                    return { getPresets: () => bundle };
+                                }
+                            } catch (e) { console.error("[WebampRadio] importPresets error:", e); }
+                        }
+                        return import("https://unpkg.com/butterchurn-presets@^2?module");
+                    },
+
+                    // Hook version B: getPresets (sometimes used directly)
+                    getPresets: async () => {
+                        console.log("[WebampRadio] Hook (getPresets) triggered.");
+                        try {
+                            const r = await fetch("/webamp_visualizers/bundle");
+                            if (r.ok) {
+                                const bundle = await r.json();
+                                console.log(`[WebampRadio] Bundle fetched via getPresets: ${Object.keys(bundle).length} presets.`);
+                                return bundle;
+                            }
+                        } catch (e) { console.error("[WebampRadio] getPresets error:", e); }
+                        return {};
+                    }
                 }
             };
-
-            if (localViz.length > 0) {
-                console.log(`[WebampRadio] Batch loading ${localViz.length} visualizers...`);
-                options.__butterchurnOptions.requireButterchurnPresets = async () => {
-                    try {
-                        const r = await fetch("/webamp_visualizers/bundle");
-                        if (r.ok) {
-                            const bundle = await r.json();
-                            const keys = Object.keys(bundle);
-                            console.log(`[WebampRadio] Successfully loaded ${keys.length} presets into Milkdrop. First few:`, keys.slice(0, 3));
-                            return bundle;
-                        }
-                    } catch (e) {
-                        console.error("[WebampRadio] Error loading visualizer bundle:", e);
-                    }
-                    return {};
-                };
-            }
 
             if (activeSkinUrl) {
                 options.initialSkin = { url: activeSkinUrl };

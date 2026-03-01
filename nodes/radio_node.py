@@ -68,8 +68,6 @@ async def bundle_webamp_visualizers(request: web.Request) -> web.Response:
     import json
     
     # Simple global cache to avoid re-reading 500+ files on every refresh
-    # In a production environment, we'd watch the directory for changes.
-    global _VIZ_BUNDLE_CACHE
     if not hasattr(bundle_webamp_visualizers, "_cache"):
         bundle_webamp_visualizers._cache = None
 
@@ -78,13 +76,25 @@ async def bundle_webamp_visualizers(request: web.Request) -> web.Response:
 
     _VISUALIZERS_DIR.mkdir(exist_ok=True)
     bundle = {}
+    success_count = 0
+    fail_count = 0
+    
     for p in sorted(_VISUALIZERS_DIR.glob("*.json")):
         try:
             with open(p, 'r', encoding='utf-8') as f:
-                bundle[p.stem.replace("_", " ")] = json.load(f)
+                data = json.load(f)
+                # Butterchurn presets must be dictionaries
+                if isinstance(data, dict):
+                    bundle[p.stem.replace("_", " ")] = data
+                    success_count += 1
+                else:
+                    print(f"[WebampRadio] Skipping {p.name}: Not a valid preset dictionary.")
+                    fail_count += 1
         except Exception as e:
-            print(f"Error loading visualizer {p.name}: {e}")
+            print(f"[WebampRadio] Error loading visualizer {p.name}: {e}")
+            fail_count += 1
             
+    print(f"[WebampRadio] Bundle created: {success_count} success, {fail_count} failed.")
     bundle_webamp_visualizers._cache = bundle
     return web.json_response(bundle)
 
