@@ -83,8 +83,11 @@ API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 
 ## Persistence / Save (Scromfy/Ace-Step/save)
 
-40. **AceStepConditioningSave** (`save_conditioning_node.py`): Save conditioning components to separate files.
-41. **AceStepTensorSave** (`save_tensor_node.py`): Save a raw tensor to disk.
+40. **Scromfy Save Audio** (`save_audio_node.py`): High-fidelity FLAC/WAV saver.
+    *   **Output**: Returns the absolute `filepath` (without extension) for downstream syncing.
+41. **Scromfy Save Audio MP3/Opus** (`save_audio_node.py`): Compressed audio saving with quality presets.
+42. **AceStepConditioningSave** (`save_conditioning_node.py`): Save conditioning components to separate files.
+43. **AceStepTensorSave** (`save_tensor_node.py`): Save a raw tensor to disk.
 
 ## Miscellaneous (Scromfy/Ace-Step/misc)
 
@@ -125,7 +128,7 @@ These are deprecated and will be removed in a future version.
 | 56 | ObsoleteAceStepLatentToAudioCodes | `obsolete_latent_to_audio_codes_node.py` |
 | 57 | ObsoleteAceStepLoRAStatus | `obsolete_lora_status_node.py` |
 | 58 | ObsoleteFlacPreviewAudio | `obsolete_preview_audio_node.py` |
-| 59 | ObsoleteSaveAudio | `obsolete_save_audio_node.py` |
+| 59 | ObsoleteSaveAudio | [REMOVED] |
 | 60 | ObsoleteSaveText | `obsolete_save_text_node.py` |
 | 61 | ObsoleteVAEDecodeAudio | `obsolete_vae_decode_audio_node.py` |
 | 62 | ObsoleteVAEEncodeAudio | `obsolete_vae_encode_audio_node.py` |

@@ -73,9 +73,9 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 - [x] `AceStepGenericAILyrics` — `lyrics_generic_ai_node.py`
 
 #### Persistence (Save)
-- [x] `ScromfySaveAudio` — `save_audio_nodes.py`
-- [x] `ScromfySaveAudioMP3` — `save_audio_nodes.py`
-- [x] `ScromfySaveAudioOpus` — `save_audio_nodes.py`
+- [x] `ScromfySaveAudio` — `save_audio_node.py`
+- [x] `ScromfySaveAudioMP3` — `save_audio_node.py`
+- [x] `ScromfySaveAudioOpus` — `save_audio_node.py`
 - [x] `AceStepConditioningSave` — `save_conditioning_node.py`
 - [x] `AceStepTensorSave` — `save_tensor_node.py`
 

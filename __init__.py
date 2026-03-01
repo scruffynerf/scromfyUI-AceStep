@@ -17,7 +17,7 @@ def load_nodes():
         return
 
     for file in os.listdir(nodes_dir):
-        if file.endswith("_node.py"):
+        if file.endswith("_node.py") or file.endswith("_nodes.py"):
             node_name = file[:-3]
             try:
                 module = importlib.import_module(f".nodes.{node_name}", package=__name__)
