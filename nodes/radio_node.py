@@ -64,8 +64,18 @@ async def serve_webamp_visualizer(request: web.Request) -> web.Response:
 
 @routes.get("/webamp_visualizers/bundle")
 async def bundle_webamp_visualizers(request: web.Request) -> web.Response:
-    """Return all visualizer presets as one large dictionary."""
+    """Return all visualizer presets as one large dictionary with caching."""
     import json
+    
+    # Simple global cache to avoid re-reading 500+ files on every refresh
+    # In a production environment, we'd watch the directory for changes.
+    global _VIZ_BUNDLE_CACHE
+    if not hasattr(bundle_webamp_visualizers, "_cache"):
+        bundle_webamp_visualizers._cache = None
+
+    if bundle_webamp_visualizers._cache is not None:
+        return web.json_response(bundle_webamp_visualizers._cache)
+
     _VISUALIZERS_DIR.mkdir(exist_ok=True)
     bundle = {}
     for p in sorted(_VISUALIZERS_DIR.glob("*.json")):
@@ -74,6 +84,8 @@ async def bundle_webamp_visualizers(request: web.Request) -> web.Response:
                 bundle[p.stem.replace("_", " ")] = json.load(f)
         except Exception as e:
             print(f"Error loading visualizer {p.name}: {e}")
+            
+    bundle_webamp_visualizers._cache = bundle
     return web.json_response(bundle)
 
 

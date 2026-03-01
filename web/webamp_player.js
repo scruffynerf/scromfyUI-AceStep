@@ -199,13 +199,13 @@ function buildWebampWidget(node) {
                 },
                 __butterchurnOptions: {
                     importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
-                    importPresets: () => import("https://unpkg.com/butterchurn-presets@^2?module")
+                    // Only load default bundle if we have NO local viz
+                    ...(localViz.length === 0 ? {
+                        importPresets: () => import("https://unpkg.com/butterchurn-presets@^2?module")
+                    } : {})
                 }
             };
 
-            // Simplified Viz loading:
-            // If local directory has files, load ONLY those. 
-            // Otherwise, let Webamp fall back to default presets.
             if (localViz.length > 0) {
                 console.log(`[WebampRadio] Batch loading ${localViz.length} visualizers...`);
                 options.__butterchurnOptions.requireButterchurnPresets = async () => {
@@ -213,7 +213,8 @@ function buildWebampWidget(node) {
                         const r = await fetch("/webamp_visualizers/bundle");
                         if (r.ok) {
                             const bundle = await r.json();
-                            console.log(`[WebampRadio] Successfully loaded ${Object.keys(bundle).length} presets into Milkdrop.`);
+                            const keys = Object.keys(bundle);
+                            console.log(`[WebampRadio] Successfully loaded ${keys.length} presets into Milkdrop. First few:`, keys.slice(0, 3));
                             return bundle;
                         }
                     } catch (e) {
