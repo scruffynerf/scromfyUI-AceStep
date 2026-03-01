@@ -3,6 +3,7 @@
  */
 
 import { app } from "../../scripts/app.js";
+import Lyricer from "./lyricer.js";
 
 // Load CSS
 const link = document.createElement("link");
@@ -10,7 +11,7 @@ link.rel = "stylesheet";
 link.href = new URL("./webamp_player.css", import.meta.url).href;
 document.head.appendChild(link);
 
-console.log("[WebampRadio] JS module loading... (Local Bundle Mode)");
+console.log("[WebampRadio] JS module loading... (Advanced Sync Mode)");
 
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
@@ -18,44 +19,67 @@ function trackLabel(filename) {
 
 function buildWebampWidget(node) {
     const container = document.createElement("div");
-    container.className = "webamp-container";
-    container.style.height = "400px";
-    container.style.width = "100%";
-    container.id = `webamp-container-${node.id || 'new'}`;
+    container.className = "webamp-node-container";
+    container.id = `webamp-node-ui-${node.id}`;
 
     const inner = document.createElement("div");
-    inner.id = `webamp-app-${node.id || 'new'}`;
-    inner.style.width = "100%";
-    inner.style.height = "100%";
-    inner.innerHTML = `<div style="color:#6b7280;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
-        <div class="rp-spinner" style="margin-bottom:10px;">⌛</div>
-        <b>Initializing Webamp...</b>
+    inner.id = `webamp-lyrics-${node.id}`;
+    inner.className = "webamp-lyrics-display";
+    inner.innerHTML = `<div class="webamp-loading-state">
+        <div class="rp-spinner">⌛</div>
+        <b>Initializing Webamp System...</b>
     </div>`;
     container.appendChild(inner);
 
     let webamp = null;
     let knownPaths = new Set();
+    let trackMap = new Map();
     let polling = null;
     let isInitializing = false;
+    let currentTrackUrl = null;
+
+    // Initialize Lyricer
+    const lyricerElId = `webamp-lyrics-${node.id}`;
+    const lrc = new Lyricer({ "divID": lyricerElId, "showLines": 3 });
 
     async function loadWebampLibrary() {
-        if (window.Webamp) return window.Webamp;
+        console.log("[WebampRadio] Loading Webamp library...");
+        // Prefer unpkg for full feature set (Butterchurn)
+        try {
+            const m = await import("https://unpkg.com/webamp@^2?module");
+            const WebampClass = m.default || m.Webamp || (window && window.Webamp);
+            if (WebampClass) return WebampClass;
+        } catch (e) {
+            console.warn("[WebampRadio] unpkg failed, using local fallback");
+        }
 
+        if (window.Webamp) return window.Webamp;
         return new Promise((resolve, reject) => {
-            console.log("[WebampRadio] Loading local Webamp bundle...");
             const script = document.createElement("script");
             script.src = new URL("./webamp.bundle.js", import.meta.url).href;
-            script.onload = () => {
-                if (window.Webamp) {
-                    console.log("[WebampRadio] Local bundle loaded OK");
-                    resolve(window.Webamp);
-                } else {
-                    reject(new Error("Webamp bundle loaded but window.Webamp is missing"));
-                }
-            };
-            script.onerror = () => reject(new Error("Failed to load local webamp.bundle.js"));
+            script.onload = () => window.Webamp ? resolve(window.Webamp) : reject(new Error("Webamp missing"));
+            script.onerror = () => reject(new Error("Failed to load local bundle"));
             document.head.appendChild(script);
         });
+    }
+
+    async function fetchLrc(url) {
+        if (!url) {
+            inner.innerHTML = "<div class='webamp-no-lyrics'>No lyrics available</div>";
+            return;
+        }
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const text = await res.text();
+                lrc.setLrc(text);
+                console.log("[WebampRadio] Lyrics loaded for URL:", url);
+            } else {
+                inner.innerHTML = "<div class='webamp-no-lyrics'>Lyrics file not found</div>";
+            }
+        } catch (e) {
+            console.error("[WebampRadio] LRC fetch error:", e);
+        }
     }
 
     async function initWebamp(skinUrl) {
@@ -65,12 +89,11 @@ function buildWebampWidget(node) {
         try {
             const WebampClass = await loadWebampLibrary();
 
-            console.log("[WebampRadio] Initializing Webamp instance...");
             const options = {
                 initialTracks: [],
                 availableSkins: [
-                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Winamp Classic" },
-                    { url: "https://cdn.webamp.org/skins/Aqua_X.wsz", name: "Aqua X" },
+                    { url: "https://archive.org/cors/winampskin_mac_os_x_1_5-aqua/mac_os_x_1_5-aqua.wsz", name: "Mac OS X Aqua" },
+                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp" },
                     { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
                 ],
                 zIndex: 1000
@@ -80,20 +103,49 @@ function buildWebampWidget(node) {
                 options.initialSkin = { url: skinUrl.trim() };
             }
 
+            // Try Butterchurn
+            try {
+                const butterchurn = await import("https://unpkg.com/butterchurn@^2?module");
+                const presets = await import("https://unpkg.com/butterchurn-presets@^2?module");
+                options.__butterchurnOptions = {
+                    importButterchurn: () => Promise.resolve(butterchurn.default || butterchurn),
+                    importPresets: () => Promise.resolve(presets.default || presets)
+                };
+            } catch (e) { }
+
             webamp = new WebampClass(options);
 
-            // Render into our container
-            console.log("[WebampRadio] Rendering Webamp to DOM...");
-            await webamp.renderWhenReady(inner);
-            console.log("[WebampRadio] Webamp rendered successfully");
+            // Time sync
+            webamp.onTimeUpdate((time) => {
+                lrc.move(time);
+            });
+
+            // Track sync via state subscription (more reliable in some versions)
+            webamp.store.subscribe(() => {
+                const state = webamp.store.getState();
+                const track = state.playlist.tracks[state.playlist.currentTrack];
+                if (track && track.url !== currentTrackUrl) {
+                    currentTrackUrl = track.url;
+                    console.log("[WebampRadio] Track changed to:", track.url);
+                    const t = trackMap.get(track.url);
+                    if (t) fetchLrc(t.lrc_url);
+                }
+            });
+
+            // Handle click-to-seek from lyrics display
+            window.addEventListener('lyricerclick', function (e) {
+                const target = e.target.closest(`#${lyricerElId}`);
+                if (target && e.detail.time >= 0 && webamp) {
+                    webamp.seekToTime(e.detail.time);
+                }
+            });
+
+            await webamp.renderWhenReady(document.body);
+            inner.innerHTML = "<div class='webamp-idle-msg'>Ready. Metadata and sync info will appear here.</div>";
 
         } catch (e) {
-            console.error("[WebampRadio] Initialization failed:", e);
-            inner.innerHTML = `<div style="color:#ef4444;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
-                <b style="font-size:14px;margin-bottom:8px;">Webamp Error</b>
-                <div style="word-break:break-all;margin-bottom:8px;">${e.message}</div>
-                <div style="color:#999;">The local bundle might have failed to load or initialize.</div>
-            </div>`;
+            console.error("[WebampRadio] Init error:", e);
+            inner.innerHTML = `<div class='webamp-error'>${e.message}</div>`;
         } finally {
             isInitializing = false;
         }
@@ -106,27 +158,23 @@ function buildWebampWidget(node) {
             const data = await res.json();
             if (data.error) return;
 
-            const newWebampTracks = [];
+            const newTracks = [];
             for (const t of data.tracks) {
                 if (!knownPaths.has(t.path)) {
                     knownPaths.add(t.path);
-                    newWebampTracks.push({
+                    trackMap.set(t.url, t);
+                    newTracks.push({
                         url: t.url,
-                        metaData: {
-                            title: trackLabel(t.filename),
-                            artist: "Ace-Step AI"
-                        }
+                        metaData: { title: trackLabel(t.filename), artist: "Ace-Step AI" }
                     });
+                } else {
+                    const existing = trackMap.get(t.url);
+                    if (existing) existing.lrc_url = t.lrc_url;
                 }
             }
 
-            if (newWebampTracks.length > 0) {
-                console.log(`[WebampRadio] Appending ${newWebampTracks.length} tracks`);
-                webamp.appendTracks(newWebampTracks);
-            }
-        } catch (e) {
-            console.error("[WebampRadio] Fetch error:", e);
-        }
+            if (newTracks.length > 0) webamp.appendTracks(newTracks);
+        } catch (e) { }
     }
 
     container._startPolling = function (folder, skinUrl, intervalMs) {
@@ -149,7 +197,6 @@ function buildWebampWidget(node) {
         if (webamp) {
             try { webamp.dispose(); } catch (e) { }
             webamp = null;
-            inner.innerHTML = `<div style="color:#999;text-align:center;padding:20px;">Ready (Stopped)</div>`;
         }
     };
 
@@ -160,52 +207,28 @@ app.registerExtension({
     name: "AceStep.WebampRadio",
     nodeCreated(node) {
         if (node.comfyClass !== "AceStepWebAmpRadio") return;
-
         const root = buildWebampWidget(node);
-
-        const domWidget = node.addDOMWidget("webamp_ui", "WEBAMP_PLAYER_UI", root, {
-            getValue() { return ""; },
-            setValue() { },
-        });
-        domWidget.serialize = false;
+        node.addDOMWidget("webamp_ui", "WEBAMP_PLAYER_UI", root, { getValue() { return ""; }, setValue() { } }).serialize = false;
 
         setTimeout(() => {
             const folderW = node.widgets?.find(w => w.name === "folder");
             const skinW = node.widgets?.find(w => w.name === "skin_url");
             const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
-
             function restartPolling() {
-                root._startPolling(
-                    folderW?.value || "audio",
-                    skinW?.value || "",
-                    (intervalW?.value || 30) * 1000
-                );
+                root._startPolling(folderW?.value || "audio", skinW?.value || "", (intervalW?.value || 30) * 1000);
             }
-
             if (folderW) {
-                const orig = folderW.callback;
-                folderW.callback = function () {
-                    if (orig) orig.apply(this, arguments);
-                    restartPolling();
-                };
+                const o = folderW.callback;
+                folderW.callback = function () { o?.apply(this, arguments); restartPolling(); };
             }
-
             if (skinW) {
-                const orig = skinW.callback;
-                skinW.callback = function () {
-                    if (orig) orig.apply(this, arguments);
-                    root._stop();
-                    restartPolling();
-                };
+                const o = skinW.callback;
+                skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); };
             }
-
             restartPolling();
         }, 300);
 
-        const origOnRemoved = node.onRemoved;
-        node.onRemoved = function () {
-            if (origOnRemoved) origOnRemoved.apply(this, arguments);
-            root._stop();
-        };
+        const oRem = node.onRemoved;
+        node.onRemoved = function () { oRem?.apply(this, arguments); root._stop(); };
     }
 });
