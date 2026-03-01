@@ -42,10 +42,13 @@ function buildWebampWidget(node) {
     </div>`;
     container.appendChild(lyricsDiv);
 
+    // Anchor for WebAmp floating windows.
+    // Offset from top so it can't hide behind browser chrome/tabs.
     const webampHost = document.createElement("div");
     webampHost.id = `webamp-host-${node.id}`;
-    webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;";
-    container.appendChild(webampHost);
+    webampHost.style.cssText = "position:fixed;top:80px;left:20px;width:0;height:0;pointer-events:none;";
+    document.body.appendChild(webampHost); // append to body so position:fixed works
+    container._webampHost = webampHost;
 
     let webamp = null;
     let knownPaths = new Set();
@@ -89,7 +92,6 @@ function buildWebampWidget(node) {
         }
     }
 
-    // Polls store every 333ms for time + track changes
     function syncState() {
         if (!webamp) return;
         try {
@@ -103,8 +105,6 @@ function buildWebampWidget(node) {
             }
 
             // Track sync
-            // In WebAmp 2.x: state.tracks = { [id]: trackObj }
-            //                 state.playlist.currentTrack = numeric id (or null)
             const currentTrackId = state.playlist?.currentTrack;
             if (currentTrackId === null || currentTrackId === undefined) return;
 
@@ -128,7 +128,6 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    // 15-second diagnostic dump
     function diagnosticDump() {
         if (!webamp) return;
         try {
@@ -143,7 +142,7 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    async function initWebamp(skinUrl) {
+    async function initWebamp(skinUrl, artistName) {
         if (webamp || isInitializing) return;
         isInitializing = true;
 
@@ -153,7 +152,11 @@ function buildWebampWidget(node) {
             const options = {
                 initialTracks: [],
                 availableSkins: [
-                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp" },
+                    {
+                        url: "https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz",
+                        name: "Windows Classic"
+                    },
+                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp 2.91" },
                     { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
                 ],
                 zIndex: 10,
@@ -169,7 +172,6 @@ function buildWebampWidget(node) {
 
             webamp = new WebampClass(options);
 
-            // One-time state dump after load
             setTimeout(() => {
                 if (!webamp) return;
                 const state = webamp.store.getState();
@@ -191,6 +193,9 @@ function buildWebampWidget(node) {
             syncInterval = setInterval(syncState, 333);
             diagInterval = setInterval(diagnosticDump, 15000);
 
+            // Store artistName for use when adding tracks
+            webampHost._artistName = artistName || "Ace-Step AI";
+
             lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready – play a track to see lyrics</div>";
 
         } catch (e) {
@@ -202,6 +207,7 @@ function buildWebampWidget(node) {
 
     async function scanFolder(folder) {
         if (!folder || !folder.trim() || !webamp) return;
+        const artistName = webampHost._artistName || "Ace-Step AI";
         try {
             const res = await fetch(`/radio_player/scan?folder=${encodeURIComponent(folder.trim())}`);
             const data = await res.json();
@@ -216,7 +222,7 @@ function buildWebampWidget(node) {
                     console.log("[WebampRadio] Registered track key:", pathKey, "lrc:", t.lrc_url);
                     newTracks.push({
                         url: t.url,
-                        metaData: { title: trackLabel(t.filename), artist: "Ace-Step AI" }
+                        metaData: { title: trackLabel(t.filename), artist: artistName }
                     });
                 } else {
                     const pathKey = getPathParam(t.url);
@@ -229,14 +235,16 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    container._startPolling = function (folder, skinUrl, intervalMs) {
+    container._startPolling = function (folder, skinUrl, artistName, intervalMs) {
         if (!webamp && !isInitializing) {
-            initWebamp(skinUrl).then(() => {
+            initWebamp(skinUrl, artistName).then(() => {
                 scanFolder(folder);
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
             });
         } else {
+            // Update artist name even if already running
+            if (webampHost) webampHost._artistName = artistName || "Ace-Step AI";
             scanFolder(folder);
             if (polling) clearInterval(polling);
             polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
@@ -251,6 +259,10 @@ function buildWebampWidget(node) {
         if (webamp) {
             try { webamp.dispose(); } catch (e) { }
             webamp = null;
+        }
+        // Remove the host from body when node is removed
+        if (webampHost && webampHost.parentNode) {
+            webampHost.parentNode.removeChild(webampHost);
         }
     };
 
@@ -268,9 +280,17 @@ app.registerExtension({
             const folderW = node.widgets?.find(w => w.name === "folder");
             const skinW = node.widgets?.find(w => w.name === "skin_url");
             const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
+            const artistW = node.widgets?.find(w => w.name === "artist_name");
+
             function restartPolling() {
-                root._startPolling(folderW?.value || "audio", skinW?.value || "", (intervalW?.value || 30) * 1000);
+                root._startPolling(
+                    folderW?.value || "audio",
+                    skinW?.value || "",
+                    artistW?.value || "Ace-Step AI",
+                    (intervalW?.value || 30) * 1000
+                );
             }
+
             if (folderW) {
                 const o = folderW.callback;
                 folderW.callback = function () { o?.apply(this, arguments); restartPolling(); };
@@ -279,6 +299,11 @@ app.registerExtension({
                 const o = skinW.callback;
                 skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); };
             }
+            if (artistW) {
+                const o = artistW.callback;
+                artistW.callback = function () { o?.apply(this, arguments); restartPolling(); };
+            }
+
             restartPolling();
         }, 300);
 

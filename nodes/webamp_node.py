@@ -7,8 +7,16 @@ class AceStepWebAmpRadio(RadioPlayerNode):
     @classmethod
     def INPUT_TYPES(cls):
         base = RadioPlayerNode.INPUT_TYPES()
-        base["required"]["skin_url"] = ("STRING", {"default": ""})
-        # Add a way to pass initial layout or other WebAmp specific settings if needed
+        base["required"]["skin_url"] = ("STRING", {
+            "default": "",
+            "multiline": False,
+            "placeholder": "Optional: URL to a .wsz skin file",
+        })
+        base["optional"]["artist_name"] = ("STRING", {
+            "default": "Ace-Step AI",
+            "multiline": False,
+            "placeholder": "Artist name shown in playlist",
+        })
         return base
 
     RETURN_TYPES = ()
@@ -16,8 +24,7 @@ class AceStepWebAmpRadio(RadioPlayerNode):
     FUNCTION = "run"
     CATEGORY = "Scromfy/Ace-Step/Radio"
 
-    def run(self, folder: str, skin_url: str = "", poll_interval_seconds: float = 60.0):
-        # We don't need to do anything server-side, it's all in the widget
+    def run(self, folder: str, skin_url: str = "", poll_interval_seconds: float = 60.0, artist_name: str = "Ace-Step AI"):
         return {}
 
 NODE_CLASS_MAPPINGS = {
