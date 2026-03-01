@@ -10,7 +10,7 @@ link.rel = "stylesheet";
 link.href = new URL("./webamp_player.css", import.meta.url).href;
 document.head.appendChild(link);
 
-console.log("[WebampRadio] JS module loading...");
+console.log("[WebampRadio] JS module loading... (Local Bundle Mode)");
 
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
@@ -29,7 +29,7 @@ function buildWebampWidget(node) {
     inner.style.height = "100%";
     inner.innerHTML = `<div style="color:#6b7280;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
         <div class="rp-spinner" style="margin-bottom:10px;">⌛</div>
-        <b>Loading Webamp...</b>
+        <b>Initializing Webamp...</b>
     </div>`;
     container.appendChild(inner);
 
@@ -38,22 +38,32 @@ function buildWebampWidget(node) {
     let polling = null;
     let isInitializing = false;
 
+    async function loadWebampLibrary() {
+        if (window.Webamp) return window.Webamp;
+
+        return new Promise((resolve, reject) => {
+            console.log("[WebampRadio] Loading local Webamp bundle...");
+            const script = document.createElement("script");
+            script.src = new URL("./webamp.bundle.js", import.meta.url).href;
+            script.onload = () => {
+                if (window.Webamp) {
+                    console.log("[WebampRadio] Local bundle loaded OK");
+                    resolve(window.Webamp);
+                } else {
+                    reject(new Error("Webamp bundle loaded but window.Webamp is missing"));
+                }
+            };
+            script.onerror = () => reject(new Error("Failed to load local webamp.bundle.js"));
+            document.head.appendChild(script);
+        });
+    }
+
     async function initWebamp(skinUrl) {
         if (webamp || isInitializing) return;
         isInitializing = true;
 
         try {
-            console.log("[WebampRadio] Dynamic loading Webamp library...");
-            // Try unpkg with module flag first
-            const m = await import("https://unpkg.com/webamp@2.9.3?module");
-
-            // Try different export locations
-            const WebampClass = m.default || m.Webamp || (window && window.Webamp);
-
-            if (!WebampClass) {
-                const keys = Object.keys(m);
-                throw new Error("Could not find Webamp constructor. Exports: " + keys.join(", "));
-            }
+            const WebampClass = await loadWebampLibrary();
 
             console.log("[WebampRadio] Initializing Webamp instance...");
             const options = {
@@ -82,7 +92,7 @@ function buildWebampWidget(node) {
             inner.innerHTML = `<div style="color:#ef4444;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
                 <b style="font-size:14px;margin-bottom:8px;">Webamp Error</b>
                 <div style="word-break:break-all;margin-bottom:8px;">${e.message}</div>
-                <div style="color:#999;">Check browser console for more details. Some extensions or firewalls may block unpkg.com.</div>
+                <div style="color:#999;">The local bundle might have failed to load or initialize.</div>
             </div>`;
         } finally {
             isInitializing = false;
