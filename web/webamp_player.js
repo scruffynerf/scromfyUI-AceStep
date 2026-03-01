@@ -32,18 +32,16 @@ function buildWebampWidget(node) {
     container.className = "webamp-node-container";
     container.id = `webamp-node-ui-${node.id}`;
 
-    // Lyrics Area (stays inside the node)
     const lyricsDiv = document.createElement("div");
     lyricsDiv.id = `webamp-lyrics-${node.id}`;
     lyricsDiv.className = "webamp-lyrics-display";
     lyricsDiv.style.minHeight = "120px";
     lyricsDiv.innerHTML = `<div class="webamp-loading-state">
-        <div class="rp-spinner">⌛</div>
+        <div class="rp-spinner">&#8987;</div>
         <b>Preparing Webamp...</b>
     </div>`;
     container.appendChild(lyricsDiv);
 
-    // Zero-size anchor for WebAmp floating windows
     const webampHost = document.createElement("div");
     webampHost.id = `webamp-host-${node.id}`;
     webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;";
@@ -54,6 +52,7 @@ function buildWebampWidget(node) {
     let trackByPath = new Map();
     let polling = null;
     let syncInterval = null;
+    let diagInterval = null;
     let isInitializing = false;
     let lastPathKey = null;
     let lastTime = -1;
@@ -90,43 +89,26 @@ function buildWebampWidget(node) {
         }
     }
 
-    // Called periodically to sync state from the webamp store
+    // Polls store every 333ms for time + track changes
     function syncState() {
         if (!webamp) return;
         try {
             const state = webamp.store.getState();
 
-            // --- Time sync ---
+            // Time sync
             const currentTime = state.media?.timeElapsed;
             if (currentTime !== undefined && Math.abs(currentTime - lastTime) > 0.05) {
                 lastTime = currentTime;
                 lrc.move(currentTime);
             }
 
-            // --- Track sync ---
-            const playlistState = state.playlist;
-            if (!playlistState) return;
+            // Track sync
+            // In WebAmp 2.x: state.tracks = { [id]: trackObj }
+            //                 state.playlist.currentTrack = numeric id (or null)
+            const currentTrackId = state.playlist?.currentTrack;
+            if (currentTrackId === null || currentTrackId === undefined) return;
 
-            // In WebAmp 2.x, tracks may be an array OR an object keyed by id
-            // currentTrack may be an index or an id string
-            const { tracks, currentTrack } = playlistState;
-            if (tracks === undefined || currentTrack === undefined || currentTrack === null) return;
-
-            let track = null;
-            if (Array.isArray(tracks)) {
-                track = tracks[currentTrack];
-            } else {
-                // Object map – try direct key lookup first, then iterate
-                track = tracks[currentTrack];
-                if (!track) {
-                    // currentTrack might be an order index – grab from `order` array
-                    const order = playlistState.trackOrder || playlistState.order;
-                    if (order && order[currentTrack] !== undefined) {
-                        track = tracks[order[currentTrack]];
-                    }
-                }
-            }
-
+            const track = state.tracks?.[currentTrackId];
             if (!track || !track.url) return;
 
             const pathKey = getPathParam(track.url);
@@ -139,13 +121,26 @@ function buildWebampWidget(node) {
             if (t) {
                 fetchLrc(t.lrc_url);
             } else {
-                console.warn("[WebampRadio] No trackMap entry for path key:", pathKey);
-                console.log("[WebampRadio] trackByPath keys:", [...trackByPath.keys()]);
-                lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>♪ ${trackLabel(track.metaData?.title || track.url)}</div>`;
+                console.warn("[WebampRadio] No match for path key:", pathKey);
+                console.log("[WebampRadio] trackByPath keys:", [...trackByPath.keys()].slice(0, 5));
+                lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>&#9834; ${trackLabel(track.defaultName || String(currentTrackId))}</div>`;
             }
-        } catch (e) {
-            // ignore transient errors
-        }
+        } catch (e) { }
+    }
+
+    // 15-second diagnostic dump
+    function diagnosticDump() {
+        if (!webamp) return;
+        try {
+            const state = webamp.store.getState();
+            const { currentTrack, trackOrder } = state.playlist || {};
+            const trackCount = Object.keys(state.tracks || {}).length;
+            console.log(`[WebampRadio] Diag — currentTrack: ${currentTrack}, trackOrder.length: ${trackOrder?.length}, tracks: ${trackCount}`);
+            if (currentTrack !== null && currentTrack !== undefined) {
+                const t = state.tracks?.[currentTrack];
+                console.log("[WebampRadio] Diag — playing URL:", t?.url);
+            }
+        } catch (e) { }
     }
 
     async function initWebamp(skinUrl) {
@@ -174,7 +169,7 @@ function buildWebampWidget(node) {
 
             webamp = new WebampClass(options);
 
-            // Dump state shape once after init for diagnostics
+            // One-time state dump after load
             setTimeout(() => {
                 if (!webamp) return;
                 const state = webamp.store.getState();
@@ -191,9 +186,10 @@ function buildWebampWidget(node) {
 
             await webamp.renderWhenReady(webampHost);
 
-            // Start polling the store – more reliable than subscribe for state diffs
             if (syncInterval) clearInterval(syncInterval);
+            if (diagInterval) clearInterval(diagInterval);
             syncInterval = setInterval(syncState, 333);
+            diagInterval = setInterval(diagnosticDump, 15000);
 
             lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready – play a track to see lyrics</div>";
 
@@ -250,7 +246,8 @@ function buildWebampWidget(node) {
     container._stop = function () {
         if (polling) clearInterval(polling);
         if (syncInterval) clearInterval(syncInterval);
-        polling = syncInterval = null;
+        if (diagInterval) clearInterval(diagInterval);
+        polling = syncInterval = diagInterval = null;
         if (webamp) {
             try { webamp.dispose(); } catch (e) { }
             webamp = null;
