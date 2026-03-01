@@ -1,6 +1,6 @@
 """AceStepGroqLyrics node for ACE-Step"""
 from groq import Groq
-from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
+from .includes.lyrics_utils import get_lyrics_messages, clean_markdown_formatting, load_api_key
 
 class AceStepGroqLyrics:
     """Generate lyrics using Groq API (fast inference)"""
@@ -56,12 +56,10 @@ class AceStepGroqLyrics:
         if not api_key:
             return ("[Groq] API key is missing. Please add it to keys/groq_api_key.txt",)
 
-        prompt = build_simple_prompt(style, seed, theme)
-
         try:
             client = Groq(api_key=api_key)
             chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
+                messages=get_lyrics_messages(style, seed, theme),
                 model=model,
                 temperature=0.9,
                 max_tokens=max_tokens,

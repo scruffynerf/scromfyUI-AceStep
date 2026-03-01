@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
+from .includes.lyrics_utils import get_lyrics_messages, clean_markdown_formatting, load_api_key
 
 class AceStepPerplexityLyrics:
     """Generate lyrics using Perplexity API"""
@@ -41,13 +41,13 @@ class AceStepPerplexityLyrics:
         api_key = load_api_key("perplexity")
         if not api_key:
             return ("[Perplexity] API key is missing. Please add it to keys/perplexity_api_key.txt",)
-
-        prompt = build_simple_prompt(style, seed, theme)
         
         url = "https://api.perplexity.ai/chat/completions"
+        
+
         payload = {
             "model": model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": get_lyrics_messages(style, seed, theme),
             "temperature": 0.9,
             "max_tokens": max_tokens,
             "top_p": 0.95,

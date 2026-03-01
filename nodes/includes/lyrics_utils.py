@@ -46,11 +46,17 @@ def load_system_prompt() -> str:
         return "You are a music lyricist. Generate lyrics in the requested style and theme."
 
 
+def get_lyrics_messages(style: str, seed: int, theme: str = "Love Song") -> list:
+    """Return a list of messages for OpenAI-compatible Chat APIs"""
+    return [
+        {"role": "system", "content": load_system_prompt()},
+        {"role": "user", "content": build_simple_prompt(style, seed, theme)}
+    ]
+
 def build_simple_prompt(style: str, seed: int, theme: str = "Love Song") -> str:
-    """Simple prompt for basic lyrics generation"""
+    """User-focused prompt for basic lyrics generation (no system instructions)"""
     base_style = style.strip() or "Generic song"
-    system_instructions = load_system_prompt()
-    return f"Style: {base_style}. Song Theme: {theme}. {system_instructions}"
+    return f"Style: {base_style}. Song Theme: {theme}. Seed: {seed}."
 
 
 def clean_markdown_formatting(text: str) -> str:

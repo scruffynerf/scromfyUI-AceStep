@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
+from .includes.lyrics_utils import load_system_prompt, build_simple_prompt, clean_markdown_formatting, load_api_key
 
 class AceStepGeminiLyrics:
     """Generate lyrics using Google Gemini API"""
@@ -47,11 +47,10 @@ class AceStepGeminiLyrics:
         if not api_key:
             return ("[Gemini] API key is missing. Please add it to keys/gemini_api_key.txt",)
 
-        prompt = build_simple_prompt(style, seed, theme)
-        
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
+            "contents": [{"parts": [{"text": build_simple_prompt(style, seed, theme)}]}],
+            "systemInstruction": {"parts": [{"text": load_system_prompt()}]},
             "generationConfig": {
                 "temperature": 0.9,
                 "top_p": 0.95,

@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from .includes.lyrics_utils import build_simple_prompt, clean_markdown_formatting, load_api_key
+from .includes.lyrics_utils import get_lyrics_messages, load_system_prompt, build_simple_prompt, clean_markdown_formatting, load_api_key
 
 class AceStepClaudeLyrics:
     """Generate lyrics using Anthropic Claude API"""
@@ -40,15 +40,15 @@ class AceStepClaudeLyrics:
         api_key = load_api_key("claude")
         if not api_key:
             return ("[Claude] API key is missing. Please add it to keys/claude_api_key.txt",)
-
-        prompt = build_simple_prompt(style, seed, theme)
         
         url = "https://api.anthropic.com/v1/messages"
+
         payload = {
             "model": model,
             "max_tokens": max_tokens,
             "temperature": 0.9,
-            "messages": [{"role": "user", "content": prompt}]
+            "system": load_system_prompt(),
+            "messages": [{"role": "user", "content": build_simple_prompt(style, seed, theme)}]
         }
         
         data = json.dumps(payload).encode("utf-8")
