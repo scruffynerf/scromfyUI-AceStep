@@ -12,76 +12,94 @@ document.head.appendChild(link);
 
 console.log("[WebampRadio] JS module loading...");
 
-// Lazy load WebAmp from CDN
-let WebampPromise = null;
-function getWebamp() {
-    if (!WebampPromise) {
-        WebampPromise = import("https://unpkg.com/webamp@2.9.3/built-bundle/main.js").then((m) => {
-            // Some versions export default, others attach to window
-            return m.default || window.Webamp;
-        });
-    }
-    return WebampPromise;
-}
-
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
 }
 
-async function buildWebampWidget(node) {
+function buildWebampWidget(node) {
     const container = document.createElement("div");
     container.className = "webamp-container";
-    container.id = `webamp-container-${node.id}`;
+    container.style.height = "400px";
+    container.style.width = "100%";
+    container.id = `webamp-container-${node.id || 'new'}`;
 
     const inner = document.createElement("div");
-    inner.id = `webamp-app-${node.id}`;
+    inner.id = `webamp-app-${node.id || 'new'}`;
+    inner.style.width = "100%";
+    inner.style.height = "100%";
+    inner.innerHTML = `<div style="color:#6b7280;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
+        <div class="rp-spinner" style="margin-bottom:10px;">⌛</div>
+        <b>Loading Webamp...</b>
+    </div>`;
     container.appendChild(inner);
 
     let webamp = null;
-    let allTracks = [];
     let knownPaths = new Set();
     let polling = null;
+    let isInitializing = false;
 
     async function initWebamp(skinUrl) {
-        const WebampClass = await getWebamp();
+        if (webamp || isInitializing) return;
+        isInitializing = true;
 
-        const options = {
-            initialTracks: [],
-            availableSkins: [
-                { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Winamp Classic" },
-                { url: "https://cdn.webamp.org/skins/Aqua_X.wsz", name: "Aqua X" },
-                { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
-            ]
-        };
+        try {
+            console.log("[WebampRadio] Dynamic loading Webamp library...");
+            // Try unpkg with module flag first
+            const m = await import("https://unpkg.com/webamp@2.9.3?module");
 
-        if (skinUrl && skinUrl.trim()) {
-            options.initialSkin = { url: skinUrl.trim() };
+            // Try different export locations
+            const WebampClass = m.default || m.Webamp || (window && window.Webamp);
+
+            if (!WebampClass) {
+                const keys = Object.keys(m);
+                throw new Error("Could not find Webamp constructor. Exports: " + keys.join(", "));
+            }
+
+            console.log("[WebampRadio] Initializing Webamp instance...");
+            const options = {
+                initialTracks: [],
+                availableSkins: [
+                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Winamp Classic" },
+                    { url: "https://cdn.webamp.org/skins/Aqua_X.wsz", name: "Aqua X" },
+                    { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
+                ],
+                zIndex: 1000
+            };
+
+            if (skinUrl && skinUrl.trim()) {
+                options.initialSkin = { url: skinUrl.trim() };
+            }
+
+            webamp = new WebampClass(options);
+
+            // Render into our container
+            console.log("[WebampRadio] Rendering Webamp to DOM...");
+            await webamp.renderWhenReady(inner);
+            console.log("[WebampRadio] Webamp rendered successfully");
+
+        } catch (e) {
+            console.error("[WebampRadio] Initialization failed:", e);
+            inner.innerHTML = `<div style="color:#ef4444;padding:20px;font-family:sans-serif;font-size:12px;display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;">
+                <b style="font-size:14px;margin-bottom:8px;">Webamp Error</b>
+                <div style="word-break:break-all;margin-bottom:8px;">${e.message}</div>
+                <div style="color:#999;">Check browser console for more details. Some extensions or firewalls may block unpkg.com.</div>
+            </div>`;
+        } finally {
+            isInitializing = false;
         }
-
-        webamp = new WebampClass(options);
-
-        // Render into our container
-        await webamp.renderWhenReady(inner);
-
-        // We can also subscribe to events if needed
     }
 
     async function scanFolder(folder) {
-        if (!folder || !folder.trim()) return;
+        if (!folder || !folder.trim() || !webamp) return;
         try {
             const res = await fetch(`/radio_player/scan?folder=${encodeURIComponent(folder.trim())}`);
             const data = await res.json();
-            if (data.error) {
-                console.error("[WebampRadio] Scan error:", data.error);
-                return;
-            }
+            if (data.error) return;
 
             const newWebampTracks = [];
             for (const t of data.tracks) {
                 if (!knownPaths.has(t.path)) {
                     knownPaths.add(t.path);
-                    allTracks.push(t);
-
                     newWebampTracks.push({
                         url: t.url,
                         metaData: {
@@ -92,10 +110,9 @@ async function buildWebampWidget(node) {
                 }
             }
 
-            if (newWebampTracks.length > 0 && webamp) {
+            if (newWebampTracks.length > 0) {
+                console.log(`[WebampRadio] Appending ${newWebampTracks.length} tracks`);
                 webamp.appendTracks(newWebampTracks);
-                // If it was empty/idle, maybe trigger play?
-                // WebAmp usually handles this well.
             }
         } catch (e) {
             console.error("[WebampRadio] Fetch error:", e);
@@ -103,15 +120,13 @@ async function buildWebampWidget(node) {
     }
 
     container._startPolling = function (folder, skinUrl, intervalMs) {
-        if (!webamp) {
+        if (!webamp && !isInitializing) {
             initWebamp(skinUrl).then(() => {
                 scanFolder(folder);
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
             });
-        } else {
-            // If folder changed, we might want to clear state? 
-            // For now, let's just keep adding.
+        } else if (webamp) {
             scanFolder(folder);
             if (polling) clearInterval(polling);
             polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
@@ -122,8 +137,9 @@ async function buildWebampWidget(node) {
         if (polling) clearInterval(polling);
         polling = null;
         if (webamp) {
-            webamp.dispose();
+            try { webamp.dispose(); } catch (e) { }
             webamp = null;
+            inner.innerHTML = `<div style="color:#999;text-align:center;padding:20px;">Ready (Stopped)</div>`;
         }
     };
 
@@ -132,23 +148,21 @@ async function buildWebampWidget(node) {
 
 app.registerExtension({
     name: "AceStep.WebampRadio",
-    async nodeCreated(node) {
+    nodeCreated(node) {
         if (node.comfyClass !== "AceStepWebAmpRadio") return;
 
-        const root = await buildWebampWidget(node);
+        const root = buildWebampWidget(node);
 
-        // Add custom widget
         const domWidget = node.addDOMWidget("webamp_ui", "WEBAMP_PLAYER_UI", root, {
             getValue() { return ""; },
             setValue() { },
         });
         domWidget.serialize = false;
 
-        // Wait a bit for other widgets to init
         setTimeout(() => {
-            const folderW = node.widgets.find(w => w.name === "folder");
-            const skinW = node.widgets.find(w => w.name === "skin_url");
-            const intervalW = node.widgets.find(w => w.name === "poll_interval_seconds");
+            const folderW = node.widgets?.find(w => w.name === "folder");
+            const skinW = node.widgets?.find(w => w.name === "skin_url");
+            const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
 
             function restartPolling() {
                 root._startPolling(
@@ -160,7 +174,7 @@ app.registerExtension({
 
             if (folderW) {
                 const orig = folderW.callback;
-                folderW.callback = function (v) {
+                folderW.callback = function () {
                     if (orig) orig.apply(this, arguments);
                     restartPolling();
                 };
@@ -168,17 +182,15 @@ app.registerExtension({
 
             if (skinW) {
                 const orig = skinW.callback;
-                skinW.callback = function (v) {
+                skinW.callback = function () {
                     if (orig) orig.apply(this, arguments);
-                    // If skin changes, we might need to recreate webamp or use webamp.setSkinFromUrl
-                    // For now, let's just restart
                     root._stop();
                     restartPolling();
                 };
             }
 
             restartPolling();
-        }, 200);
+        }, 300);
 
         const origOnRemoved = node.onRemoved;
         node.onRemoved = function () {
