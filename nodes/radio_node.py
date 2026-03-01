@@ -9,23 +9,32 @@ from server import PromptServer
 
 routes = PromptServer.instance.routes
 
-# Extension name as served by ComfyUI
-_EXT_NAME = "ScromfyRadioPlayer"
-_SKINS_DIR = Path(__file__).parent.parent / "web" / "webamp_skins"
+# Skins directory (relative to this file)
+_SKINS_DIR = Path(__file__).parent.parent / "webamp_skins"
 
 
 @routes.get("/webamp_skins/list")
 async def list_webamp_skins(request: web.Request) -> web.Response:
-    """Return available .wsz skins from the web/webamp_skins directory."""
+    """Return available .wsz skins from web/webamp_skins/."""
     _SKINS_DIR.mkdir(exist_ok=True)
     skins = []
     for p in sorted(_SKINS_DIR.glob("*.wsz")):
         skins.append({
             "name": p.stem.replace("_", " "),
-            "url": f"/extensions/{_EXT_NAME}/webamp_skins/{p.name}",
+            "url": f"/webamp_skins/{p.name}",   # served by route below
             "filename": p.name,
         })
     return web.json_response({"skins": skins})
+
+
+@routes.get("/webamp_skins/{filename}")
+async def serve_webamp_skin(request: web.Request) -> web.Response:
+    """Serve a .wsz skin file from web/webamp_skins/."""
+    filename = request.match_info["filename"]
+    skin_path = _SKINS_DIR / filename
+    if not skin_path.is_file() or skin_path.suffix.lower() != ".wsz":
+        return web.Response(status=404, text=f"Skin not found: {filename}")
+    return web.FileResponse(skin_path, headers={"Content-Type": "application/octet-stream"})
 
 
 @routes.get("/radio_player/scan")
