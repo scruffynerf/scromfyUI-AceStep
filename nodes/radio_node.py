@@ -9,6 +9,24 @@ from server import PromptServer
 
 routes = PromptServer.instance.routes
 
+# Extension name as served by ComfyUI
+_EXT_NAME = "ScromfyRadioPlayer"
+_SKINS_DIR = Path(__file__).parent.parent / "web" / "webamp_skins"
+
+
+@routes.get("/webamp_skins/list")
+async def list_webamp_skins(request: web.Request) -> web.Response:
+    """Return available .wsz skins from the web/webamp_skins directory."""
+    _SKINS_DIR.mkdir(exist_ok=True)
+    skins = []
+    for p in sorted(_SKINS_DIR.glob("*.wsz")):
+        skins.append({
+            "name": p.stem.replace("_", " "),
+            "url": f"/extensions/{_EXT_NAME}/webamp_skins/{p.name}",
+            "filename": p.name,
+        })
+    return web.json_response({"skins": skins})
+
 
 @routes.get("/radio_player/scan")
 async def scan_folder(request: web.Request) -> web.Response:

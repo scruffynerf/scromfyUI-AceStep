@@ -33,6 +33,19 @@ function applyFontSize(lyricsDiv, fontSize) {
     lyricsDiv.style.setProperty("--lyric-active-font-size", activePx);
 }
 
+// Fetch available skins from the server scan endpoint
+async function fetchAvailableSkins() {
+    try {
+        const res = await fetch("/webamp_skins/list");
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.skins || [];
+    } catch (e) {
+        console.warn("[WebampRadio] Could not fetch skin list:", e);
+        return [];
+    }
+}
+
 function buildWebampWidget(node) {
     const container = document.createElement("div");
     container.className = "webamp-node-container";
@@ -48,9 +61,7 @@ function buildWebampWidget(node) {
     </div>`;
     container.appendChild(lyricsDiv);
 
-    // Zero-size anchor div placed INSIDE the node container.
-    // WebAmp renders its floating windows relative to the viewport regardless,
-    // but this anchors its DOM element so it doesn't pollute the body.
+    // Zero-size anchor div placed INSIDE the node container
     const webampHost = document.createElement("div");
     webampHost.id = `webamp-host-${node.id}`;
     webampHost.style.cssText = "position:absolute;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;";
@@ -127,7 +138,7 @@ function buildWebampWidget(node) {
         if (!webamp) return;
         try {
             const state = webamp.store.getState();
-            const { currentTrack, trackOrder } = state.playlist || {};
+            const { currentTrack } = state.playlist || {};
             console.log(`[WebampRadio] Diag — currentTrack: ${currentTrack}, tracks: ${Object.keys(state.tracks || {}).length}`);
             if (currentTrack !== null && currentTrack !== undefined) {
                 console.log("[WebampRadio] Diag — playing URL:", state.tracks?.[currentTrack]?.url);
@@ -135,7 +146,7 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    async function initWebamp(skinUrl, artistName, fontSize) {
+    async function initWebamp(skinFilename, skinUrl, artistName, fontSize) {
         if (webamp || isInitializing) return;
         isInitializing = true;
         currentArtistName = artistName || "Ace-Step AI";
@@ -143,18 +154,29 @@ function buildWebampWidget(node) {
         try {
             const WebampClass = await loadWebampLibrary();
 
+            // Fetch skins from the server
+            const localSkins = await fetchAvailableSkins();
+
+            // Build availableSkins list: local skins + hardcoded fallbacks
+            const availableSkins = [
+                ...localSkins.map(s => ({ url: s.url, name: s.name })),
+                { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp 2.91" },
+                { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" },
+                { url: "https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz", name: "Windows Classic (Archive.org)" }
+            ];
+
+            // Resolve active skin URL:
+            // skin_url (custom) > skin (dropdown filename) > (none)
+            let activeSkinUrl = skinUrl?.trim() || "";
+            if (!activeSkinUrl && skinFilename && skinFilename !== "(none)") {
+                const match = localSkins.find(s => s.filename === skinFilename);
+                if (match) activeSkinUrl = match.url;
+            }
+
             const options = {
                 initialTracks: [],
-                availableSkins: [
-                    {
-                        url: "https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz",
-                        name: "Windows Classic"
-                    },
-                    { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp 2.91" },
-                    { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
-                ],
+                availableSkins,
                 zIndex: 100,
-                // Open windows with 150px top buffer so they can't hide behind browser tabs
                 __initialWindowLayout: {
                     main: { position: { x: 20, y: 150 } },
                     equalizer: { position: { x: 20, y: 266 } },
@@ -167,8 +189,8 @@ function buildWebampWidget(node) {
                 }
             };
 
-            if (skinUrl && skinUrl.trim()) {
-                options.initialSkin = { url: skinUrl.trim() };
+            if (activeSkinUrl) {
+                options.initialSkin = { url: activeSkinUrl };
             }
 
             webamp = new WebampClass(options);
@@ -180,7 +202,6 @@ function buildWebampWidget(node) {
                 }
             });
 
-            // Render into the in-node host div — NOT document.body
             await webamp.renderWhenReady(webampHost);
 
             if (syncInterval) clearInterval(syncInterval);
@@ -224,11 +245,11 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    container._startPolling = function (folder, skinUrl, artistName, fontSize, intervalMs) {
+    container._startPolling = function (folder, skinFilename, skinUrl, artistName, fontSize, intervalMs) {
         currentArtistName = artistName || "Ace-Step AI";
         applyFontSize(lyricsDiv, fontSize || 13);
         if (!webamp && !isInitializing) {
-            initWebamp(skinUrl, artistName, fontSize).then(() => {
+            initWebamp(skinFilename, skinUrl, artistName, fontSize).then(() => {
                 scanFolder(folder);
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
@@ -263,7 +284,8 @@ app.registerExtension({
 
         setTimeout(() => {
             const folderW = node.widgets?.find(w => w.name === "folder");
-            const skinW = node.widgets?.find(w => w.name === "skin_url");
+            const skinW = node.widgets?.find(w => w.name === "skin");           // COMBO dropdown
+            const skinUrlW = node.widgets?.find(w => w.name === "skin_url");       // custom URL override
             const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
             const artistW = node.widgets?.find(w => w.name === "artist_name");
             const fontW = node.widgets?.find(w => w.name === "lyrics_font_size");
@@ -271,13 +293,15 @@ app.registerExtension({
             function restartPolling() {
                 root._startPolling(
                     folderW?.value || "audio",
-                    skinW?.value || "",
+                    skinW?.value || "(none)",
+                    skinUrlW?.value || "",
                     artistW?.value || "Ace-Step AI",
                     fontW?.value || 13,
                     (intervalW?.value || 30) * 1000
                 );
             }
 
+            // Font size updates live without restart
             if (fontW) {
                 const o = fontW.callback;
                 fontW.callback = function () {
@@ -286,8 +310,11 @@ app.registerExtension({
                     if (ld) applyFontSize(ld, fontW.value || 13);
                 };
             }
-            if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
+
+            // Skin changes require a restart
             if (skinW) { const o = skinW.callback; skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            if (skinUrlW) { const o = skinUrlW.callback; skinUrlW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
             if (artistW) { const o = artistW.callback; artistW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
 
             restartPolling();
