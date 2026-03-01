@@ -99,6 +99,8 @@ API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 
 44. **Faster Whisper Loader** (`faster_whisper_node.py`): Load Systran's optimized Whisper models. Supports CPU/GPU and precision settings.
 45. **Faster Whisper Transcribe** (`faster_whisper_node.py`): High-speed transcription with VAD and word-timestamps (AUDIO-only input, auto-resampled to 16kHz).
+    *   **Advanced Options**: Full support for `log_prob_threshold`, `temperature`, `patience`, `hotwords`, and many others.
+    *   **User Friendly**: Replaced legacy `-999` placeholders with clean `0` defaults for optional numeric parameters.
 46. **Save Subtitle/Lyrics** (`faster_whisper_node.py`): Specialized saver that matches filenames with your audio saves.
     *   **Logic**: Takes the `filepath` from a Scromfy Save Audio node and appends the chosen extension (`.srt`, `.vtt`, `.lrc`).
 
