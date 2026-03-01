@@ -5,13 +5,14 @@
 import { app } from "../../scripts/app.js";
 import Lyricer from "./lyricer.js";
 
+// VERSION MARKER FOR CACHE CHECK
+console.log("[WebampRadio] === SCRIPT LOADED: VERSION 10 (RESOLVED TYPE FIX) ===");
+
 // Load CSS
 const link = document.createElement("link");
 link.rel = "stylesheet";
 link.href = new URL("./webamp_player.css", import.meta.url).href;
 document.head.appendChild(link);
-
-console.log("[WebampRadio] JS module loading...");
 
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
@@ -165,6 +166,8 @@ function buildWebampWidget(node) {
         isInitializing = true;
         currentArtistName = artistName || "Ace-Step";
 
+        console.log("[WebampRadio] Starting initWebamp...");
+
         try {
             const WebampClass = await loadWebampLibrary();
 
@@ -187,47 +190,37 @@ function buildWebampWidget(node) {
                 if (match) activeSkinUrl = match.url;
             }
 
-            // Function to fetch and format presets for WebAmp's internal normalizePresetTypes
-            async function getLocalPresets() {
-                if (localViz.length === 0) return [];
-                console.log(`[WebampRadio] Fetching bundle for ${localViz.length} local presets...`);
-                try {
-                    const r = await fetch("/webamp_visualizers/bundle");
-                    if (r.ok) {
-                        const bundle = await r.json();
-                        // IMPORTANT: WebAmp 2.2.0 expects an ARRAY of objects with 'name' and 'butterchurnPresetObject'
-                        const presetsArray = Object.entries(bundle).map(([name, preset]) => ({
-                            name,
-                            butterchurnPresetObject: preset
-                        }));
-                        console.log(`[WebampRadio] Formatted ${presetsArray.length} presets for WebAmp.`);
-                        return presetsArray;
-                    }
-                } catch (e) {
-                    console.error("[WebampRadio] Failed to load visualizer bundle:", e);
-                }
-                return [];
-            }
-
             const butterchurnOpts = {
                 importButterchurn: async () => {
-                    console.log("[WebampRadio] Loading requested Butterchurn engine...");
+                    console.log("[WebampRadio] Hook (importButterchurn) triggered.");
                     try {
-                        // Try the local v3 beta first
+                        // Use the local v3 beta engine
                         await import("./butterchurn.v3.js");
                         if (window.butterchurn) {
-                            console.log("[WebampRadio] Using local Butterchurn v3 beta.");
+                            console.log("[WebampRadio] Successfully loaded local Butterchurn v3 beta.");
                             return window.butterchurn;
                         }
-                    } catch (e) {
-                        console.warn("[WebampRadio] Local v3 failed, falling back to CDN v2.");
-                    }
+                    } catch (e) { console.warn("[WebampRadio] Local v3 failed:", e); }
                     return import("https://unpkg.com/butterchurn@^2?module");
                 },
-                getPresets: getLocalPresets,
-                importPresets: async () => {
-                    const presets = await getLocalPresets();
-                    return { getPresets: () => presets };
+                getPresets: async () => {
+                    console.log("[WebampRadio] Hook (getPresets) triggered.");
+                    if (localViz.length > 0) {
+                        try {
+                            const r = await fetch("/webamp_visualizers/bundle");
+                            if (r.ok) {
+                                const bundle = await r.json();
+                                const presets = Object.entries(bundle).map(([name, preset]) => ({
+                                    type: "RESOLVED",
+                                    name,
+                                    preset: preset
+                                }));
+                                console.log(`[WebampRadio] Hook: providing ${presets.length} resolved presets.`);
+                                return presets;
+                            }
+                        } catch (e) { console.error("[WebampRadio] Hook fetch failed:", e); }
+                    }
+                    return [];
                 }
             };
 
@@ -241,9 +234,8 @@ function buildWebampWidget(node) {
                     playlist: { position: { x: 100, y: 382 } },
                     milkdrop: { position: { x: 375, y: 150 } }
                 },
-                // Apply to both common keys for maximum compatibility
                 __butterchurnOptions: butterchurnOpts,
-                butterchurnOptions: butterchurnOpts
+                butterchurnOptions: butterchurnOpts // compatibility
             };
 
             if (activeSkinUrl) {
@@ -251,6 +243,32 @@ function buildWebampWidget(node) {
             }
 
             webamp = new WebampClass(options);
+
+            // Plan D: Extreme manual dispatch
+            async function forceLoadPresets() {
+                if (!webamp || localViz.length === 0) return;
+                console.log("[WebampRadio] Plan D: Forcing GOT_BUTTERCHURN_PRESETS into store...");
+                try {
+                    const r = await fetch("/webamp_visualizers/bundle");
+                    if (r.ok) {
+                        const bundle = await r.json();
+                        const presetsArray = Object.entries(bundle).map(([name, preset]) => ({
+                            type: "RESOLVED",
+                            name,
+                            preset: preset
+                        }));
+                        console.log(`[WebampRadio] Plan D: Dispatching ${presetsArray.length} resolved presets.`);
+
+                        // This matches the format verified in webamp.lazy-bundle.js
+                        webamp.store.dispatch({
+                            type: "GOT_BUTTERCHURN_PRESETS",
+                            presets: presetsArray
+                        });
+                    }
+                } catch (e) {
+                    console.error("[WebampRadio] Plan D failed:", e);
+                }
+            }
 
             // Force window positions after render
             async function clampWindowPositions() {
@@ -278,6 +296,9 @@ function buildWebampWidget(node) {
                     }
 
                     console.log("[WebampRadio] Windows clamped & Milkdrop checked");
+
+                    // Trigger Plan D after a short wait
+                    setTimeout(forceLoadPresets, 2500);
                 } catch (err) {
                     console.warn("[WebampRadio] Failed to clamp window positions:", err);
                 }
