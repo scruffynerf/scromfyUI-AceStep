@@ -11,10 +11,23 @@ link.rel = "stylesheet";
 link.href = new URL("./webamp_player.css", import.meta.url).href;
 document.head.appendChild(link);
 
-console.log("[WebampRadio] JS module loading... (Butterchurn + LRC Sync)");
+console.log("[WebampRadio] JS module loading...");
 
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
+}
+
+// Extract the `path` query param from a URL like:
+//   http://localhost:8188/radio_player/audio?path=./output/audio/foo.flac
+// Returns just the `path` value which is stable across relative vs absolute URL forms
+function getPathParam(url) {
+    try {
+        // Both relative and absolute URLs work here
+        const u = new URL(url, window.location.href);
+        return u.searchParams.get("path") || url;
+    } catch {
+        return url;
+    }
 }
 
 function buildWebampWidget(node) {
@@ -22,17 +35,18 @@ function buildWebampWidget(node) {
     container.className = "webamp-node-container";
     container.id = `webamp-node-ui-${node.id}`;
 
-    // Lyrics Area (Stays inside the node)
+    // Lyrics Area (stays inside the node)
     const lyricsDiv = document.createElement("div");
     lyricsDiv.id = `webamp-lyrics-${node.id}`;
     lyricsDiv.className = "webamp-lyrics-display";
+    lyricsDiv.style.minHeight = "120px";
     lyricsDiv.innerHTML = `<div class="webamp-loading-state">
         <div class="rp-spinner">⌛</div>
         <b>Preparing Webamp...</b>
     </div>`;
     container.appendChild(lyricsDiv);
 
-    // Hidden container for WebAmp's windows (so they float but are tracked by the node)
+    // Zero-size container for WebAmp floating windows
     const webampHost = document.createElement("div");
     webampHost.id = `webamp-host-${node.id}`;
     webampHost.style.position = "absolute";
@@ -40,56 +54,51 @@ function buildWebampWidget(node) {
     webampHost.style.left = "0";
     webampHost.style.width = "0";
     webampHost.style.height = "0";
-    // NOTE: We don't want to hide it (display:none) because WebAmp needs to measure things
     container.appendChild(webampHost);
 
     let webamp = null;
     let knownPaths = new Set();
-    let trackMap = new Map();
+    // Key: `path` param from the audio URL (stable reference)
+    let trackByPath = new Map();
     let polling = null;
     let isInitializing = false;
-    let lastTrackUrl = null;
+    let lastPathKey = null;
     let lastTime = -1;
 
-    // Initialize Lyricer
     const lrc = new Lyricer({ "divID": lyricsDiv.id, "showLines": 3 });
 
     async function loadWebampLibrary() {
-        console.log("[WebampRadio] Loading local Butterchurn bundle...");
         try {
             const m = await import("./webamp.butterchurn.mjs");
-            const WebampClass = m.default || m.Webamp;
-            if (WebampClass) return WebampClass;
+            const W = m.default || m.Webamp;
+            if (W) return W;
         } catch (e) {
-            console.warn("[WebampRadio] Local mjs import failed, trying CDN fallback...");
+            console.warn("[WebampRadio] Local bundle failed, trying CDN...");
         }
-
         try {
             const m = await import("https://cdn.jsdelivr.net/npm/webamp@2.2.0/built/webamp.butterchurn-bundle.min.mjs");
             return m.default || m.Webamp;
         } catch (e) {
-            console.error("[WebampRadio] CDN fallback failed:", e);
+            throw new Error("Could not load Webamp: " + e.message);
         }
-
-        throw new Error("Could not load Webamp library bundle.");
     }
 
-    async function fetchLrc(url) {
-        if (!url) {
-            lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>No lyrics for this track</div>";
+    async function fetchLrc(lrcUrl) {
+        if (!lrcUrl) {
+            lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>No lyrics available</div>";
             return;
         }
         try {
-            const res = await fetch(url);
+            const res = await fetch(lrcUrl);
             if (res.ok) {
                 const text = await res.text();
                 lrc.setLrc(text);
-                console.log("[WebampRadio] Lyrics loaded for", url);
+                console.log("[WebampRadio] Lyrics loaded OK");
             } else {
-                lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>Lyrics not found</div>";
+                lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>No lyrics found</div>";
             }
         } catch (e) {
-            console.error("[WebampRadio] LRC fetch error:", e);
+            lyricsDiv.innerHTML = "<div class='webamp-no-lyrics'>Error loading lyrics</div>";
         }
     }
 
@@ -103,11 +112,9 @@ function buildWebampWidget(node) {
             const options = {
                 initialTracks: [],
                 availableSkins: [
-                    { url: "https://archive.org/cors/winampskin_mac_os_x_1_5-aqua/mac_os_x_1_5-aqua.wsz", name: "Mac OS X Aqua" },
                     { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp" },
                     { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
                 ],
-                // Reduced zIndex to prevent complete takeover
                 zIndex: 10,
                 __butterchurnOptions: {
                     importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
@@ -121,54 +128,53 @@ function buildWebampWidget(node) {
 
             webamp = new WebampClass(options);
 
-            // Version 2.2.0 store subscription
             webamp.store.subscribe(() => {
                 const state = webamp.store.getState();
 
-                // 1. Sync Time
+                // --- Time sync ---
                 const currentTime = state.media?.timeElapsed;
-                if (currentTime !== undefined && Math.abs(currentTime - lastTime) > 0.1) {
+                if (currentTime !== undefined && Math.abs(currentTime - lastTime) > 0.05) {
                     lastTime = currentTime;
                     lrc.move(currentTime);
                 }
 
-                // 2. Sync Track
+                // --- Track sync (using stable path key) ---
                 const tracks = state.playlist?.tracks;
                 const currentIdx = state.playlist?.currentTrack;
+
                 if (tracks && currentIdx !== null && currentIdx !== undefined) {
                     const track = tracks[currentIdx];
-                    if (track && track.url !== lastTrackUrl) {
-                        lastTrackUrl = track.url;
-                        console.log("[WebampRadio] Track sync:", track.url);
-                        const t = trackMap.get(track.url);
-                        if (t) fetchLrc(t.lrc_url);
-                        else lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>Playing: ${trackLabel(track.metaData.title || t?.filename || "Unknown")}</div>`;
+                    if (track) {
+                        // Normalize: extract path param, which is stable
+                        const pathKey = getPathParam(track.url);
+                        if (pathKey !== lastPathKey) {
+                            lastPathKey = pathKey;
+                            console.log("[WebampRadio] Track changed, path key:", pathKey);
+
+                            const t = trackByPath.get(pathKey);
+                            if (t) {
+                                fetchLrc(t.lrc_url);
+                            } else {
+                                console.warn("[WebampRadio] Track not in map. Path key:", pathKey, "| Map keys:", [...trackByPath.keys()].slice(0, 3));
+                                lyricsDiv.innerHTML = `<div class='webamp-idle-msg'>♪ ${trackLabel(track.metaData.title || "Unknown")}</div>`;
+                            }
+                        }
                     }
                 }
             });
 
-            // Handle click-to-seek
             window.addEventListener('lyricerclick', function (e) {
                 const target = e.target.closest(`#${lyricsDiv.id}`);
                 if (target && e.detail.time >= 0 && webamp) {
-                    try {
-                        webamp.seekToTime(e.detail.time);
-                    } catch (err) {
-                        webamp.store.dispatch({ type: "SEEK_TO_TIME", time: e.detail.time });
-                    }
+                    try { webamp.seekToTime(e.detail.time); } catch (err) { }
                 }
             });
 
-            // Render into our hidden host div
-            console.log("[WebampRadio] Rendering Webamp to host div...");
             await webamp.renderWhenReady(webampHost);
-
-            lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready. Metadata and lyrics will sync here.</div>";
-            console.log("[WebampRadio] Webamp initialized successfully.");
+            lyricsDiv.innerHTML = "<div class='webamp-idle-msg'>Ready – play a track to see lyrics</div>";
 
         } catch (e) {
-            console.error("[WebampRadio] Init failed:", e);
-            lyricsDiv.innerHTML = `<div class='webamp-error'>${e.message}<br><small>See console for more.</small></div>`;
+            lyricsDiv.innerHTML = `<div class='webamp-error'>${e.message}</div>`;
         } finally {
             isInitializing = false;
         }
@@ -185,21 +191,22 @@ function buildWebampWidget(node) {
             for (const t of data.tracks) {
                 if (!knownPaths.has(t.path)) {
                     knownPaths.add(t.path);
-                    trackMap.set(t.url, t);
+                    // Key by the same `path` param we'll extract from WebAmp's store URL
+                    const pathKey = getPathParam(t.url);
+                    trackByPath.set(pathKey, t);
+
                     newTracks.push({
                         url: t.url,
                         metaData: { title: trackLabel(t.filename), artist: "Ace-Step AI" }
                     });
                 } else {
-                    const existing = trackMap.get(t.url);
+                    const pathKey = getPathParam(t.url);
+                    const existing = trackByPath.get(pathKey);
                     if (existing) existing.lrc_url = t.lrc_url;
                 }
             }
 
-            if (newTracks.length > 0) {
-                console.log(`[WebampRadio] Adding ${newTracks.length} tracks`);
-                webamp.appendTracks(newTracks);
-            }
+            if (newTracks.length > 0) webamp.appendTracks(newTracks);
         } catch (e) { }
     }
 
@@ -210,7 +217,7 @@ function buildWebampWidget(node) {
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
             });
-        } else if (webamp) {
+        } else {
             scanFolder(folder);
             if (polling) clearInterval(polling);
             polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
