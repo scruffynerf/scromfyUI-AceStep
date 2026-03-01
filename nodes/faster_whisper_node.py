@@ -60,7 +60,7 @@ class AceStepFasterWhisperTranscription:
                 "task": (["transcribe", "translate"],),
                 "beam_size": ("INT", {"default": 5, "min": 1, "max": 20}),
                 "best_of": ("INT", {"default": 5, "min": 1, "max": 20}),
-                "patience": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.1}),
+                "patience": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 10.0, "step": 0.1}),
                 "temperature": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.1}),
                 "condition_on_previous_text": ("BOOLEAN", {"default": True}),
                 "initial_prompt": ("STRING", {"default": ""}),
