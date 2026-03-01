@@ -94,6 +94,7 @@ API keys stored in `keys/*.txt` — see [keys/README.md](../keys/README.md).
 44. **AceStep5HzLMConfig** (`llm_config_node.py`): LLM parameter configuration.
 
 45. **RadioPlayer** (`radio_node.py`): In-UI audio player that scans an output folder and plays tracks with polling. Frontend in `web/radio_player.js`.
+46. **AceStepWebAmpRadio** (`webamp_node.py`): Classic Winamp 2.9 style in-UI player. Supports folder scanning, skins (`.wsz`), and classic Winamp features like the equalizer and playlist. Frontend in `web/webamp_player.js`.
 
 ## Transcription (Scromfy/Ace-Step/Whisper)
 
@@ -169,3 +170,4 @@ These are deprecated and will be removed in a future version.
 ## Frontend Extensions (web/)
 
 - **radio_player.js**: ComfyUI widget for the RadioPlayer node — in-browser audio player with queue, polling, and transport controls.
+- **webamp_player.js**: ComfyUI widget for the WebAmpRadio node — classic Winamp interface with playlist, skins, and visualization support.

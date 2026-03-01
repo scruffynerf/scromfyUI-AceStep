@@ -1,0 +1,17 @@
+/* WebAmp UI Container */
+.webamp-container {
+    width: 100%;
+    height: 400px;
+    /* Space for Main + Playlist + Equalizer */
+    background: #000;
+    border-radius: 8px;
+    border: 1px solid #333;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Ensure WebAmp's windows don't escape the node's bounds easily if we can help it */
+#webamp-app {
+    width: 100%;
+    height: 100%;
+}

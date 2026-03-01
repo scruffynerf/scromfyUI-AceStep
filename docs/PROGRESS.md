@@ -83,6 +83,7 @@ All nodes are implemented and refactored. **60 node files** — 45 active, 15 ob
 
 #### Radio & Lyrics Sync
 - [x] `RadioPlayer` — `radio_node.py` + `web/radio_player.js`
+- [x] `AceStepWebAmpRadio` — `webamp_node.py` + `web/webamp_player.js`
 - [x] `Lyricer` Integration — `web/lyricer.js` + `web/radio_player.css`
 
 #### Transcription (Whisper)
@@ -141,7 +142,9 @@ scromfyUI-AceStep/
 ├── web/
 │   ├── lyricer.js        # Sync engine for lyrics
 │   ├── radio_player.css  # Radio UI styling
-│   └── radio_player.js   # RadioPlayer frontend widget
+│   ├── radio_player.js   # RadioPlayer frontend widget
+│   ├── webamp_player.css # WebAmp UI styling
+│   └── webamp_player.js  # WebAmpRadio frontend widget
 ├── keys/
 │   └── README.md         # API key setup instructions
 ├── AIinstructions/
