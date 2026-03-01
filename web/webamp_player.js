@@ -91,7 +91,6 @@ function buildWebampWidget(node) {
     let lastTime = -1;
     let currentArtistName = "Ace-Step";
     let cachedLocalSkins = [];
-    let cachedLocalViz = [];
 
     const lrc = new Lyricer({ "divID": lyricsDiv.id, "showLines": 3 });
 
@@ -161,7 +160,7 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    async function initWebamp(skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize) {
+    async function initWebamp(skinFilename, skinUrl, artistName, fontSize) {
         if (webamp || isInitializing) return;
         isInitializing = true;
         currentArtistName = artistName || "Ace-Step";
@@ -175,12 +174,10 @@ function buildWebampWidget(node) {
                 fetchAvailableVisualizers()
             ]);
             cachedLocalSkins = localSkins;
-            cachedLocalViz = localViz;
 
             // Build availableSkins list
             const availableSkins = [
-                ...localSkins.map(s => ({ url: s.url, name: s.name })),
-                { url: "https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz", name: "Windows Classic (Archive.org)" }
+                ...localSkins.map(s => ({ url: s.url, name: s.name }))
             ];
 
             // Resolve active skin URL
@@ -188,13 +185,6 @@ function buildWebampWidget(node) {
             if (!activeSkinUrl && skinFilename && skinFilename !== "(none)") {
                 const match = localSkins.find(s => s.filename === skinFilename);
                 if (match) activeSkinUrl = match.url;
-            }
-
-            // Resolve active visualizer URL
-            let activeVizUrl = vizUrl?.trim() || "";
-            if (!activeVizUrl && vizFilename && vizFilename !== "(default)") {
-                const match = localViz.find(v => v.filename === vizFilename);
-                if (match) activeVizUrl = match.url;
             }
 
             const options = {
@@ -213,20 +203,24 @@ function buildWebampWidget(node) {
                 }
             };
 
-            // If a specific visualizer is requested, we use requireButterchurnPresets to load it
-            if (activeVizUrl) {
+            // Simplified Viz loading:
+            // If local directory has files, load ONLY those. 
+            // Otherwise, let Webamp fall back to default presets.
+            if (localViz.length > 0) {
+                console.log(`[WebampRadio] Loading ${localViz.length} local visualizers...`);
                 options.__butterchurnOptions.requireButterchurnPresets = async () => {
-                    try {
-                        const res = await fetch(activeVizUrl);
-                        if (!res.ok) throw new Error(`Failed to fetch visualizer: ${activeVizUrl}`);
-                        const presetData = await res.json();
-                        const name = vizFilename && vizFilename !== "(default)" ? vizFilename : "Custom Visualizer";
-                        return { [name]: presetData };
-                    } catch (e) {
-                        console.error("[WebampRadio] Error loading custom visualizer:", e);
-                        const presetsModule = await import("https://unpkg.com/butterchurn-presets@^2?module");
-                        return presetsModule.getPresets();
-                    }
+                    const presetList = {};
+                    const loadPromises = localViz.map(async (v) => {
+                        try {
+                            const r = await fetch(v.url);
+                            if (r.ok) {
+                                const data = await r.json();
+                                presetList[v.name] = data;
+                            }
+                        } catch (e) { console.warn(`Failed to load viz: ${v.name}`); }
+                    });
+                    await Promise.all(loadPromises);
+                    return presetList;
                 };
             }
 
@@ -255,7 +249,7 @@ function buildWebampWidget(node) {
                         absolute: true
                     });
 
-                    // If we have a custom visualizer, try to ensure Milkdrop is open
+                    // Always ensure Milkdrop is open
                     const state = webamp.store.getState();
                     if (!state.windows.genWindows.milkdrop.open) {
                         webamp.store.dispatch({ type: "TOGGLE_WINDOW", windowId: "milkdrop" });
@@ -318,11 +312,11 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    container._startPolling = function (folder, skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize, intervalMs) {
+    container._startPolling = function (folder, skinFilename, skinUrl, artistName, fontSize, intervalMs) {
         currentArtistName = artistName || "Ace-Step";
         applyFontSize(lyricsDiv, fontSize || 13);
         if (!webamp && !isInitializing) {
-            initWebamp(skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize).then(() => {
+            initWebamp(skinFilename, skinUrl, artistName, fontSize).then(() => {
                 scanFolder(folder);
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
@@ -356,41 +350,8 @@ function buildWebampWidget(node) {
             console.log("[WebampRadio] Hot-swapping skin:", activeSkinUrl);
             webamp.setSkinFromUrl(activeSkinUrl);
         } else if (skinFilename === "(none)") {
-            webamp.setSkinFromUrl("https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz");
-        }
-    };
-
-    container._setVisualizer = async function (vizFilename, vizUrl) {
-        if (!webamp) return;
-        let activeVizUrl = vizUrl?.trim() || "";
-        if (!activeVizUrl && vizFilename && vizFilename !== "(default)") {
-            const match = cachedLocalViz.find(v => v.filename === vizFilename);
-            if (match) activeVizUrl = match.url;
-        }
-
-        if (activeVizUrl) {
-            console.log("[WebampRadio] Hot-swapping visualizer:", activeVizUrl);
-            try {
-                const res = await fetch(activeVizUrl);
-                if (!res.ok) throw new Error(`Failed to fetch visualizer: ${activeVizUrl}`);
-                const presetData = await res.json();
-
-                // Ensure Milkdrop window is open
-                const state = webamp.store.getState();
-                if (!state.windows.genWindows.milkdrop.open) {
-                    webamp.store.dispatch({ type: "TOGGLE_WINDOW", windowId: "milkdrop" });
-                }
-
-                // Dispatch to internal Redux store to select the preset
-                // Note: LOAD_DEFAULT_PRESETS or similar might be needed if not initialized,
-                // but usually SELECT_PRESET works if butterchurn is active.
-                webamp.store.dispatch({
-                    type: "SELECT_PRESET",
-                    preset: presetData
-                });
-            } catch (e) {
-                console.error("[WebampRadio] Error hot-swapping visualizer:", e);
-            }
+            console.log("[WebampRadio] Resetting to Base (Classic) skin");
+            webamp.setSkinFromUrl(null);
         }
     };
 
@@ -408,8 +369,6 @@ app.registerExtension({
             const folderW = node.widgets?.find(w => w.name === "folder");
             const skinW = node.widgets?.find(w => w.name === "skin");
             const skinUrlW = node.widgets?.find(w => w.name === "skin_url");
-            const vizW = node.widgets?.find(w => w.name === "visualizer");
-            const vizUrlW = node.widgets?.find(w => w.name === "visualizer_url");
             const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
             const artistW = node.widgets?.find(w => w.name === "artist_name");
             const fontW = node.widgets?.find(w => w.name === "lyrics_font_size");
@@ -419,8 +378,6 @@ app.registerExtension({
                     folderW?.value || "audio",
                     skinW?.value || "(none)",
                     skinUrlW?.value || "",
-                    vizW?.value || "(default)",
-                    vizUrlW?.value || "",
                     artistW?.value || "Ace-Step",
                     fontW?.value || 13,
                     (intervalW?.value || 30) * 1000
@@ -436,7 +393,7 @@ app.registerExtension({
                 };
             }
 
-            // Skin or Visualizer changes now use hot-swapping
+            // Skin changes now use hot-swapping. Folder/artist changes restart polling.
             if (skinW) {
                 const o = skinW.callback;
                 skinW.callback = function () {
@@ -449,20 +406,6 @@ app.registerExtension({
                 skinUrlW.callback = function () {
                     o?.apply(this, arguments);
                     root._setSkin(skinW?.value, skinUrlW.value);
-                };
-            }
-            if (vizW) {
-                const o = vizW.callback;
-                vizW.callback = function () {
-                    o?.apply(this, arguments);
-                    root._setVisualizer(vizW.value, vizUrlW?.value);
-                };
-            }
-            if (vizUrlW) {
-                const o = vizUrlW.callback;
-                vizUrlW.callback = function () {
-                    o?.apply(this, arguments);
-                    root._setVisualizer(vizW?.value, vizUrlW.value);
                 };
             }
             if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
