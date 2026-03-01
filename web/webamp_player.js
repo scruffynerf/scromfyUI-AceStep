@@ -90,6 +90,8 @@ function buildWebampWidget(node) {
     let lastPathKey = null;
     let lastTime = -1;
     let currentArtistName = "Ace-Step";
+    let cachedLocalSkins = [];
+    let cachedLocalViz = [];
 
     const lrc = new Lyricer({ "divID": lyricsDiv.id, "showLines": 3 });
 
@@ -172,6 +174,8 @@ function buildWebampWidget(node) {
                 fetchAvailableSkins(),
                 fetchAvailableVisualizers()
             ]);
+            cachedLocalSkins = localSkins;
+            cachedLocalViz = localViz;
 
             // Build availableSkins list
             const availableSkins = [
@@ -341,6 +345,55 @@ function buildWebampWidget(node) {
         }
     };
 
+    container._setSkin = function (skinFilename, skinUrl) {
+        if (!webamp) return;
+        let activeSkinUrl = skinUrl?.trim() || "";
+        if (!activeSkinUrl && skinFilename && skinFilename !== "(none)") {
+            const match = cachedLocalSkins.find(s => s.filename === skinFilename);
+            if (match) activeSkinUrl = match.url;
+        }
+        if (activeSkinUrl) {
+            console.log("[WebampRadio] Hot-swapping skin:", activeSkinUrl);
+            webamp.setSkinFromUrl(activeSkinUrl);
+        } else if (skinFilename === "(none)") {
+            webamp.setSkinFromUrl("https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz");
+        }
+    };
+
+    container._setVisualizer = async function (vizFilename, vizUrl) {
+        if (!webamp) return;
+        let activeVizUrl = vizUrl?.trim() || "";
+        if (!activeVizUrl && vizFilename && vizFilename !== "(default)") {
+            const match = cachedLocalViz.find(v => v.filename === vizFilename);
+            if (match) activeVizUrl = match.url;
+        }
+
+        if (activeVizUrl) {
+            console.log("[WebampRadio] Hot-swapping visualizer:", activeVizUrl);
+            try {
+                const res = await fetch(activeVizUrl);
+                if (!res.ok) throw new Error(`Failed to fetch visualizer: ${activeVizUrl}`);
+                const presetData = await res.json();
+
+                // Ensure Milkdrop window is open
+                const state = webamp.store.getState();
+                if (!state.windows.genWindows.milkdrop.open) {
+                    webamp.store.dispatch({ type: "TOGGLE_WINDOW", windowId: "milkdrop" });
+                }
+
+                // Dispatch to internal Redux store to select the preset
+                // Note: LOAD_DEFAULT_PRESETS or similar might be needed if not initialized,
+                // but usually SELECT_PRESET works if butterchurn is active.
+                webamp.store.dispatch({
+                    type: "SELECT_PRESET",
+                    preset: presetData
+                });
+            } catch (e) {
+                console.error("[WebampRadio] Error hot-swapping visualizer:", e);
+            }
+        }
+    };
+
     return container;
 }
 
@@ -383,11 +436,35 @@ app.registerExtension({
                 };
             }
 
-            // Skin or Visualizer changes require a restart
-            if (skinW) { const o = skinW.callback; skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
-            if (skinUrlW) { const o = skinUrlW.callback; skinUrlW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
-            if (vizW) { const o = vizW.callback; vizW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
-            if (vizUrlW) { const o = vizUrlW.callback; vizUrlW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            // Skin or Visualizer changes now use hot-swapping
+            if (skinW) {
+                const o = skinW.callback;
+                skinW.callback = function () {
+                    o?.apply(this, arguments);
+                    root._setSkin(skinW.value, skinUrlW?.value);
+                };
+            }
+            if (skinUrlW) {
+                const o = skinUrlW.callback;
+                skinUrlW.callback = function () {
+                    o?.apply(this, arguments);
+                    root._setSkin(skinW?.value, skinUrlW.value);
+                };
+            }
+            if (vizW) {
+                const o = vizW.callback;
+                vizW.callback = function () {
+                    o?.apply(this, arguments);
+                    root._setVisualizer(vizW.value, vizUrlW?.value);
+                };
+            }
+            if (vizUrlW) {
+                const o = vizUrlW.callback;
+                vizUrlW.callback = function () {
+                    o?.apply(this, arguments);
+                    root._setVisualizer(vizW?.value, vizUrlW.value);
+                };
+            }
             if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
             if (artistW) { const o = artistW.callback; artistW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
 
