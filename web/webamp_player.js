@@ -11,7 +11,7 @@ link.rel = "stylesheet";
 link.href = new URL("./webamp_player.css", import.meta.url).href;
 document.head.appendChild(link);
 
-console.log("[WebampRadio] JS module loading... (Advanced Sync Mode)");
+console.log("[WebampRadio] JS module loading... (Butterchurn + LRC Sync)");
 
 function trackLabel(filename) {
     return filename.replace(/\.[^.]+$/, "");
@@ -27,7 +27,7 @@ function buildWebampWidget(node) {
     inner.className = "webamp-lyrics-display";
     inner.innerHTML = `<div class="webamp-loading-state">
         <div class="rp-spinner">⌛</div>
-        <b>Initializing Webamp System...</b>
+        <b>Preparing Webamp...</b>
     </div>`;
     container.appendChild(inner);
 
@@ -36,31 +36,34 @@ function buildWebampWidget(node) {
     let trackMap = new Map();
     let polling = null;
     let isInitializing = false;
-    let currentTrackUrl = null;
+    let lastTrackUrl = null;
+    let lastTime = -1;
 
     // Initialize Lyricer
     const lyricerElId = `webamp-lyrics-${node.id}`;
     const lrc = new Lyricer({ "divID": lyricerElId, "showLines": 3 });
 
     async function loadWebampLibrary() {
-        console.log("[WebampRadio] Loading Webamp library...");
-        // Prefer unpkg for full feature set (Butterchurn)
+        console.log("[WebampRadio] Loading local Butterchurn bundle...");
         try {
-            const m = await import("https://unpkg.com/webamp@^2?module");
-            const WebampClass = m.default || m.Webamp || (window && window.Webamp);
+            // Import the local .mjs file
+            const m = await import("./webamp.butterchurn.mjs");
+            // In ESM bundles, it's usually the default export
+            const WebampClass = m.default || m.Webamp;
             if (WebampClass) return WebampClass;
         } catch (e) {
-            console.warn("[WebampRadio] unpkg failed, using local fallback");
+            console.warn("[WebampRadio] Local mjs import failed:", e);
         }
 
-        if (window.Webamp) return window.Webamp;
-        return new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = new URL("./webamp.bundle.js", import.meta.url).href;
-            script.onload = () => window.Webamp ? resolve(window.Webamp) : reject(new Error("Webamp missing"));
-            script.onerror = () => reject(new Error("Failed to load local bundle"));
-            document.head.appendChild(script);
-        });
+        // Try jsdelivr as fallback
+        try {
+            const m = await import("https://cdn.jsdelivr.net/npm/webamp@2.2.0/built/webamp.butterchurn-bundle.min.mjs");
+            return m.default || m.Webamp;
+        } catch (e) {
+            console.error("[WebampRadio] CDN fallback failed:", e);
+        }
+
+        throw new Error("Could not load Webamp library bundle.");
     }
 
     async function fetchLrc(url) {
@@ -73,9 +76,7 @@ function buildWebampWidget(node) {
             if (res.ok) {
                 const text = await res.text();
                 lrc.setLrc(text);
-                console.log("[WebampRadio] Lyrics loaded for URL:", url);
-            } else {
-                inner.innerHTML = "<div class='webamp-no-lyrics'>Lyrics file not found</div>";
+                console.log("[WebampRadio] lyrics loaded for", url);
             }
         } catch (e) {
             console.error("[WebampRadio] LRC fetch error:", e);
@@ -96,56 +97,68 @@ function buildWebampWidget(node) {
                     { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp" },
                     { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" }
                 ],
-                zIndex: 1000
+                zIndex: 1000,
+                // version 2.2.0 butterchurn bundle includes presets internally or expects them
+                __butterchurnOptions: {
+                    importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
+                    importPresets: () => import("https://unpkg.com/butterchurn-presets@^2?module")
+                }
             };
 
             if (skinUrl && skinUrl.trim()) {
                 options.initialSkin = { url: skinUrl.trim() };
             }
 
-            // Try Butterchurn
-            try {
-                const butterchurn = await import("https://unpkg.com/butterchurn@^2?module");
-                const presets = await import("https://unpkg.com/butterchurn-presets@^2?module");
-                options.__butterchurnOptions = {
-                    importButterchurn: () => Promise.resolve(butterchurn.default || butterchurn),
-                    importPresets: () => Promise.resolve(presets.default || presets)
-                };
-            } catch (e) { }
-
             webamp = new WebampClass(options);
 
-            // Time sync
-            webamp.onTimeUpdate((time) => {
-                lrc.move(time);
-            });
-
-            // Track sync via state subscription (more reliable in some versions)
+            // Version 2.2.0 compatibility: use store subscription for everything
             webamp.store.subscribe(() => {
                 const state = webamp.store.getState();
-                const track = state.playlist.tracks[state.playlist.currentTrack];
-                if (track && track.url !== currentTrackUrl) {
-                    currentTrackUrl = track.url;
-                    console.log("[WebampRadio] Track changed to:", track.url);
-                    const t = trackMap.get(track.url);
-                    if (t) fetchLrc(t.lrc_url);
+
+                // 1. Time Update
+                const mediaStatus = state.media?.status;
+                const currentTime = state.media?.timeElapsed; // or timeRemaining
+                if (currentTime !== undefined && currentTime !== lastTime) {
+                    lastTime = currentTime;
+                    lrc.move(currentTime);
+                }
+
+                // 2. Track Change
+                const tracks = state.playlist?.tracks;
+                const currentIdx = state.playlist?.currentTrack;
+                if (tracks && currentIdx !== null && currentIdx !== undefined) {
+                    const track = tracks[currentIdx];
+                    if (track && track.url !== lastTrackUrl) {
+                        lastTrackUrl = track.url;
+                        console.log("[WebampRadio] Track changed:", track.url);
+                        const t = trackMap.get(track.url);
+                        if (t) fetchLrc(t.lrc_url);
+                        else inner.innerHTML = `<div class='webamp-idle-msg'>Playing: ${trackLabel(track.metaData.title || "Unknown")}</div>`;
+                    }
                 }
             });
 
-            // Handle click-to-seek from lyrics display
+            // Handle click-to-seek from lyrics
             window.addEventListener('lyricerclick', function (e) {
                 const target = e.target.closest(`#${lyricerElId}`);
                 if (target && e.detail.time >= 0 && webamp) {
-                    webamp.seekToTime(e.detail.time);
+                    // In 2.2.0, seek might be through a method or action
+                    // Most versions support seekToTime(seconds)
+                    try {
+                        webamp.seekToTime(e.detail.time);
+                    } catch (err) {
+                        console.warn("[WebampRadio] seekToTime not available, trying dispatch...");
+                        webamp.store.dispatch({ type: "SEEK_TO_TIME", time: e.detail.time });
+                    }
                 }
             });
 
             await webamp.renderWhenReady(document.body);
-            inner.innerHTML = "<div class='webamp-idle-msg'>Ready. Metadata and sync info will appear here.</div>";
+            inner.innerHTML = "<div class='webamp-idle-msg'>Ready. Metadata and lyrics will sync here.</div>";
 
         } catch (e) {
-            console.error("[WebampRadio] Init error:", e);
-            inner.innerHTML = `<div class='webamp-error'>${e.message}</div>`;
+            console.error("[WebampRadio] Init failed:", e);
+            inner.innerHTML = `<div class='webamp-error'>${e.message}<br><small>See console for more.</small></div>`;
         } finally {
             isInitializing = false;
         }
