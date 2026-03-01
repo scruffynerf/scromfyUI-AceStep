@@ -9,8 +9,9 @@ from server import PromptServer
 
 routes = PromptServer.instance.routes
 
-# Skins directory (relative to this file)
+# Skins and Presets directories (relative to this file)
 _SKINS_DIR = Path(__file__).parent.parent / "webamp_skins"
+_VISUALIZERS_DIR = Path(__file__).parent.parent / "webamp_visualizers"
 
 
 @routes.get("/webamp_skins/list")
@@ -35,6 +36,30 @@ async def serve_webamp_skin(request: web.Request) -> web.Response:
     if not skin_path.is_file() or skin_path.suffix.lower() != ".wsz":
         return web.Response(status=404, text=f"Skin not found: {filename}")
     return web.FileResponse(skin_path, headers={"Content-Type": "application/octet-stream"})
+
+
+@routes.get("/webamp_visualizers/list")
+async def list_webamp_visualizers(request: web.Request) -> web.Response:
+    """Return available .json Milkdrop presets from webamp_visualizers/."""
+    _VISUALIZERS_DIR.mkdir(exist_ok=True)
+    presets = []
+    for p in sorted(_VISUALIZERS_DIR.glob("*.json")):
+        presets.append({
+            "name": p.stem.replace("_", " "),
+            "url": f"/webamp_visualizers/{p.name}",
+            "filename": p.name,
+        })
+    return web.json_response({"visualizers": presets})
+
+
+@routes.get("/webamp_visualizers/{filename}")
+async def serve_webamp_visualizer(request: web.Request) -> web.Response:
+    """Serve a .json preset file from webamp_visualizers/."""
+    filename = request.match_info["filename"]
+    preset_path = _VISUALIZERS_DIR / filename
+    if not preset_path.is_file() or preset_path.suffix.lower() != ".json":
+        return web.Response(status=404, text=f"Visualizer not found: {filename}")
+    return web.FileResponse(preset_path, headers={"Content-Type": "application/json"})
 
 
 @routes.get("/radio_player/scan")

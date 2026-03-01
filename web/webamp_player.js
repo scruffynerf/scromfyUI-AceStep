@@ -33,7 +33,7 @@ function applyFontSize(lyricsDiv, fontSize) {
     lyricsDiv.style.setProperty("--lyric-active-font-size", activePx);
 }
 
-// Fetch available skins from the server scan endpoint
+// Fetch available skins from the server
 async function fetchAvailableSkins() {
     try {
         const res = await fetch("/webamp_skins/list");
@@ -42,6 +42,19 @@ async function fetchAvailableSkins() {
         return data.skins || [];
     } catch (e) {
         console.warn("[WebampRadio] Could not fetch skin list:", e);
+        return [];
+    }
+}
+
+// Fetch available visualizers from the server
+async function fetchAvailableVisualizers() {
+    try {
+        const res = await fetch("/webamp_visualizers/list");
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.visualizers || [];
+    } catch (e) {
+        console.warn("[WebampRadio] Could not fetch visualizer list:", e);
         return [];
     }
 }
@@ -76,7 +89,7 @@ function buildWebampWidget(node) {
     let isInitializing = false;
     let lastPathKey = null;
     let lastTime = -1;
-    let currentArtistName = "Ace-Step AI";
+    let currentArtistName = "Ace-Step";
 
     const lrc = new Lyricer({ "divID": lyricsDiv.id, "showLines": 3 });
 
@@ -146,31 +159,38 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    async function initWebamp(skinFilename, skinUrl, artistName, fontSize) {
+    async function initWebamp(skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize) {
         if (webamp || isInitializing) return;
         isInitializing = true;
-        currentArtistName = artistName || "Ace-Step AI";
+        currentArtistName = artistName || "Ace-Step";
 
         try {
             const WebampClass = await loadWebampLibrary();
 
-            // Fetch skins from the server
-            const localSkins = await fetchAvailableSkins();
+            // Fetch skins and visualizers from the server
+            const [localSkins, localViz] = await Promise.all([
+                fetchAvailableSkins(),
+                fetchAvailableVisualizers()
+            ]);
 
-            // Build availableSkins list: local skins + hardcoded fallbacks
+            // Build availableSkins list
             const availableSkins = [
                 ...localSkins.map(s => ({ url: s.url, name: s.name })),
-                { url: "https://cdn.webamp.org/skins/base-2.91.wsz", name: "Classic Winamp 2.91" },
-                { url: "https://cdn.webamp.org/skins/Bento.wsz", name: "Bento" },
                 { url: "https://archive.org/cors/winampskin_Windows_Classic/Windows_Classic.wsz", name: "Windows Classic (Archive.org)" }
             ];
 
-            // Resolve active skin URL:
-            // skin_url (custom) > skin (dropdown filename) > (none)
+            // Resolve active skin URL
             let activeSkinUrl = skinUrl?.trim() || "";
             if (!activeSkinUrl && skinFilename && skinFilename !== "(none)") {
                 const match = localSkins.find(s => s.filename === skinFilename);
                 if (match) activeSkinUrl = match.url;
+            }
+
+            // Resolve active visualizer URL
+            let activeVizUrl = vizUrl?.trim() || "";
+            if (!activeVizUrl && vizFilename && vizFilename !== "(default)") {
+                const match = localViz.find(v => v.filename === vizFilename);
+                if (match) activeVizUrl = match.url;
             }
 
             const options = {
@@ -178,10 +198,10 @@ function buildWebampWidget(node) {
                 availableSkins,
                 zIndex: 100,
                 __initialWindowLayout: {
-                    main: { position: { x: 20, y: 150 } },
-                    equalizer: { position: { x: 20, y: 266 } },
-                    playlist: { position: { x: 20, y: 382 } },
-                    milkdrop: { position: { x: 295, y: 150 } }
+                    main: { position: { x: 100, y: 150 } },
+                    equalizer: { position: { x: 100, y: 266 } },
+                    playlist: { position: { x: 100, y: 382 } },
+                    milkdrop: { position: { x: 375, y: 150 } }
                 },
                 __butterchurnOptions: {
                     importButterchurn: () => import("https://unpkg.com/butterchurn@^2?module"),
@@ -189,44 +209,55 @@ function buildWebampWidget(node) {
                 }
             };
 
+            // If a specific visualizer is requested, we use requireButterchurnPresets to load it
+            if (activeVizUrl) {
+                options.__butterchurnOptions.requireButterchurnPresets = async () => {
+                    try {
+                        const res = await fetch(activeVizUrl);
+                        if (!res.ok) throw new Error(`Failed to fetch visualizer: ${activeVizUrl}`);
+                        const presetData = await res.json();
+                        const name = vizFilename && vizFilename !== "(default)" ? vizFilename : "Custom Visualizer";
+                        return { [name]: presetData };
+                    } catch (e) {
+                        console.error("[WebampRadio] Error loading custom visualizer:", e);
+                        const presetsModule = await import("https://unpkg.com/butterchurn-presets@^2?module");
+                        return presetsModule.getPresets();
+                    }
+                };
+            }
+
             if (activeSkinUrl) {
                 options.initialSkin = { url: activeSkinUrl };
             }
 
             webamp = new WebampClass(options);
 
-            // Force window positions after render to ensure the 150px buffer is respected,
-            // even if a skin tries to override it or if state was cached.
+            // Force window positions after render
             async function clampWindowPositions() {
                 try {
-                    // Give Webamp a moment to actually render the windows into the DOM
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 800));
                     if (!webamp) return;
 
-                    const state = webamp.store.getState();
-                    const windows = state.windows?.genWindows || {};
-                    const updates = {};
-
-                    // Positions to force (same as initialWindowLayout)
-                    const layout = {
-                        main: { x: 20, y: 150 },
-                        equalizer: { x: 20, y: 266 },
-                        playlist: { x: 20, y: 382 },
-                        milkdrop: { x: 295, y: 150 }
+                    const updates = {
+                        main: { x: 100, y: 150 },
+                        equalizer: { x: 100, y: 266 },
+                        playlist: { x: 100, y: 382 },
+                        milkdrop: { x: 375, y: 150 }
                     };
 
-                    for (const [id, pos] of Object.entries(layout)) {
-                        updates[id] = { x: pos.x, y: pos.y };
-                    }
-
-                    // Dispatch directly to the internal Redux store
                     webamp.store.dispatch({
                         type: "UPDATE_WINDOW_POSITIONS",
                         positions: updates,
                         absolute: true
                     });
 
-                    console.log("[WebampRadio] Windows clamped to 150px top buffer");
+                    // If we have a custom visualizer, try to ensure Milkdrop is open
+                    const state = webamp.store.getState();
+                    if (!state.windows.genWindows.milkdrop.open) {
+                        webamp.store.dispatch({ type: "TOGGLE_WINDOW", windowId: "milkdrop" });
+                    }
+
+                    console.log("[WebampRadio] Windows clamped & Milkdrop checked");
                 } catch (err) {
                     console.warn("[WebampRadio] Failed to clamp window positions:", err);
                 }
@@ -283,11 +314,11 @@ function buildWebampWidget(node) {
         } catch (e) { }
     }
 
-    container._startPolling = function (folder, skinFilename, skinUrl, artistName, fontSize, intervalMs) {
-        currentArtistName = artistName || "Ace-Step AI";
+    container._startPolling = function (folder, skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize, intervalMs) {
+        currentArtistName = artistName || "Ace-Step";
         applyFontSize(lyricsDiv, fontSize || 13);
         if (!webamp && !isInitializing) {
-            initWebamp(skinFilename, skinUrl, artistName, fontSize).then(() => {
+            initWebamp(skinFilename, skinUrl, vizFilename, vizUrl, artistName, fontSize).then(() => {
                 scanFolder(folder);
                 if (polling) clearInterval(polling);
                 polling = setInterval(() => scanFolder(folder), intervalMs || 5000);
@@ -322,8 +353,10 @@ app.registerExtension({
 
         setTimeout(() => {
             const folderW = node.widgets?.find(w => w.name === "folder");
-            const skinW = node.widgets?.find(w => w.name === "skin");           // COMBO dropdown
-            const skinUrlW = node.widgets?.find(w => w.name === "skin_url");       // custom URL override
+            const skinW = node.widgets?.find(w => w.name === "skin");
+            const skinUrlW = node.widgets?.find(w => w.name === "skin_url");
+            const vizW = node.widgets?.find(w => w.name === "visualizer");
+            const vizUrlW = node.widgets?.find(w => w.name === "visualizer_url");
             const intervalW = node.widgets?.find(w => w.name === "poll_interval_seconds");
             const artistW = node.widgets?.find(w => w.name === "artist_name");
             const fontW = node.widgets?.find(w => w.name === "lyrics_font_size");
@@ -333,13 +366,14 @@ app.registerExtension({
                     folderW?.value || "audio",
                     skinW?.value || "(none)",
                     skinUrlW?.value || "",
-                    artistW?.value || "Ace-Step AI",
+                    vizW?.value || "(default)",
+                    vizUrlW?.value || "",
+                    artistW?.value || "Ace-Step",
                     fontW?.value || 13,
                     (intervalW?.value || 30) * 1000
                 );
             }
 
-            // Font size updates live without restart
             if (fontW) {
                 const o = fontW.callback;
                 fontW.callback = function () {
@@ -349,9 +383,11 @@ app.registerExtension({
                 };
             }
 
-            // Skin changes require a restart
+            // Skin or Visualizer changes require a restart
             if (skinW) { const o = skinW.callback; skinW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
             if (skinUrlW) { const o = skinUrlW.callback; skinUrlW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            if (vizW) { const o = vizW.callback; vizW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
+            if (vizUrlW) { const o = vizUrlW.callback; vizUrlW.callback = function () { o?.apply(this, arguments); root._stop(); restartPolling(); }; }
             if (folderW) { const o = folderW.callback; folderW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
             if (artistW) { const o = artistW.callback; artistW.callback = function () { o?.apply(this, arguments); restartPolling(); }; }
 
