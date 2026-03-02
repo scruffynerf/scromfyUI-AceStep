@@ -1,7 +1,7 @@
 """AceStepPromptGen node for ACE-Step – dynamically uses all components from prompt_utils"""
 import random
 import re
-from .includes.prompt_utils import get_available_components, get_visible_components, get_component
+from .includes.prompt_utils import get_available_components, get_visible_components, get_component, expand_wildcards
 
 
 def _choices_for(items):
@@ -25,40 +25,6 @@ def _choices_for(items):
     return ["none", "random", "random2"] + choices
 
 
-def expand_wildcards(text, rng, max_depth=5):
-    """Recursively expand __VARIABLE__ wildcards using available prompt components."""
-    if not isinstance(text, str) or "__" not in text:
-        return text
-
-    pattern = r"__([A-Z0-9_]+)__"
-
-    def replace(match):
-        comp_name = match.group(1)
-        # Try exact, then try with 'S' suffix for plural filenames
-        items = get_component(comp_name)
-        if items is None:
-            items = get_component(comp_name + "S")
-        if items is None:
-            items = get_component(comp_name + "ES")
-            
-        if items is None:
-            return match.group(0)
-
-        # Pick a random item
-        if isinstance(items, dict):
-            # For dicts, pick a key and then use its value
-            key = rng.choice(list(items.keys()))
-            return str(items[key])
-        elif isinstance(items, list):
-            return str(rng.choice(items))
-        return str(items)
-
-    for _ in range(max_depth):
-        new_text = re.sub(pattern, replace, text)
-        if new_text == text:
-            break
-        text = new_text
-    return text
 
 
 class AceStepPromptGen:

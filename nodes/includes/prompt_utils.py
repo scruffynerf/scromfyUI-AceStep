@@ -4,6 +4,8 @@ Now dynamically loads components from the 'prompt_components' directory.
 import os
 import json
 import sys
+import random
+import re
 
 # Cache to store loaded components
 _COMPONENTS = {}
@@ -185,3 +187,39 @@ def get_component(name, default=None):
     if name.lower() in _COMPONENTS:
         return _COMPONENTS[name.lower()]
     return default
+
+def expand_wildcards(text, rng, max_depth=5):
+    """Recursively expand __VARIABLE__ wildcards using available prompt components."""
+    if not isinstance(text, str) or "__" not in text:
+        return text
+
+    pattern = r"__([A-Z0-9_]+)__"
+
+    def replace(match):
+        comp_name = match.group(1).upper() # Normalize to uppercase for lookup
+        # Try exact, then try common plural suffixes
+        items = get_component(comp_name)
+        if items is None:
+            items = get_component(comp_name + "S")
+        if items is None:
+            items = get_component(comp_name + "ES")
+            
+        if items is None:
+            return match.group(0)
+
+        # Pick a random item
+        if isinstance(items, dict):
+            # For dicts, pick a key and then use its value
+            key = rng.choice(list(items.keys()))
+            return str(items[key])
+        elif isinstance(items, list):
+            if not items: return ""
+            return str(rng.choice(items))
+        return str(items)
+
+    for _ in range(max_depth):
+        new_text = re.sub(pattern, replace, text)
+        if new_text == text:
+            break
+        text = new_text
+    return text

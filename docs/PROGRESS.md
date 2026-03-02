@@ -94,6 +94,7 @@ All nodes are implemented and refactored. **63 node files** — 47 active, 16 ob
 #### Misc
 - [x] `AceStep5HzLMConfig` — `lm_config_node.py`
 - [x] `WikipediaRandomNode` — `wikipedia_node.py`
+- [x] `AceStepPromptFreeform` — `prompt_freeform_node.py`
 - [x] `AceStepInpaintSampler` — `inpaint_sampler_node.py`
 - [x] `AceStepLoadAudio` — `load_audio_node.py`
 - [x] `AceStepModeSelector` — `mode_selector_node.py`
@@ -102,8 +103,8 @@ All nodes are implemented and refactored. **63 node files** — 47 active, 16 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 63/63 complete (100%)** ✅
-- **Active Nodes: 47** ✅
+- **Total Nodes: 64/64 complete (100%)** ✅
+- **Active Nodes: 48** ✅
 - **Obsolete Nodes: 16** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅
