@@ -2,7 +2,7 @@
 
 ## Node Implementation Status
 
-All nodes are implemented and refactored. **62 node files** — 46 active, 16 obsolete.
+All nodes are implemented and refactored. **63 node files** — 47 active, 16 obsolete.
 
 ### ✅ Refactored Structure Summary
 - **Nodes**: Each node is in its own `nodes/*_node.py` file.
@@ -91,8 +91,9 @@ All nodes are implemented and refactored. **62 node files** — 46 active, 16 ob
 - [x] `AceStepFasterWhisperTranscription` — `faster_whisper_node.py`
 - [x] `AceStepSaveSubtitleLyrics` — `faster_whisper_node.py` (.lrc support)
 
-#### Miscellaneous
-- [x] `AceStep5HzLMConfig` — `llm_config_node.py`
+#### Misc
+- [x] `AceStep5HzLMConfig` — `lm_config_node.py`
+- [x] `WikipediaRandomNode` — `wikipedia_node.py`
 - [x] `AceStepInpaintSampler` — `inpaint_sampler_node.py`
 - [x] `AceStepLoadAudio` — `load_audio_node.py`
 - [x] `AceStepModeSelector` — `mode_selector_node.py`
@@ -101,8 +102,8 @@ All nodes are implemented and refactored. **62 node files** — 46 active, 16 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 62/62 complete (100%)** ✅
-- **Active Nodes: 46** ✅
+- **Total Nodes: 63/63 complete (100%)** ✅
+- **Active Nodes: 47** ✅
 - **Obsolete Nodes: 16** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
 - **Dynamic Loading: Functional** ✅

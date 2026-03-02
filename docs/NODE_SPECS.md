@@ -3,7 +3,7 @@
 All nodes live in `nodes/` and are auto-registered by `__init__.py`.
 Shared logic is in `nodes/includes/`. Frontend extensions are in `web/`.
 
-**62 node files total** — 46 active, 16 obsolete.
+**63 node files total** — 47 active, 16 obsolete.
 
 ---
 
@@ -101,9 +101,10 @@ User instructions stored in `AIinstructions/`.
     *   **Advanced Options**: Full support for `log_prob_threshold`, `temperature`, `patience`, `hotwords`, etc.
 47. **Save Subtitle/Lyrics** (`faster_whisper_node.py`): Specialized saver that matches filenames with your audio saves. Converts transcription to `.srt`, `.vtt`, or `.lrc`.
 
-## Miscellaneous (Scromfy/Ace-Step/misc)
+## Misc (Scromfy/Ace-Step/misc)
 
-48. **AceStep5HzLMConfig** (`llm_config_node.py`): LLM parameter configuration.
+61. **AceStep5HzLMConfig** (`lm_config_node.py`): Configuration for the 5Hz LM parameters.
+62. **WikipediaRandomNode** (`wikipedia_node.py`): Fetches a random Wikipedia page with filters.
 49. **AceStepInpaintSampler** (`inpaint_sampler_node.py`): Specialized sampler for audio inpainting.
 50. **AceStepLoadAudio** (`load_audio_node.py`): Load audio files with auto-resampling.
 51. **AceStepModeSelector** (`mode_selector_node.py`): 4-in-1 mode routing.
