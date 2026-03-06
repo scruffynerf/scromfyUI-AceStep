@@ -290,7 +290,7 @@ class AceStepAudioCodesUnaryOp:
 
         return canvas.unsqueeze(0)
 
-    def process(self, audio_codes, mode, length_pct, strength, sigma, seed, ssm_blur, mask=None):
+    def process(self, audio_codes, mode, length_pct, strength, sigma, seed, ssm_blur, visualization_type, mask=None):
         #inner_model = model.model
         #if hasattr(inner_model, "diffusion_model"):
         #    inner_model = inner_model.diffusion_model
