@@ -1,0 +1,186 @@
+import numpy as np
+import cv2
+import torch
+from .includes.visualizer_utils import FlexAudioVisualizerBase, BaseAudioProcessor
+
+class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
+    @classmethod
+    def INPUT_TYPES(cls):
+        base_inputs = super().INPUT_TYPES()
+        base_required = base_inputs.get("required", {})
+        base_optional = base_inputs.get("optional", {})
+        
+        base_required["feature_param"] = (cls.get_modifiable_params(), {"default": "None"})
+        
+        # Remove parameters not used by contour
+        for param in ["screen_width", "screen_height", "position_x", "position_y"]:
+            if param in base_required:
+                del base_required[param]
+
+        new_inputs = {
+            "required": {
+                "mask": ("MASK",),
+                "visualization_method": (["bar", "line"], {"default": "bar"}),
+                "visualization_feature": (["frequency", "waveform"], {"default": "frequency"}),
+                "smoothing": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "num_points": ("INT", {"default": 360, "min": 3, "max": 1000, "step": 1}),
+                "fft_size": ("INT", {"default": 2048, "min": 256, "max": 8192, "step": 256}),
+                "min_frequency": ("FLOAT", {"default": 20.0, "min": 20.0, "max": 20000.0, "step": 10.0}),
+                "max_frequency": ("FLOAT", {"default": 8000.0, "min": 20.0, "max": 20000.0, "step": 10.0}),
+                "bar_length": ("FLOAT", {"default": 20.0, "min": 1.0, "max": 100.0, "step": 1.0}),
+                "line_width": ("INT", {"default": 2, "min": 1, "max": 10, "step": 1}),
+                "contour_smoothing": ("INT", {"default": 0, "min": 0, "max": 50, "step": 1}),
+                "rotation": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 360.0, "step": 1.0}),
+                "direction": (["outward", "inward", "both"], {"default": "outward"}),
+                "min_contour_area": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 10000.0, "step": 10.0}),
+                "max_contours": ("INT", {"default": 5, "min": 1, "max": 20, "step": 1}),
+                "distribute_by": (["area", "perimeter", "equal"], {"default": "perimeter"}),
+            }
+        }
+
+        all_required = {**new_inputs["required"], **base_required}
+        
+        return {
+            "required": all_required,
+            "optional": base_optional
+        }
+
+    @classmethod
+    def get_modifiable_params(cls):
+        return ["smoothing", "rotation", "num_points", "fft_size", 
+                "min_frequency", "max_frequency", "bar_length", "line_width",
+                "contour_smoothing", "min_contour_area", "max_contours", "None"]
+
+    def apply_effect(self, audio, frame_rate, mask, strength, feature_param, feature_mode,
+                     feature_threshold, opt_feature=None, **kwargs):
+        # Get dimensions from mask
+        if len(mask.shape) == 3:
+            batch_size, screen_height, screen_width = mask.shape
+        else:
+            screen_height, screen_width = mask.shape
+            batch_size = 1
+            mask = mask.unsqueeze(0)
+            
+        kwargs['mask'] = mask
+        return super().apply_effect(
+            audio, frame_rate, screen_width, screen_height,
+            strength, feature_param, feature_mode, feature_threshold,
+            opt_feature, **kwargs
+        )
+
+    def get_audio_data(self, processor: BaseAudioProcessor, frame_index, **kwargs):
+        visualization_feature = kwargs.get('visualization_feature', 'frequency')
+        smoothing = kwargs.get('smoothing', 0.5)
+        num_points = kwargs.get('num_points', 360)
+        fft_size = kwargs.get('fft_size', 2048)
+        min_frequency = kwargs.get('min_frequency', 20.0)
+        max_frequency = kwargs.get('max_frequency', 8000.0)
+
+        _, feature_value = self.process_audio_data(
+            processor, frame_index, visualization_feature,
+            num_points, smoothing, fft_size, min_frequency, max_frequency
+        )
+        return feature_value
+
+    def apply_effect_internal(self, processor: BaseAudioProcessor, **kwargs):
+        mask = kwargs.get('mask')
+        visualization_method = kwargs.get('visualization_method', 'bar')
+        batch_size, screen_height, screen_width = mask.shape
+        line_width = kwargs.get('line_width', 2)
+        bar_length = kwargs.get('bar_length', 20.0)
+        contour_smoothing = kwargs.get('contour_smoothing', 0)
+        rotation = kwargs.get('rotation', 0.0) % 360.0
+        direction = kwargs.get('direction', 'outward')
+        min_contour_area = kwargs.get('min_contour_area', 100.0)
+        max_contours = kwargs.get('max_contours', 5)
+        distribute_by = kwargs.get('distribute_by', 'perimeter')
+        
+        frame_index = processor.current_frame
+        image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
+        
+        frame_idx = min(frame_index, batch_size - 1)
+        mask_uint8 = (mask[frame_idx].cpu().numpy() * 255).astype(np.uint8)
+        
+        contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours: return image
+
+        valid_contours = [c for c in contours if cv2.contourArea(c) >= min_contour_area]
+        valid_contours.sort(key=cv2.contourArea, reverse=True)
+        valid_contours = valid_contours[:max_contours]
+        if not valid_contours: return image
+
+        if distribute_by == 'area':
+            weights = [cv2.contourArea(c) for c in valid_contours]
+        elif distribute_by == 'perimeter':
+            weights = [cv2.arcLength(c, True) for c in valid_contours]
+        else:
+            weights = [1] * len(valid_contours)
+
+        total_weight = sum(weights)
+        weights = [w / total_weight for w in weights] if total_weight > 0 else [1/len(weights)]*len(weights)
+
+        data = processor.spectrum
+        
+        def process_contour(contour, start_idx, end_idx, direction_multiplier=1.0):
+            if contour_smoothing > 0:
+                epsilon = contour_smoothing * cv2.arcLength(contour, True) * 0.01
+                contour = cv2.approxPolyDP(contour, epsilon, True)
+            
+            contour = contour.squeeze()
+            if len(contour.shape) < 2: return
+            contour_length = len(contour)
+            if not np.array_equal(contour[0], contour[-1]):
+                contour = np.vstack([contour, contour[0]])
+                contour_length += 1
+            
+            rotation_offset = int((rotation / 360.0) * contour_length)
+            contour_data = data[start_idx:end_idx]
+            num_pts = len(contour_data)
+            if num_pts == 0: return
+
+            indices = (np.linspace(0, contour_length - 1, num_pts) + rotation_offset) % (contour_length - 1)
+            x_coords = np.interp(indices, range(contour_length), contour[:, 0])
+            y_coords = np.interp(indices, range(contour_length), contour[:, 1])
+            
+            dx = np.gradient(x_coords)
+            dy = np.gradient(y_coords)
+            lengths = np.sqrt(dx**2 + dy**2)
+            lengths = np.where(lengths > 0, lengths, 1.0)
+            normals_x = -dy / lengths
+            normals_y = dx / lengths
+
+            if visualization_method == 'bar':
+                for i, amplitude in enumerate(contour_data):
+                    x1, y1 = int(x_coords[i]), int(y_coords[i])
+                    bar_h = amplitude * bar_length * direction_multiplier
+                    x2, y2 = int(x1 + normals_x[i] * bar_h), int(y1 + normals_y[i] * bar_h)
+                    cv2.line(image, (x1, y1), (x2, y2), (1.0, 1.0, 1.0), thickness=line_width)
+            else:
+                pts = np.column_stack([
+                    x_coords + normals_x * contour_data * bar_length * direction_multiplier,
+                    y_coords + normals_y * contour_data * bar_length * direction_multiplier
+                ]).astype(np.int32)
+                cv2.polylines(image, [pts], True, (1.0, 1.0, 1.0), thickness=line_width)
+
+        start_idx = 0
+        total_pts = len(data)
+        for i, (cnt, w) in enumerate(zip(valid_contours, weights)):
+            num_pts = int(round(total_pts * w)) if i < len(valid_contours)-1 else total_pts - start_idx
+            end_idx = start_idx + num_pts
+            if direction == "both":
+                process_contour(cnt, start_idx, end_idx, 0.5)
+                process_contour(cnt, start_idx, end_idx, -0.5)
+            else:
+                mul = -1.0 if direction == "inward" else 1.0
+                process_contour(cnt, start_idx, end_idx, mul)
+            start_idx = end_idx
+
+        return image
+
+NODE_CLASS_MAPPINGS = {
+    "ScromfyFlexAudioVisualizerContour": ScromfyFlexAudioVisualizerContourNode,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "ScromfyFlexAudioVisualizerContour": "Flex Audio Visualizer Contour (Scromfy)",
+}
