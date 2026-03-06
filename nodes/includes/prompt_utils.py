@@ -45,6 +45,8 @@ def _load_components():
     replace_map = {}
     reverse_replace = {}
     weights = {} # Component Name -> float Weight
+    force_show = set()
+    hidden = set()
     
     def get_path(filename):
         user_p = os.path.join(components_dir, filename)
@@ -65,6 +67,10 @@ def _load_components():
     ignore_path = get_path("TOTALIGNORE.list")
     replace_path = get_path("REPLACE.list")
     weights_path = get_path("WEIGHTS.json")
+    forceshow_path = get_path("FORCESHOW.list")
+    hidden_path = get_path("HIDDEN.list")
+    # Also check the old name for backward compatibility/consistency
+    loadbutnotshow_path = get_path("LOADBUTNOTSHOW.list")
     
     def read_list_file(p):
         if os.path.exists(p):
@@ -73,6 +79,8 @@ def _load_components():
         return set()
 
     total_ignore = read_list_file(ignore_path)
+    force_show = read_list_file(forceshow_path)
+    hidden = read_list_file(hidden_path) | read_list_file(loadbutnotshow_path)
     
     if os.path.exists(replace_path):
         try:
@@ -115,7 +123,7 @@ def _load_components():
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         
         for filename in files:
-            if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list", "WEIGHTS.json", "README.md") or ".default." in filename:
+            if filename in ("TOTALIGNORE.list", "LOADBUTNOTSHOW.list", "REPLACE.list", "WEIGHTS.json", "README.md", "FORCESHOW.list", "HIDDEN.list") or ".default." in filename:
                 continue
                 
             name, ext = os.path.splitext(filename)
@@ -132,9 +140,11 @@ def _load_components():
 
             full_path = os.path.join(root, filename)
             
-            # Visibility logic: Only files in the root of prompt_components are visible in UI
-            if root == components_dir:
-                _TOP_LEVEL_COMPONENTS.add(assign_name)
+            # Visibility logic: Only files in the root of prompt_components are visible in UI,
+            # unless explicitly forced via FORCESHOW.list. HIDDEN.list overrides both.
+            if assign_name not in hidden:
+                if root == components_dir or assign_name in force_show:
+                    _TOP_LEVEL_COMPONENTS.add(assign_name)
 
             ext = ext.lower()
             try:

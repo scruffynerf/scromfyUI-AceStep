@@ -1,0 +1,4 @@
+# List component names (file basenames) from subdirectories that you want to show in the UI.
+# Example: 
+# If you have prompt_components/genres/SUNO.txt, add SUNO here.
+SUNO

@@ -1,0 +1,4 @@
+# List component names (file basenames) that you do NOT want to show in the UI.
+# This overrides top-level directory visibility and FORCESHOW.list.
+# Example: 
+# If you have prompt_components/OLD_GENRES.txt, add OLD_GENRES here to keep it loaded but hide it from dropdowns.

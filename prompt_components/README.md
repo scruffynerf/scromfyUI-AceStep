@@ -34,7 +34,16 @@ The visibility of components in the **Prompt Generator** dropdown is determined 
 
 ### 3. `REPLACE.list` (JSON)
 Allows you to substitute an existing component name with a custom file.
-- **Example**: `{"ADJECTIVES": "MY_PROMPT_LIST"}`
+- **Example**: `{"ADJECTIVES": "MY_CUSTOM_LIST"}` (will load `MY_CUSTOM_LIST.txt` when `__ADJECTIVES__` is used).
+
+### 3. Visibility Control (UI Dropdowns)
+By default, only files in the root directory are shown in the UI. You can override this:
+
+- **`FORCESHOW.list`**: Explicitly show nested components (from subdirectories) in the UI.
+  - *Example*: Add `SUNO` to show `genres/SUNO.txt` in the dropdowns.
+- **`HIDDEN.list`**: Hide components from the UI (works for both root and forced-show items).
+  - *Example*: Add `ADJECTIVES` to hide it while still keeping it available for wildcards.
+- **`LOADBUTNOTSHOW.list`**: Alias for `HIDDEN.list` for backward compatibility.
 
 ### 4. `WEIGHTS.json` (JSON)
 Controls the **order** in which components appear in the UI and their position in the final combined prompt.

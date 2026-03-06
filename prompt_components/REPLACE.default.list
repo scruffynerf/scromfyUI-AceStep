@@ -1,3 +1,4 @@
 {
+    "_help": "Allows you to substitute an existing component name with a custom file. Mapping is 'VIRTUAL_NAME': 'PHYSICAL_FILENAME_WITHOUT_EXT'. Example: {'ADJECTIVES': 'MY_NEW_ADJECTIVES'}",
     "EXAMPLE_ORIGINAL": "EXAMPLE_REPLACEMENT"
 }
