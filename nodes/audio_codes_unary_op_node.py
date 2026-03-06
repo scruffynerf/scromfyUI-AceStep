@@ -19,7 +19,14 @@ class AceStepAudioCodesUnaryOp:
             "required": {
                 "audio_codes": ("LIST",),
                 "model": ("MODEL",),
-                "mode": (["gate", "scale_masked", "noise_masked", "fade_out"], {"default": "gate"}),
+                "mode": ([
+                    "noop_visualize",
+                    "gate",
+                    "scale_masked",
+                    "noise_masked",
+                    "fade_out"
+                ], {"default": "noop_visualize"}),
+                "ssm_blur": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "length_pct": ("FLOAT", {"default": 100.0, "min": 0.1, "max": 1000.0, "step": 0.1}),
                 "strength": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
                 "sigma": ("FLOAT", {"default": 0.01, "min": 0.0, "max": 1.0, "step": 0.001}),
@@ -30,8 +37,8 @@ class AceStepAudioCodesUnaryOp:
             }
         }
     
-    RETURN_TYPES = ("LIST",)
-    RETURN_NAMES = ("audio_codes",)
+    RETURN_TYPES = ("LIST", "IMAGE")
+    RETURN_NAMES = ("audio_codes", "visualization")
     FUNCTION = "process"
     CATEGORY = "Scromfy/Ace-Step/mixers"
 
@@ -46,6 +53,45 @@ class AceStepAudioCodesUnaryOp:
             return hashlib.md5(info.encode()).hexdigest()
         except:
             return "random"
+
+    def _self_similarity_image(self, A, blur_sigma=0.0):
+        """
+        Create a Self-Similarity Matrix image from decoded tensor A.
+        A shape: [1, T, 6]
+        """
+        X = A[0]  # [T,6]
+
+        # normalize vectors
+        X = torch.nn.functional.normalize(X, dim=1)
+
+        # cosine similarity
+        S = X @ X.T   # [T,T]
+
+        # convert [-1,1] → [0,1]
+        S = (S + 1.0) / 2.0
+
+        # optional gaussian blur (the "cool trick")
+        if blur_sigma > 0:
+            k = int(blur_sigma * 4 + 1)
+            if k % 2 == 0:
+                k += 1
+
+            coords = torch.arange(k, device=S.device) - k // 2
+            g = torch.exp(-(coords**2) / (2 * blur_sigma**2))
+            g = g / g.sum()
+
+            kernel = torch.outer(g, g)
+            kernel = kernel / kernel.sum()
+
+            kernel = kernel.view(1,1,k,k)
+
+            S = S.unsqueeze(0).unsqueeze(0)
+            S = F.conv2d(S, kernel, padding=k//2)
+            S = S[0,0]
+
+        # convert to RGB image
+        img = S.unsqueeze(0).unsqueeze(-1).repeat(1,1,1,3)
+        return img
 
     def process(self, audio_codes, model, mode, length_pct, strength, sigma, seed, mask=None):
         inner_model = model.model
@@ -66,6 +112,9 @@ class AceStepAudioCodesUnaryOp:
 
         # Decode to 6D float space [1, T, 6]
         A = fsq_decode_indices(torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0), levels)
+
+        # --- Visualization (time vs FSQ dimensions) ---
+        vis_image = self._self_similarity_image(A, blur_sigma=ssm_blur)
 
         # Handle Length Scaling
         if length_pct != 100.0:
@@ -96,7 +145,11 @@ class AceStepAudioCodesUnaryOp:
                 mask = mask.transpose(1, 2)
 
         # Perform Operations in 6D space
-        if mode == "gate":
+
+        if mode == "noop_visualize":
+            out = A
+
+        elif mode == "gate":
             # Gating: A * mask (values move towards 0.0 midpoint)
             out = A * mask
             
@@ -128,7 +181,7 @@ class AceStepAudioCodesUnaryOp:
         # Encode back to indices
         result_ids = fsq_encode_to_indices(out, levels)[0].tolist()
 
-        return ([result_ids],)
+        return ([result_ids], vis_image)
 
 NODE_CLASS_MAPPINGS = {
     "AceStepAudioCodesUnaryOp": AceStepAudioCodesUnaryOp,
