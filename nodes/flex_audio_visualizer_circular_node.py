@@ -118,7 +118,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                 else:
                     cv2.polylines(image, [points], isClosed=True, color=(1.0, 1.0, 1.0), thickness=line_width)
 
-        return image
+        return image.copy()
 
 NODE_CLASS_MAPPINGS = {
     "ScromfyFlexAudioVisualizerCircular": ScromfyFlexAudioVisualizerCircularNode,

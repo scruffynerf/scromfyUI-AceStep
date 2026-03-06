@@ -301,15 +301,20 @@ class FlexAudioVisualizerBase(FlexBase):
 
             # Generate the image for the current frame
             image = self.apply_effect_internal(processor, **processed_kwargs)
-            result.append(image)
+            result.append(torch.from_numpy(image).float())
 
             self.update_progress()
 
         self.end_progress()
 
-        # Convert result to tensor
-        result_np = np.stack(result)
-        result_tensor = torch.from_numpy(result_np).float()
-        mask = result_tensor[:, :, :, 0]
-        
-        return (result_tensor, mask,)
+        # Convert result list of tensors to a single stacked tensor
+        if result:
+            result_tensor = torch.stack(result)
+            # Create mask from the first channel (assuming grayscale or white-on-black)
+            mask = result_tensor[:, :, :, 0]
+            return (result_tensor, mask,)
+        else:
+            # Fallback for empty results
+            empty_tensor = torch.zeros((1, screen_height, screen_width, 3), dtype=torch.float32)
+            empty_mask = torch.zeros((1, screen_height, screen_width), dtype=torch.float32)
+            return (empty_tensor, empty_mask,)

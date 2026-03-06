@@ -199,7 +199,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 process_contour(cnt, start_idx, end_idx, mul)
             start_idx = end_idx
 
-        return image
+        return image.copy()
 
 NODE_CLASS_MAPPINGS = {
     "ScromfyFlexAudioVisualizerContour": ScromfyFlexAudioVisualizerContourNode,
