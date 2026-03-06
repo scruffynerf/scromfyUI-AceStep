@@ -72,6 +72,8 @@ class ScromfyLyricsOverlay:
     def overlay_lyrics(self, images, lrc_text, fps, font_size, highlight_color, normal_color, 
                        background_alpha, blur_radius, y_position, max_lines, line_spacing, font_path=""):
         
+        from comfy.utils import ProgressBar
+        
         # Parse lyrics (detect mode)
         if "-->" in lrc_text:
             lyrics = self.parse_srt(lrc_text)
@@ -101,7 +103,21 @@ class ScromfyLyricsOverlay:
             font_bold = font_reg
 
         batch_size, height, width, channels = images.shape
-        out_images = []
+        # Pre-allocate output tensor to avoid stack copy later
+        out_tensor = torch.empty_like(images)
+        pbar = ProgressBar(batch_size)
+
+        # Pre-calculate colors
+        def hex_to_rgb(hex_str):
+            hex_str = hex_str.lstrip('#')
+            return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+        
+        try:
+            high_rgb = hex_to_rgb(highlight_color)
+            norm_rgb = hex_to_rgb(normal_color)
+        except:
+            high_rgb = (52, 211, 153)
+            norm_rgb = (156, 163, 175)
 
         for i in range(batch_size):
             time = i / fps
@@ -114,82 +130,85 @@ class ScromfyLyricsOverlay:
                 else:
                     break
             
-            # Convert frame to numpy for cv2 and PIL
-            frame_np = (images[i].cpu().numpy() * 255).astype(np.uint8)
+            # Convert frame to numpy (copy ensures we don't hold references to the batch)
+            frame_np = (images[i].cpu().numpy() * 255).astype(np.uint8).copy()
             
-            # Prepare overlay
-            overlay_pil = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-            draw = ImageDraw.Draw(overlay_pil)
-            
-            # Determine vertical orientation
-            center_y = int(height * y_position)
-            
-            # Lines to render
-            lines_to_draw = []
             if current_idx != -1:
-                # Get window of lyrics
+                # Lines to render
                 start_l = max(0, current_idx - max_lines // 2)
                 end_l = min(len(lyrics), start_l + max_lines)
-                
-                # Adjust start if we hit the end
                 if end_l - start_l < max_lines:
                     start_l = max(0, end_l - max_lines)
                 
+                lines_to_draw = []
                 for j in range(start_l, end_l):
-                    is_active = (j == current_idx)
                     lines_to_draw.append({
                         "text": lyrics[j]["text"],
-                        "active": is_active,
+                        "active": (j == current_idx),
                         "offset": j - current_idx
                     })
 
-            if lines_to_draw:
-                # Calculate dimensions for background box
-                line_height = int(font_size * line_spacing)
-                total_h = line_height * len(lines_to_draw)
-                box_top = center_y - total_h // 2 - 10
-                box_bottom = center_y + total_h // 2 + 10
-                box_left = int(width * 0.1)
-                box_right = int(width * 0.9)
-                
-                # Apply blur to background
-                if blur_radius > 0:
-                    box_region = frame_np[max(0, box_top):min(height, box_bottom), 
-                                          max(0, box_left):min(width, box_right)]
-                    if box_region.size > 0:
-                        box_region = cv2.GaussianBlur(box_region, (0, 0), blur_radius)
-                        frame_np[max(0, box_top):min(height, box_bottom), 
-                                 max(0, box_left):min(width, box_right)] = box_region
-
-                # Draw semi-transparent box
-                draw.rectangle([box_left, box_top, box_right, box_bottom], 
-                               fill=(0, 0, 0, int(255 * background_alpha)))
-                
-                # Draw lines
-                for item in lines_to_draw:
-                    txt = item["text"]
-                    f = font_bold if item["active"] else font_reg
-                    c = highlight_color if item["active"] else normal_color
+                if lines_to_draw:
+                    center_y = int(height * y_position)
+                    line_height = int(font_size * line_spacing)
+                    total_h = line_height * len(lines_to_draw)
                     
-                    # Get text size
-                    left, top, right, bottom = draw.textbbox((0, 0), txt, font=f)
-                    tw, th = right - left, bottom - top
-                    
-                    tx = (width - tw) // 2
-                    # Position relative to center_y
-                    ty = center_y + (item["offset"] * line_height) - th // 2
-                    
-                    draw.text((tx, ty), txt, font=f, fill=c)
+                    # Box dimensions
+                    box_top = max(0, center_y - total_h // 2 - 20)
+                    box_bottom = min(height, center_y + total_h // 2 + 20)
+                    box_left = int(width * 0.1)
+                    box_right = int(width * 0.9)
+                    box_w = box_right - box_left
+                    box_h = box_bottom - box_top
 
-            # Composite
-            base_pil = Image.fromarray(frame_np).convert("RGBA")
-            base_pil.alpha_composite(overlay_pil)
-            
-            # Back to tensor
-            frame_out = np.array(base_pil.convert("RGB")).astype(np.float32) / 255.0
-            out_images.append(torch.from_numpy(frame_out))
+                    if box_w > 0 and box_h > 0:
+                        # 1. Blur and Dim in-place using OpenCV (Much faster and memory efficient)
+                        sub_img = frame_np[box_top:box_bottom, box_left:box_right]
+                        if blur_radius > 0:
+                            k = blur_radius if blur_radius % 2 == 1 else blur_radius + 1
+                            sub_img = cv2.GaussianBlur(sub_img, (k, k), 0)
+                        
+                        # Dimming (Manual alpha blend with black)
+                        if background_alpha > 0:
+                            sub_img = (sub_img.astype(np.float32) * (1.0 - background_alpha)).astype(np.uint8)
+                        
+                        frame_np[box_top:box_bottom, box_left:box_right] = sub_img
 
-        return (torch.stack(out_images),)
+                        # 2. Render Text onto a SMALL PIL image (the size of the box)
+                        text_overlay = Image.new("RGBA", (box_w, box_h), (0, 0, 0, 0))
+                        draw = ImageDraw.Draw(text_overlay)
+                        
+                        for item in lines_to_draw:
+                            f = font_bold if item["active"] else font_reg
+                            c = high_rgb if item["active"] else norm_rgb
+                            if item["active"]:
+                                rgba_color = (*c, 255)
+                            else:
+                                rgba_color = (*c, 180) # Slightly transparent for normal lines
+
+                            bbox = draw.textbbox((0, 0), item["text"], font=f)
+                            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                            
+                            tx = (box_w - tw) // 2
+                            # Rel to box center
+                            ty = (box_h // 2) + (item["offset"] * line_height) - th // 2
+                            
+                            draw.text((tx, ty), item["text"], font=f, fill=rgba_color)
+                        
+                        # Composite the small text overlay onto the frame
+                        text_overlay_np = np.array(text_overlay)
+                        text_rgb = text_overlay_np[:, :, :3]
+                        text_alpha = text_overlay_np[:, :, 3:] / 255.0
+                        
+                        target_region = frame_np[box_top:box_bottom, box_left:box_right]
+                        blended = (text_rgb * text_alpha + target_region * (1.0 - text_alpha)).astype(np.uint8)
+                        frame_np[box_top:box_bottom, box_left:box_right] = blended
+
+            # Put back into pre-allocated tensor
+            out_tensor[i] = torch.from_numpy(frame_np.astype(np.float32) / 255.0)
+            pbar.update(1)
+
+        return (out_tensor,)
 
 NODE_CLASS_MAPPINGS = {
     "ScromfyLyricsOverlay": ScromfyLyricsOverlay,
