@@ -165,6 +165,9 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     # Determine color
                     if color_mode == "spectrum" and item_freqs is not None:
                         color = get_color_for_frequency(item_freqs[start_idx + i], color_shift, saturation, brightness)
+                    elif color_mode == "custom":
+                        custom_hex = kwargs.get("custom_color", "#FFFFFF").lstrip('#')
+                        color = tuple(int(custom_hex[i:i+2], 16)/255.0 for i in (0, 2, 4))
                     else:
                         color = (1.0, 1.0, 1.0)
                         
@@ -183,6 +186,10 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     # Close the loop if needed (contour is closed)
                     color = get_color_for_frequency(item_freqs[end_idx - 1], color_shift, saturation, brightness)
                     cv2.line(image, tuple(pts[-1]), tuple(pts[0]), color, line_width)
+                elif color_mode == "custom":
+                    custom_hex = kwargs.get("custom_color", "#FFFFFF").lstrip('#')
+                    color = tuple(int(custom_hex[i:i+2], 16)/255.0 for i in (0, 2, 4))
+                    cv2.polylines(image, [pts.astype(np.int32)], True, color, thickness=line_width)
                 else:
                     cv2.polylines(image, [pts.astype(np.int32)], True, (1.0, 1.0, 1.0), thickness=line_width)
 

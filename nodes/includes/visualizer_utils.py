@@ -107,12 +107,13 @@ def get_color_for_frequency(freq, shift=0.0, saturation=1.0, brightness=1.0):
 
 class LyricRenderer:
     def __init__(self, lrc_text, width, height, font_size, highlight_color, normal_color, 
-                 background_alpha, blur_radius, y_position, max_lines, line_spacing, font_path=""):
+                 background_alpha, blur_radius, active_blur_radius, y_position, max_lines, line_spacing, font_path=""):
         self.width = width
         self.height = height
         self.font_size = font_size
         self.background_alpha = background_alpha
         self.blur_radius = blur_radius
+        self.active_blur_radius = active_blur_radius
         self.y_position = y_position
         self.max_lines = max_lines
         self.line_spacing = line_spacing
@@ -238,6 +239,25 @@ class LyricRenderer:
                     text_np = np.array(self.scratch_overlay.crop((0, 0, b_w, b_h)))
                     t_rgb = text_np[:, :, :3]
                     t_alpha = text_np[:, :, 3:].astype(np.float32) / 255.0
+
+                    # Apply extra blur behind ONLY the active lyric line if requested
+                    if self.active_blur_radius > 0:
+                        # Find the vertical bounds of the active line in text_np
+                        active_mask = text_np[:, :, 3] > 0
+                        if np.any(active_mask):
+                            # We want to blur the background 'sub' localized to where the active text is
+                            # First, find the vertical range of the active text
+                            # (Actually, we can just use the item["active"] logic from earlier to know exactly where it is)
+                            
+                            # Re-calculating active line y-range for localized blur
+                            active_ty = (b_h // 2) - line_h // 2
+                            active_y_start = max(0, active_ty - 10)
+                            active_y_end = min(b_h, active_ty + line_h + 10)
+                            
+                            active_sub = sub[active_y_start:active_y_end, :]
+                            k_active = self.active_blur_radius if self.active_blur_radius % 2 == 1 else self.active_blur_radius + 1
+                            cv2.GaussianBlur(active_sub, (k_active, k_active), 0, dst=active_sub)
+
                     frame_np[b_top:b_bot, b_left:b_right] = (t_rgb * t_alpha + sub * (1.0 - t_alpha)).astype(np.uint8)
 
         return frame_np
@@ -257,7 +277,8 @@ class FlexAudioVisualizerBase(FlexBase):
                 "screen_height": ("INT", {"default": 464, "min": 100, "max": 1080, "step": 1}),
                 "position_x": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "position_y": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "color_mode": (["white", "spectrum"], {"default": "spectrum"}),
+                "color_mode": (["white", "spectrum", "custom"], {"default": "spectrum"}),
+                "custom_color": ("COLOR", {"default": "#FFFFFF"}),
                 "color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "brightness": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -265,10 +286,11 @@ class FlexAudioVisualizerBase(FlexBase):
             "optional": {
                 "lrc_text": ("STRING", {"multiline": True, "default": ""}),
                 "lyric_font_size": ("INT", {"default": 24, "min": 10, "max": 200}),
-                "lyric_highlight_color": ("STRING", {"default": "#34d399"}),
-                "lyric_normal_color": ("STRING", {"default": "#9ca3af"}),
+                "lyric_highlight_color": ("COLOR", {"default": "#34d399"}),
+                "lyric_normal_color": ("COLOR", {"default": "#9ca3af"}),
                 "lyric_background_alpha": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "lyric_blur_radius": ("INT", {"default": 10, "min": 0, "max": 50}),
+                "lyric_active_blur": ("INT", {"default": 20, "min": 0, "max": 100}),
                 "lyric_y_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "lyric_max_lines": ("INT", {"default": 5, "min": 1, "max": 20}),
                 "lyric_line_spacing": ("FLOAT", {"default": 1.5, "min": 1.0, "max": 3.0, "step": 0.1}),
@@ -396,6 +418,7 @@ class FlexAudioVisualizerBase(FlexBase):
                 kwargs.get("lyric_normal_color", "#9ca3af"),
                 kwargs.get("lyric_background_alpha", 0.4),
                 kwargs.get("lyric_blur_radius", 10),
+                kwargs.get("lyric_active_blur", 20),
                 kwargs.get("lyric_y_position", 0.5),
                 kwargs.get("lyric_max_lines", 5),
                 kwargs.get("lyric_line_spacing", 1.5)
