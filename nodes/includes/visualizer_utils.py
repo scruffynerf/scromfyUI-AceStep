@@ -242,23 +242,17 @@ class LyricRenderer:
 
                     # Apply extra blur behind ONLY the active lyric line if requested
                     if self.active_blur_radius > 0:
-                        # Find the vertical bounds of the active line in text_np
-                        active_mask = text_np[:, :, 3] > 0
-                        if np.any(active_mask):
-                            # We want to blur the background 'sub' localized to where the active text is
-                            # First, find the vertical range of the active text
-                            # (Actually, we can just use the item["active"] logic from earlier to know exactly where it is)
-                            
-                            # Re-calculating active line y-range for localized blur
-                            active_ty = (b_h // 2) - line_h // 2
-                            active_y_start = max(0, active_ty - 10)
-                            active_y_end = min(b_h, active_ty + line_h + 10)
-                            
-                            active_sub = sub[active_y_start:active_y_end, :]
-                            k_active = self.active_blur_radius if self.active_blur_radius % 2 == 1 else self.active_blur_radius + 1
-                            cv2.GaussianBlur(active_sub, (k_active, k_active), 0, dst=active_sub)
+                        active_ty = (b_h // 2) - line_h // 2
+                        active_y_start = max(0, active_ty - 10)
+                        active_y_end = min(b_h, active_ty + line_h + 10)
+                        
+                        active_sub = sub[active_y_start:active_y_end, :]
+                        k_active = self.active_blur_radius if self.active_blur_radius % 2 == 1 else self.active_blur_radius + 1
+                        cv2.GaussianBlur(active_sub, (k_active, k_active), 0, dst=active_sub)
 
-                    frame_np[b_top:b_bot, b_left:b_right] = (t_rgb * t_alpha + sub * (1.0 - t_alpha)).astype(np.uint8)
+                    # Final blend: Use np.clip to prevent any wrap-around during conversion
+                    blended = (t_rgb.astype(np.float32) * t_alpha + sub.astype(np.float32) * (1.0 - t_alpha))
+                    frame_np[b_top:b_bot, b_left:b_right] = np.clip(blended, 0, 255).astype(np.uint8)
 
         return frame_np
 
@@ -460,10 +454,13 @@ class FlexAudioVisualizerBase(FlexBase):
             
             # Ensure image is uint8 [0, 255] for lyric renderer and efficient processing
             if image.dtype != np.uint8:
-                if np.max(image) <= 1.01: # Check if it's [0, 1] floats
-                    image = (image * 255).astype(np.uint8)
+                # Force to [0, 1] range then to [0, 255] for consistency
+                if np.max(image) <= 1.05 and np.min(image) >= -0.05:
+                    image = np.clip(image, 0, 1)
+                    image = (image * 255.0).astype(np.uint8)
                 else:
-                    image = image.astype(np.uint8)
+                    # Already seems to be in 0-255 range but float?
+                    image = np.clip(image, 0, 255).astype(np.uint8)
             
             # Apply lyrics if enabled
             if lyric_renderer:
