@@ -5,11 +5,11 @@ from .includes.visualizer_utils import FlexAudioVisualizerBase
 class ScromfyFlexLyricsNode(FlexAudioVisualizerBase):
     @classmethod
     def INPUT_TYPES(cls):
-        # We want to prune the visualizer-specific parameters to keep it clean
+        # Keep audio, video, frame_rate, dimensions, and ALL lyric settings
         base = super().INPUT_TYPES()
         required = base["required"]
         
-        # Remove visualizer specific color/shape params
+        # Keep audio, video, frame_rate, dimensions, and ALL lyric settings
         cleaned_required = {
             "audio": required["audio"],
             "frame_rate": required["frame_rate"],
@@ -17,13 +17,32 @@ class ScromfyFlexLyricsNode(FlexAudioVisualizerBase):
             "screen_height": required["screen_height"],
             "strength": required["strength"],
             "feature_threshold": required["feature_threshold"],
-            "feature_param": (["None"],),
             "feature_mode": required["feature_mode"],
+        }
+        
+        # Add basic visualizer mode so it passes base class validation
+        cleaned_required["color_mode"] = required["color_mode"]
+        cleaned_required["custom_color"] = required["custom_color"]
+        
+        # Add all lyric settings from optional
+        optional = base["optional"]
+        cleaned_optional = {
+            "opt_video": optional["opt_video"],
+            "lrc_text": optional["lrc_text"],
+            "lyric_font_size": optional["lyric_font_size"],
+            "lyric_highlight_color": optional["lyric_highlight_color"],
+            "lyric_normal_color": optional["lyric_normal_color"],
+            "lyric_background_alpha": optional["lyric_background_alpha"],
+            "lyric_blur_radius": optional["lyric_blur_radius"],
+            "lyric_active_blur": optional["lyric_active_blur"],
+            "lyric_y_position": optional["lyric_y_position"],
+            "lyric_max_lines": optional["lyric_max_lines"],
+            "lyric_line_spacing": optional["lyric_line_spacing"],
         }
         
         return {
             "required": cleaned_required,
-            "optional": base["optional"]
+            "optional": cleaned_optional
         }
 
     @classmethod

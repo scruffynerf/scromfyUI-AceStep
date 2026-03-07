@@ -34,7 +34,7 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         }
 
         # Combine, putting new specific inputs first
-        all_required = {**new_inputs["required"], **base_required}
+        all_required = {**base_required, **new_inputs["required"]}
         
         return {
             "required": all_required,

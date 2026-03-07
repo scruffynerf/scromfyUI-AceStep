@@ -52,7 +52,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             }
         }
 
-        all_required = {**new_inputs["required"], **base_required}
+        all_required = {**base_required, **new_inputs["required"]}
         all_optional = {**base_optional, "mask": ("MASK",)}
         
         return {
@@ -75,12 +75,12 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             s_rng = random.Random(kwargs.get("seed", 0))
             kwargs["visualization_method"] = s_rng.choice(["bar", "line"])
             kwargs["visualization_feature"] = s_rng.choice(["frequency", "waveform"])
-            kwargs["color_mode"] = s_rng.choice(["white", "spectrum", "custom"])
+            kwargs["color_mode"] = s_rng.choice(["spectrum", "custom"])
             kwargs["bar_length"] = s_rng.uniform(5.0, 100.0)
-            kwargs["line_width"] = s_rng.randint(1, 10)
+            kwargs["line_width"] = s_rng.randint(2, 10)
             kwargs["distribute_by"] = s_rng.choice(["area", "perimeter", "equal"])
             kwargs["direction"] = s_rng.choice(["outward", "inward", "both"])
-            kwargs["max_contours"] = s_rng.randint(1, 20)
+            kwargs["max_contours"] = s_rng.randint(5, 20)
             kwargs["contour_smoothing"] = s_rng.randint(0, 10) # subtle smoothing
             kwargs["smoothing"] = s_rng.uniform(0.1, 0.9)
 
