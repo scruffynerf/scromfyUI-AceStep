@@ -131,6 +131,9 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 
+# Virtual environment
+venv/
+
 # SageMath parsed files
 *.sage.py
 

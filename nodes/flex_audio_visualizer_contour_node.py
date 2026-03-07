@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
 import torch
+import os
+import random
+from PIL import Image
 from .includes.visualizer_utils import FlexAudioVisualizerBase, BaseAudioProcessor, get_color_for_frequency
 
 class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
@@ -17,9 +20,16 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             if param in base_required:
                 del base_required[param]
 
+        # Get list of masks
+        masks_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "masks")
+        installed_masks = ["random"]
+        if os.path.exists(masks_dir):
+            masks_list = sorted([f for f in os.listdir(masks_dir) if f.lower().endswith(".png")])
+            installed_masks.extend(masks_list)
+
         new_inputs = {
             "required": {
-                "mask": ("MASK",),
+                "installed_mask": (installed_masks, {"default": "random"}),
                 "visualization_method": (["bar", "line"], {"default": "bar"}),
                 "visualization_feature": (["frequency", "waveform"], {"default": "frequency"}),
                 "smoothing": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -39,10 +49,11 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         }
 
         all_required = {**new_inputs["required"], **base_required}
+        all_optional = {**base_optional, "mask": ("MASK",)}
         
         return {
             "required": all_required,
-            "optional": base_optional
+            "optional": all_optional
         }
 
     @classmethod
@@ -52,15 +63,44 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "contour_smoothing", "min_contour_area", "max_contours", 
                 "color_shift", "saturation", "brightness", "None"]
 
-    def apply_effect(self, audio, frame_rate, mask, strength, feature_param, feature_mode,
-                     feature_threshold, opt_feature=None, **kwargs):
+    def apply_effect(self, audio, frame_rate, strength, feature_param, feature_mode,
+                     feature_threshold, mask=None, opt_feature=None, **kwargs):
+        # Handle optional/missing mask
+        if mask is None:
+            masks_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "masks")
+            installed_mask = kwargs.get("installed_mask", "random")
+            
+            if installed_mask == "random":
+                masks_list = [f for f in os.listdir(masks_dir) if f.lower().endswith(".png")]
+                if masks_list:
+                    installed_mask = random.choice(masks_list)
+                else:
+                    # Fallback to a simple circle if no masks found
+                    mask = torch.zeros((1, 512, 512), dtype=torch.float32)
+                    cv2.circle(mask[0].numpy(), (256, 256), 200, (1.0,), -1)
+            
+            if mask is None: # Means we have a filename to load
+                mask_path = os.path.join(masks_dir, installed_mask)
+                if os.path.exists(mask_path):
+                    pil_img = Image.open(mask_path).convert('L')
+                    mask_np = np.array(pil_img).astype(np.float32) / 255.0
+                    mask = torch.from_numpy(mask_np)
+                else:
+                    mask = torch.zeros((1, 512, 512), dtype=torch.float32)
+
         # Get dimensions from mask
         if len(mask.shape) == 3:
             batch_size, screen_height, screen_width = mask.shape
         else:
-            screen_height, screen_width = mask.shape
-            batch_size = 1
-            mask = mask.unsqueeze(0)
+            if len(mask.shape) == 2:
+                screen_height, screen_width = mask.shape
+                batch_size = 1
+                mask = mask.unsqueeze(0)
+            else:
+                # Should not happen with valid masks, but for safety:
+                batch_size = 1
+                screen_height, screen_width = 512, 512
+                mask = torch.zeros((1, 512, 512), dtype=torch.float32)
             
         kwargs['mask'] = mask
         return super().apply_effect(
