@@ -230,12 +230,23 @@ class LyricRenderer:
                     for item in lines_to_draw:
                         f = self.f_bold if item["active"] else self.f_reg
                         c = (*(self.high_rgb if item["active"] else self.norm_rgb), 255 if item["active"] else 180)
-                        bbox = self.scratch_draw.textbbox((0, 0), item["txt"], font=f)
+                        
+                        # Auto-shrink font size if too wide
+                        current_f = f
+                        bbox = self.scratch_draw.textbbox((0, 0), item["txt"], font=current_f)
                         tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
+                        
+                        if tw > b_w - 40: # 20px padding on each side
+                            scale = (b_w - 40) / tw
+                            new_size = int(current_f.size * scale)
+                            current_f = ImageFont.truetype(current_f.path, new_size) if hasattr(current_f, 'path') else current_f
+                            bbox = self.scratch_draw.textbbox((0, 0), item["txt"], font=current_f)
+                            tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
+
                         tx = (b_w - tw) // 2
                         ty = (b_h // 2) + (item["off"] * line_h) - th // 2
                         if ty + th < b_h and ty >= 0:
-                            self.scratch_draw.text((tx, ty), item["txt"], font=f, fill=c)
+                            self.scratch_draw.text((tx, ty), item["txt"], font=current_f, fill=c)
                     
                     text_np = np.array(self.scratch_overlay.crop((0, 0, b_w, b_h)))
                     t_rgb = text_np[:, :, :3]
@@ -267,13 +278,13 @@ class FlexAudioVisualizerBase(FlexBase):
         new_inputs = {
             "required": {
                 "audio": ("AUDIO",),
-                "frame_rate": ("FLOAT", {"default": 30.0, "min": 1.0, "max": 240.0, "step": 1.0}),
+                "frame_rate": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 240.0, "step": 1.0}),
                 "screen_width": ("INT", {"default": 768, "min": 100, "max": 1920, "step": 1}),
                 "screen_height": ("INT", {"default": 464, "min": 100, "max": 1080, "step": 1}),
                 "position_x": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "position_y": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "color_mode": (["white", "spectrum", "custom"], {"default": "spectrum"}),
-                "custom_color": ("COLOR", {"default": "#FFFFFF"}),
+                "custom_color": ("COLOR", {"default": "#00FFFF"}),
                 "color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "brightness": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -283,11 +294,11 @@ class FlexAudioVisualizerBase(FlexBase):
                 "lrc_text": ("STRING", {"multiline": True, "default": ""}),
                 "lyric_font_size": ("INT", {"default": 24, "min": 10, "max": 200}),
                 "lyric_highlight_color": ("COLOR", {"default": "#34d399"}),
-                "lyric_normal_color": ("COLOR", {"default": "#9ca3af"}),
-                "lyric_background_alpha": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "lyric_blur_radius": ("INT", {"default": 10, "min": 0, "max": 50}),
-                "lyric_active_blur": ("INT", {"default": 20, "min": 0, "max": 100}),
-                "lyric_y_position": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "lyric_normal_color": ("COLOR", {"default": "#f3f4f6"}),
+                "lyric_background_alpha": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "lyric_blur_radius": ("INT", {"default": 1, "min": 0, "max": 50}),
+                "lyric_active_blur": ("INT", {"default": 10, "min": 0, "max": 100}),
+                "lyric_y_position": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "lyric_max_lines": ("INT", {"default": 5, "min": 1, "max": 20}),
                 "lyric_line_spacing": ("FLOAT", {"default": 1.5, "min": 1.0, "max": 3.0, "step": 0.1}),
             }

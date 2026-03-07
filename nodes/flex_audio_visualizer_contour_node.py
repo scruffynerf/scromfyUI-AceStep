@@ -30,6 +30,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         new_inputs = {
             "required": {
                 "installed_mask": (installed_masks, {"default": "random"}),
+                "mask_scale": ("FLOAT", {"default": 0.40, "min": 0.01, "max": 1.0, "step": 0.01}),
+                "mask_top_margin": ("FLOAT", {"default": 0.05, "min": 0.0, "max": 0.5, "step": 0.01}),
                 "visualization_method": (["bar", "line"], {"default": "bar"}),
                 "visualization_feature": (["frequency", "waveform"], {"default": "frequency"}),
                 "smoothing": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -88,19 +90,49 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 else:
                     mask = torch.zeros((1, 512, 512), dtype=torch.float32)
 
-        # Get dimensions from mask
+        # Resizing and Positioning logic
+        mask_scale = kwargs.get("mask_scale", 0.40)
+        mask_top_margin = kwargs.get("mask_top_margin", 0.05)
+        
+        # We need the original/target dimensions to pad correctly
+        # If mask was loaded, it might have its own size, but we usually want to fit it to a screen
         if len(mask.shape) == 3:
-            batch_size, screen_height, screen_width = mask.shape
+            m_batch, m_height, m_width = mask.shape
         else:
-            if len(mask.shape) == 2:
-                screen_height, screen_width = mask.shape
-                batch_size = 1
-                mask = mask.unsqueeze(0)
-            else:
-                # Should not happen with valid masks, but for safety:
-                batch_size = 1
-                screen_height, screen_width = 512, 512
-                mask = torch.zeros((1, 512, 512), dtype=torch.float32)
+            m_height, m_width = mask.shape
+            m_batch = 1
+            mask = mask.unsqueeze(0)
+
+        # Actually resize the mask content
+        new_w = int(m_width * mask_scale)
+        new_h = int(m_height * mask_scale)
+        
+        if new_w > 0 and new_h > 0:
+            resized_masks = []
+            for b in range(m_batch):
+                m_np = mask[b].cpu().numpy()
+                m_resized = cv2.resize(m_np, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                
+                # Create a blank canvas of the original size
+                canvas = np.zeros((m_height, m_width), dtype=np.float32)
+                
+                # Calculate positions
+                x_offset = (m_width - new_w) // 2
+                y_offset = int(m_height * mask_top_margin)
+                
+                # Ensure it fits
+                y_end = min(y_offset + new_h, m_height)
+                x_end = min(x_offset + new_w, m_width)
+                h_to_copy = y_end - y_offset
+                w_to_copy = x_end - x_offset
+                
+                canvas[y_offset:y_end, x_offset:x_end] = m_resized[:h_to_copy, :w_to_copy]
+                resized_masks.append(torch.from_numpy(canvas))
+            
+            mask = torch.stack(resized_masks) if m_batch > 1 else resized_masks[0].unsqueeze(0)
+
+        # Get final dimensions
+        batch_size, screen_height, screen_width = mask.shape
             
         kwargs['mask'] = mask
         return super().apply_effect(
