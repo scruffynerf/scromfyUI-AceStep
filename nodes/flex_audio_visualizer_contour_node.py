@@ -49,6 +49,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "min_contour_area": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 10000.0, "step": 10.0}),
                 "max_contours": ("INT", {"default": 5, "min": 1, "max": 20, "step": 1}),
                 "distribute_by": (["area", "perimeter", "equal"], {"default": "perimeter"}),
+                "contour_color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
 
@@ -86,6 +87,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             kwargs["contour_smoothing"] = s_rng.randint(0, 10) # subtle smoothing
             kwargs["smoothing"] = s_rng.uniform(0.1, 0.9)
             kwargs["rotation"] = s_rng.uniform(0.0, 360.0)
+            kwargs["contour_color_shift"] = s_rng.uniform(0.0, 0.5)
             # Seeded random custom color (lowercase hex)
             kwargs["custom_color"] = "#%06x" % s_rng.randint(0, 0xffffff)
 
@@ -226,7 +228,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
 
         data = processor.spectrum
         
-        def process_contour(contour, start_idx, end_idx, direction_multiplier=1.0):
+        def process_contour(contour, start_idx, end_idx, direction_multiplier=1.0, contour_idx=0, total_contours=1):
             if contour_smoothing > 0:
                 epsilon = contour_smoothing * cv2.arcLength(contour, True) * 0.01
                 contour = cv2.approxPolyDP(contour, epsilon, True)
@@ -264,8 +266,14 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     if color_mode == "spectrum" and item_freqs is not None:
                         color = get_color_for_frequency(item_freqs[start_idx + i], color_shift, saturation, brightness)
                     elif color_mode == "custom":
-                        custom_hex = kwargs.get("custom_color", "#FFFFFF").lstrip('#')
-                        color = tuple(int(custom_hex[i:i+2], 16)/255.0 for i in (0, 2, 4))
+                        base_color = parse_color(kwargs.get("custom_color", "#00ffff"))
+                        color_shift_val = kwargs.get("contour_color_shift", 0.0)
+                        if color_shift_val > 0 and total_contours > 1:
+                            import colorsys
+                            h, l, s = colorsys.rgb_to_hls(*base_color)
+                            color = colorsys.hls_to_rgb((h + (contour_idx / total_contours) * color_shift_val) % 1.0, l, s)
+                        else:
+                            color = base_color
                     else:
                         color = (1.0, 1.0, 1.0)
                         
@@ -285,22 +293,30 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     color = get_color_for_frequency(item_freqs[end_idx - 1], color_shift, saturation, brightness)
                     cv2.line(image, tuple(pts[-1]), tuple(pts[0]), color, line_width)
                 elif color_mode == "custom":
-                    color = parse_color(kwargs.get("custom_color", "#00ffff"))
+                    base_color = parse_color(kwargs.get("custom_color", "#00ffff"))
+                    color_shift_val = kwargs.get("contour_color_shift", 0.0)
+                    if color_shift_val > 0 and total_contours > 1:
+                        import colorsys
+                        h, l, s = colorsys.rgb_to_hls(*base_color)
+                        color = colorsys.hls_to_rgb((h + (contour_idx / total_contours) * color_shift_val) % 1.0, l, s)
+                    else:
+                        color = base_color
                     cv2.polylines(image, [pts.astype(np.int32)], True, color, thickness=line_width)
                 else:
                     cv2.polylines(image, [pts.astype(np.int32)], True, (1.0, 1.0, 1.0), thickness=line_width)
 
         start_idx = 0
         total_pts = len(data)
+        total_contours = len(valid_contours)
         for i, (cnt, w) in enumerate(zip(valid_contours, weights)):
             num_pts = int(round(total_pts * w)) if i < len(valid_contours)-1 else total_pts - start_idx
             end_idx = start_idx + num_pts
             if direction == "both":
-                process_contour(cnt, start_idx, end_idx, 0.5)
-                process_contour(cnt, start_idx, end_idx, -0.5)
+                process_contour(cnt, start_idx, end_idx, 0.5, i, total_contours)
+                process_contour(cnt, start_idx, end_idx, -0.5, i, total_contours)
             else:
                 mul = -1.0 if direction == "inward" else 1.0
-                process_contour(cnt, start_idx, end_idx, mul)
+                process_contour(cnt, start_idx, end_idx, mul, i, total_contours)
             start_idx = end_idx
 
         return image.copy()
