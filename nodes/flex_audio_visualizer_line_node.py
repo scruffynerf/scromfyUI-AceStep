@@ -27,11 +27,11 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                 "max_height": ("FLOAT", {"default": 200.0, "min": 10.0, "max": 2000.0, "step": 10.0}),
                 "min_height": ("FLOAT", {"default": 10.0, "min": 0.0, "max": 500.0, "step": 5.0}),
                 "bar_length_mode": (["absolute", "relative"], {"default": "absolute"}),
+                "direction": (["outward", "inward", "both"], {"default": "outward"}),
                 "length": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 4000.0, "step": 10.0}),
                 "separation": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 100.0, "step": 1.0}),
                 "curvature": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 50.0, "step": 1.0}),
                 "curve_smoothing": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "reflect": ("BOOLEAN", {"default": False}),
             }
         }
 
@@ -48,7 +48,11 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         return ["smoothing", "rotation", "position_y", "position_x",
                 "num_bars", "max_height", "min_height", "separation", "curvature", 
                 "curve_smoothing", "fft_size", "min_frequency", "max_frequency", 
-                "color_shift", "saturation", "brightness", "bar_length_mode", "None"]
+                "color_shift", "saturation", "brightness", "bar_length_mode", "direction", "None"]
+
+    def get_point_count(self, kwargs):
+        # Line wants num_bars
+        return kwargs.get('num_bars', 64)
 
     def apply_effect(self, audio, frame_rate, strength, feature_param, feature_mode,
                      feature_threshold, opt_feature=None, **kwargs):
@@ -66,18 +70,33 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                 kwargs["max_height"] = s_rng.uniform(30.0, 70.0)
             
             kwargs["num_bars"] = s_rng.choice([16, 32, 64, 128])
+            kwargs["direction"] = s_rng.choice(["outward", "inward", "both"])
 
         # Get screen dimensions
         screen_width = kwargs.get("screen_width", 512)
         screen_height = kwargs.get("screen_height", 512)
         
-        images, masks, settings = super().apply_effect(
+        images, masks, source_mask, settings = super().apply_effect(
             audio, frame_rate, screen_width, screen_height,
             strength, feature_param, feature_mode, feature_threshold,
             opt_feature, **kwargs
         )
         
-        return (images, masks, settings)
+        return (images, masks, source_mask, settings)
+
+    def get_audio_data(self, processor: BaseAudioProcessor, frame_index, **kwargs):
+        visualization_feature = kwargs.get('visualization_feature', 'frequency')
+        smoothing = kwargs.get('smoothing', 0.5)
+        num_bars = kwargs.get('num_bars', 64)
+        fft_size = kwargs.get('fft_size', 2048)
+        min_frequency = kwargs.get('min_frequency', 20.0)
+        max_frequency = kwargs.get('max_frequency', 8000.0)
+
+        _, feature_value, _ = self.process_audio_data(
+            processor, frame_index, visualization_feature,
+            num_bars, smoothing, fft_size, min_frequency, max_frequency
+        )
+        return feature_value
 
     def apply_effect_internal(self, processor: BaseAudioProcessor, **kwargs):
         visualization_method = kwargs.get('visualization_method', 'bar')
@@ -86,9 +105,9 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         rotation = kwargs.get('rotation', 0.0) % 360
         position_y = kwargs.get('position_y', 0.5)
         position_x = kwargs.get('position_x', 0.5)
-        reflect = kwargs.get('reflect', False)
-        num_bars = kwargs.get('num_bars', 64)
+        num_bars = self.get_point_count(kwargs)
         length = kwargs.get('length', 0.0)
+        direction = kwargs.get('direction', 'outward')
         
         max_height = kwargs.get('max_height', 200.0)
         min_height = kwargs.get('min_height', 10.0)
@@ -142,10 +161,14 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
             for i, bar_value in enumerate(data):
                 x = int(x_offset + i * (bar_width + separation))
                 bar_h = effective_min_height + (effective_max_height - effective_min_height) * bar_value
-                if reflect:
+                if direction == 'inward':
                     y_start = int(baseline_y_padded)
                     y_end = int(baseline_y_padded + bar_h)
-                else:
+                elif direction == 'both':
+                    half_h = bar_h / 2.0
+                    y_start = int(baseline_y_padded - half_h)
+                    y_end = int(baseline_y_padded + half_h)
+                else: # outward
                     y_start = int(baseline_y_padded - bar_h)
                     y_end = int(baseline_y_padded)
                 

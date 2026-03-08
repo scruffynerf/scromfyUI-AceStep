@@ -26,6 +26,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                 "base_radius": ("FLOAT", {"default": 200.0, "min": 10.0, "max": 1000.0, "step": 10.0}),
                 "amplitude_scale": ("FLOAT", {"default": 100.0, "min": 1.0, "max": 1000.0, "step": 10.0}),
                 "bar_length_mode": (["absolute", "relative"], {"default": "absolute"}),
+                "direction": (["outward", "inward", "both"], {"default": "outward"}),
             }
         }
 
@@ -41,7 +42,11 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         return ["smoothing", "rotation", "num_points", "fft_size", 
                 "min_frequency", "max_frequency", "radius", "line_width",
                 "amplitude_scale", "base_radius", "position_x", "position_y", 
-                "color_shift", "saturation", "brightness", "bar_length_mode", "None"]
+                "color_shift", "saturation", "brightness", "bar_length_mode", "direction", "None"]
+
+    def get_point_count(self, kwargs):
+        # Circular usually wants num_points
+        return kwargs.get('num_points', 360)
 
     def apply_effect(self, audio, frame_rate, strength, feature_param, feature_mode,
                      feature_threshold, opt_feature=None, **kwargs):
@@ -60,23 +65,24 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
             
             kwargs["base_radius"] = s_rng.uniform(50.0, 300.0)
             kwargs["radius"] = kwargs["base_radius"]
+            kwargs["direction"] = s_rng.choice(["outward", "inward", "both"])
 
         # Get screen dimensions from base or defaults
         screen_width = kwargs.get("screen_width", 512)
         screen_height = kwargs.get("screen_height", 512)
         
-        images, masks, settings = super().apply_effect(
+        images, masks, source_mask, settings = super().apply_effect(
             audio, frame_rate, screen_width, screen_height,
             strength, feature_param, feature_mode, feature_threshold,
             opt_feature, **kwargs
         )
         
-        return (images, masks, settings)
+        return (images, masks, source_mask, settings)
 
     def get_audio_data(self, processor: BaseAudioProcessor, frame_index, **kwargs):
         visualization_feature = kwargs.get('visualization_feature', 'frequency')
         smoothing = kwargs.get('smoothing', 0.5)
-        num_points = kwargs.get('num_points', 360)
+        num_points = self.get_point_count(kwargs)
         fft_size = kwargs.get('fft_size', 2048)
         min_frequency = kwargs.get('min_frequency', 20.0)
         max_frequency = kwargs.get('max_frequency', 8000.0)
@@ -90,7 +96,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
     def apply_effect_internal(self, processor: BaseAudioProcessor, **kwargs):
         visualization_method = kwargs.get('visualization_method', 'bar')
         rotation = kwargs.get('rotation', 0.0) % 360
-        num_points = kwargs.get('num_points', 360)
+        num_points = self.get_point_count(kwargs)
         screen_width = processor.width
         screen_height = processor.height
         position_x = kwargs.get('position_x', 0.5)
@@ -98,6 +104,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         base_radius = kwargs.get('base_radius', 200.0)
         amplitude_scale = kwargs.get('amplitude_scale', 100.0)
         bar_length_mode = kwargs.get('bar_length_mode', 'absolute')
+        direction = kwargs.get('direction', 'outward')
         
         if bar_length_mode == "relative":
             # Treat amplitude_scale as a percentage of base_radius (consistent with contour scaling)
@@ -125,10 +132,22 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
 
         if visualization_method == 'bar':
             for i, (angle, amplitude) in enumerate(zip(angles, data)):
-                x_start = center_x + base_radius * np.cos(angle)
-                y_start = center_y + base_radius * np.sin(angle)
-                x_end = center_x + (base_radius + amplitude * effective_amplitude_scale) * np.cos(angle)
-                y_end = center_y + (base_radius + amplitude * effective_amplitude_scale) * np.sin(angle)
+                if direction == 'inward':
+                    x_start = center_x + base_radius * np.cos(angle)
+                    y_start = center_y + base_radius * np.sin(angle)
+                    x_end = center_x + (base_radius - amplitude * effective_amplitude_scale) * np.cos(angle)
+                    y_end = center_y + (base_radius - amplitude * effective_amplitude_scale) * np.sin(angle)
+                elif direction == 'both':
+                    half_amp = (amplitude * effective_amplitude_scale) / 2.0
+                    x_start = center_x + (base_radius - half_amp) * np.cos(angle)
+                    y_start = center_y + (base_radius - half_amp) * np.sin(angle)
+                    x_end = center_x + (base_radius + half_amp) * np.cos(angle)
+                    y_end = center_y + (base_radius + half_amp) * np.sin(angle)
+                else: # outward
+                    x_start = center_x + base_radius * np.cos(angle)
+                    y_start = center_y + base_radius * np.sin(angle)
+                    x_end = center_x + (base_radius + amplitude * effective_amplitude_scale) * np.cos(angle)
+                    y_end = center_y + (base_radius + amplitude * effective_amplitude_scale) * np.sin(angle)
                 
                 # Determine color
                 if color_mode == "spectrum" and item_freqs is not None:

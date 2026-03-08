@@ -301,11 +301,64 @@ class LyricRenderer:
         return frame_np
 
 VIBRANT_COLORS = [
-    "#00ffff", "#39ff14", "#ff00ff", "#ffea00", "#ff3d00", 
-    "#76ff03", "#00e5ff", "#f50057", "#d500f9", "#1de9b6",
-    "#ff9100", "#2979ff", "#ff1744", "#00b0ff", "#00e676",
-    "#ffee58", "#ff4081", "#7c4dff", "#64ffda", "#ffab40",
-    "#bf00ff", "#7fff00", "#ff1493", "#00ffbf"
+    # Reds & Oranges
+    "#ff0000", # Pure Red
+    "#ff1744", # Bright Red-Pink
+    "#ff0033", # Crimson
+    "#ff0066", # Raspberry
+    "#ff3300", # Red-Orange
+    "#ff3d00", # Deep Orange
+    "#ff6600", # Vibrant Orange
+    "#ff9100", # Bright Orange
+    "#ffab40", # Light Peach-Orange
+    
+    # Yellows
+    "#ffff00", # Pure Yellow
+    "#ffea00", # Bright Yellow
+    "#ffee58", # Soft Neon Yellow
+    "#afff00", # Lime Yellow
+    
+    # Greens
+    "#99ff00", # Spring Green
+    "#7fff00", # Chartreuse
+    "#76ff03", # Bright Lime
+    "#66ff00", # Bright Green
+    "#39ff14", # Neon Green
+    "#33ff00", # High-Voltage Green
+    "#00ff00", # Pure Green
+    "#00ff33", # Mint Green
+    "#00ff66", # Seafoam Green
+    "#00ff99", # Jade Green
+    "#00e676", # Spring Green 2
+    "#1de9b6", # Teal-Green
+    "#64ffda", # Turquoise
+    "#00ffbf", # Electric Aquamarine
+    
+    # Cyans & Blues
+    "#00ffff", # Pure Cyan
+    "#00f5ff", # Neon Cyan
+    "#00e5ff", # Sky Blue
+    "#00ccff", # Vivid Blue
+    "#00b0ff", # Azure Blue
+    "#0099ff", # Deep Sky Blue
+    "#0066ff", # Royal Blue
+    "#2979ff", # Electric Blue
+    "#0033ff", # Vivid Blue 2
+    "#3300ff", # Indigo Blue
+    "#0000ff", # Pure Blue
+    
+    # Purples & Magentas
+    "#6600ff", # Purple Heart
+    "#7c4dff", # Deep Purple
+    "#bf00ff", # Electric Purple
+    "#cc00ff", # Vivid Purple
+    "#d500f9", # Magenta-Purple
+    "#ff00ff", # Pure Magenta/Fuchsia
+    "#ff00cc", # Deep Pink
+    "#ff007f", # Rose
+    "#ff1493", # Deep Pink 2
+    "#f50057", # Pink-Red
+    "#ff4081", # Hot Pink
 ]
 
 class FlexAudioVisualizerBase(FlexBase):
@@ -340,8 +393,8 @@ class FlexAudioVisualizerBase(FlexBase):
         }
 
     CATEGORY = "Scromfy/Ace-Step/Visualizers"
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING")
-    RETURN_NAMES = ("IMAGE", "MASK", "SETTINGS")
+    RETURN_TYPES = ("IMAGE", "MASK", "MASK", "STRING")
+    RETURN_NAMES = ("IMAGE", "MASK", "SOURCE_MASK", "SETTINGS")
     FUNCTION = "apply_effect"
 
     @classmethod
@@ -349,6 +402,11 @@ class FlexAudioVisualizerBase(FlexBase):
     def get_modifiable_params(cls):
         """Return a list of parameter names that can be modulated."""
         pass
+
+    def get_point_count(self, kwargs):
+        """Determine the number of points/bars to calculate for the spectrum."""
+        # Check both common names, default to 64
+        return kwargs.get('num_points', kwargs.get('num_bars', 64))
 
     def validate_param(self, param_name, param_value):
         valid_params = {
@@ -437,7 +495,7 @@ class FlexAudioVisualizerBase(FlexBase):
 
     def apply_effect(self, audio, frame_rate, screen_width, screen_height, 
                      strength, feature_param, feature_mode, feature_threshold,
-                     opt_feature=None, opt_video=None, **kwargs):
+                     opt_feature=None, opt_video=None, source_mask=None, **kwargs):
         
         # Unpack visualizer settings if provided
         ext_settings = kwargs.get("visualizer_settings", {})
@@ -568,7 +626,7 @@ class FlexAudioVisualizerBase(FlexBase):
                 "background": background_np
             })
             
-            num_points = processed_kwargs.get('num_points', processed_kwargs.get('num_bars', 64))
+            num_points = self.get_point_count(processed_kwargs)
             spectrum, _, item_freqs = self.process_audio_data(
                 processor, i,
                 processed_kwargs.get('visualization_feature', 'frequency'),
@@ -605,8 +663,15 @@ class FlexAudioVisualizerBase(FlexBase):
         if result:
             result_tensor = torch.stack(result)
             mask = result_tensor[:, :, :, 0]
-            return (result_tensor, mask, settings_str)
+            
+            # Use provided source_mask or create a fallback black mask
+            if source_mask is None:
+                source_mask = torch.zeros((1, actual_height, actual_width), dtype=torch.float32)
+            
+            return (result_tensor, mask, source_mask, settings_str)
         else:
             empty_tensor = torch.zeros((1, actual_height, actual_width, 3), dtype=torch.float32)
             empty_mask = torch.zeros((1, actual_height, actual_width), dtype=torch.float32)
-            return (empty_tensor, empty_mask, settings_str)
+            if source_mask is None:
+                source_mask = empty_mask
+            return (empty_tensor, empty_mask, source_mask, settings_str)

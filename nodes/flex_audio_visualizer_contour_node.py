@@ -180,13 +180,13 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         else:
             kwargs["_mask_scale"] = 100.0 # Fallback
 
-        images, masks, settings = super().apply_effect(
+        images, masks, source_mask_out, settings = super().apply_effect(
             audio, frame_rate, screen_width, screen_height,
             strength, feature_param, feature_mode, feature_threshold,
-            opt_feature, **kwargs
+            opt_feature, source_mask=source_mask, **kwargs
         )
         
-        return (images, masks, source_mask, settings)
+        return (images, masks, source_mask_out, settings)
 
     def get_audio_data(self, processor: BaseAudioProcessor, frame_index, **kwargs):
         visualization_feature = kwargs.get('visualization_feature', 'frequency')
