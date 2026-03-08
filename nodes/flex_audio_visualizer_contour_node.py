@@ -45,6 +45,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "bar_length": ("FLOAT", {"default": 20.0, "min": 1.0, "max": 100.0, "step": 1.0}),
                 "line_width": ("INT", {"default": 2, "min": 1, "max": 10, "step": 1}),
                 "contour_smoothing": ("INT", {"default": 0, "min": 0, "max": 50, "step": 1}),
+                "draw_ghost_contours": ("BOOLEAN", {"default": False}),
+                "adaptive_point_density": ("BOOLEAN", {"default": False}),
                 "rotation": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 360.0, "step": 1.0}),
                 "direction": (["outward", "inward", "both"], {"default": "outward"}),
                 "min_contour_area": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 10000.0, "step": 10.0}),
@@ -67,7 +69,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         return ["smoothing", "rotation", "num_points", "fft_size", 
                 "min_frequency", "max_frequency", "bar_length", "line_width",
                 "contour_smoothing", "min_contour_area", "max_contours", 
-                "color_shift", "saturation", "brightness", "None"]
+                "color_shift", "saturation", "brightness", "draw_ghost_contours", "adaptive_point_density", "None"]
 
     RETURN_TYPES = ("IMAGE", "MASK", "MASK", "STRING")
     RETURN_NAMES = ("IMAGE", "MASK", "SOURCE_MASK", "SETTINGS")
@@ -90,6 +92,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             kwargs["max_contours"] = 50
             kwargs["min_contour_area"] = 0
             kwargs["contour_smoothing"] = 0
+            kwargs["draw_ghost_contours"] = True
             kwargs["smoothing"] = s_rng.uniform(0.0, 0.1)
             kwargs["rotation"] = s_rng.uniform(0.0, 360.0)
             kwargs["contour_color_shift"] = s_rng.uniform(0.0, 0.75)
@@ -182,6 +185,31 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         batch_size, screen_height, screen_width = mask.shape
             
         kwargs['mask'] = mask
+        # Find contours here so we can use them for adaptive density
+        mask_uint8 = (mask[0].cpu().numpy() * 255).astype(np.uint8)
+        contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        min_contour_area = kwargs.get('min_contour_area', 100.0)
+        max_contours = kwargs.get('max_contours', 5)
+        valid_contours = [c for c in contours if cv2.contourArea(c) >= min_contour_area]
+        valid_contours.sort(key=cv2.contourArea, reverse=True)
+        valid_contours = valid_contours[:max_contours]
+
+        # Scale num_points if adaptive density is enabled
+        if kwargs.get("adaptive_point_density", False) and valid_contours:
+            # Calculate total perimeter of selected contours
+            total_perimeter = 0
+            for c in valid_contours:
+                total_perimeter += cv2.arcLength(c, True)
+            
+            if total_perimeter > 0:
+                # Reference: num_points units per 2000 perimeter units
+                kwargs["num_points"] = int(total_perimeter * (kwargs.get("num_points", 100) / 2000.0))
+                kwargs["num_points"] = max(10, min(kwargs["num_points"], 4000))
+        
+        # Pass derived contours to internal to avoid re-finding
+        kwargs["_valid_contours"] = valid_contours
+
         images, masks, settings = super().apply_effect(
             audio, frame_rate, screen_width, screen_height,
             strength, feature_param, feature_mode, feature_threshold,
@@ -240,10 +268,25 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             cx, cy = screen_width // 2, screen_height // 2
         max_dist = np.sqrt(cx**2 + cy**2) # Max possible distance from center
 
-        valid_contours = [c for c in contours if cv2.contourArea(c) >= min_contour_area]
-        valid_contours.sort(key=cv2.contourArea, reverse=True)
-        valid_contours = valid_contours[:max_contours]
+        # Prioritize pre-calculated contours from apply_effect
+        valid_contours = kwargs.get("_valid_contours")
+        if valid_contours is None:
+            valid_contours = [c for c in contours if cv2.contourArea(c) >= min_contour_area]
+            valid_contours.sort(key=cv2.contourArea, reverse=True)
+            valid_contours = valid_contours[:max_contours]
+        
         if not valid_contours: return image
+
+        # Option 1: Draw ghost contours (thin lines) if enabled
+        if kwargs.get("draw_ghost_contours", False):
+            ghost_color = (0.2, 0.2, 0.2) # Default subtle gray
+            # If we have a custom color, use a very dimmed version of it
+            if color_mode == "custom":
+                c = parse_color(kwargs.get("custom_color", "#00ffff"))
+                ghost_color = tuple(val * 0.2 for val in c)
+            
+            for c in valid_contours:
+                cv2.polylines(image, [c.astype(np.int32)], True, ghost_color, 1)
 
         if distribute_by == 'area':
             weights = [cv2.contourArea(c) for c in valid_contours]
