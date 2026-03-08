@@ -4,6 +4,7 @@ import torch
 import os
 import re
 import gc
+import json
 from abc import abstractmethod
 from PIL import Image, ImageDraw, ImageFont
 from .flex_utils import FlexBase
@@ -310,16 +311,7 @@ class FlexAudioVisualizerBase(FlexBase):
             },
             "optional": {
                 "opt_video": ("IMAGE",),
-                "lrc_text": ("STRING", {"multiline": True, "default": ""}),
-                "lyric_font_size": ("INT", {"default": 24, "min": 10, "max": 200}),
-                "lyric_highlight_color": ("COLOR", {"default": "#34d399"}),
-                "lyric_normal_color": ("COLOR", {"default": "#f3f4f6"}),
-                "lyric_background_alpha": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "lyric_blur_radius": ("INT", {"default": 1, "min": 0, "max": 50}),
-                "lyric_active_blur": ("INT", {"default": 10, "min": 0, "max": 100}),
-                "lyric_y_position": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "lyric_max_lines": ("INT", {"default": 5, "min": 1, "max": 20}),
-                "lyric_line_spacing": ("FLOAT", {"default": 1.5, "min": 1.0, "max": 3.0, "step": 0.1}),
+                "lyric_settings": ("LYRIC_SETTINGS",),
             }
         }
 
@@ -332,7 +324,8 @@ class FlexAudioVisualizerBase(FlexBase):
         }
 
     CATEGORY = "Scromfy/Ace-Step/Visualizers"
-    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING")
+    RETURN_NAMES = ("IMAGE", "MASK", "SETTINGS")
     FUNCTION = "apply_effect"
 
     @classmethod
@@ -428,8 +421,29 @@ class FlexAudioVisualizerBase(FlexBase):
 
     def apply_effect(self, audio, frame_rate, screen_width, screen_height, 
                      strength, feature_param, feature_mode, feature_threshold,
-                     opt_feature=None, opt_video=None, lrc_text="", **kwargs):
+                     opt_feature=None, opt_video=None, **kwargs):
         
+        # Unpack lyric settings if provided
+        lyric_settings = kwargs.get("lyric_settings", {})
+        if isinstance(lyric_settings, dict):
+            for k, v in lyric_settings.items():
+                if k.startswith("lyric_"):
+                    kwargs[k] = v
+
+        # Construct settings string for debugging
+        settings_dict = {
+            "strength": strength,
+            "feature_param": feature_param,
+            "feature_mode": feature_mode,
+            "feature_threshold": feature_threshold,
+        }
+        # Add all relevant kwargs (excluding large objects)
+        for k, v in kwargs.items():
+            if k not in ["opt_video", "opt_feature", "lyric_settings", "background", "mask", "item_freqs"]:
+                settings_dict[k] = v
+        
+        settings_str = json.dumps(settings_dict, indent=4)
+
         audio_duration = len(audio['waveform'].squeeze(0).mean(axis=0)) / audio['sample_rate']
         
         # Determine number of frames and resolution from video if provided
@@ -445,6 +459,7 @@ class FlexAudioVisualizerBase(FlexBase):
         processor = BaseAudioProcessor(audio, num_frames, actual_height, actual_width, frame_rate)
         
         # Initialize Lyric Renderer if text provided
+        lrc_text = kwargs.get("lyric_lrc_text", "")
         lyric_renderer = None
         if lrc_text:
             lyric_renderer = LyricRenderer(
@@ -525,8 +540,8 @@ class FlexAudioVisualizerBase(FlexBase):
         if result:
             result_tensor = torch.stack(result)
             mask = result_tensor[:, :, :, 0]
-            return (result_tensor, mask,)
+            return (result_tensor, mask, settings_str)
         else:
             empty_tensor = torch.zeros((1, actual_height, actual_width, 3), dtype=torch.float32)
             empty_mask = torch.zeros((1, actual_height, actual_width), dtype=torch.float32)
-            return (empty_tensor, empty_mask,)
+            return (empty_tensor, empty_mask, settings_str)

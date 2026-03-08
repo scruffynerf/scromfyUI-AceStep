@@ -24,20 +24,10 @@ class ScromfyFlexLyricsNode(FlexAudioVisualizerBase):
         cleaned_required["color_mode"] = required["color_mode"]
         cleaned_required["custom_color"] = required["custom_color"]
         
-        # Add all lyric settings from optional
-        optional = base["optional"]
+        # Use simplified base inputs
         cleaned_optional = {
             "opt_video": optional["opt_video"],
-            "lrc_text": optional["lrc_text"],
-            "lyric_font_size": optional["lyric_font_size"],
-            "lyric_highlight_color": optional["lyric_highlight_color"],
-            "lyric_normal_color": optional["lyric_normal_color"],
-            "lyric_background_alpha": optional["lyric_background_alpha"],
-            "lyric_blur_radius": optional["lyric_blur_radius"],
-            "lyric_active_blur": optional["lyric_active_blur"],
-            "lyric_y_position": optional["lyric_y_position"],
-            "lyric_max_lines": optional["lyric_max_lines"],
-            "lyric_line_spacing": optional["lyric_line_spacing"],
+            "lyric_settings": optional["lyric_settings"],
         }
         
         return {
