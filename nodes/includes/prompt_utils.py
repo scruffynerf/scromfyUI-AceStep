@@ -140,12 +140,6 @@ def _load_components():
 
             full_path = os.path.join(root, filename)
             
-            # Visibility logic: Only files in the root of prompt_components are visible in UI,
-            # unless explicitly forced via FORCESHOW.list. HIDDEN.list overrides both.
-            if assign_name not in hidden:
-                if root == components_dir or assign_name in force_show:
-                    _TOP_LEVEL_COMPONENTS.add(assign_name)
-
             ext = ext.lower()
             try:
                 if ext == ".json":
@@ -153,11 +147,25 @@ def _load_components():
                         data = json.load(f)
                         _COMPONENTS[assign_name] = data
                         globals()[assign_name] = data
+                        
+                        # Visibility logic: Only files in the root of prompt_components are visible in UI,
+                        # unless explicitly forced via FORCESHOW.list. HIDDEN.list overrides both.
+                        if assign_name not in hidden:
+                            if root == components_dir or assign_name in force_show:
+                                _TOP_LEVEL_COMPONENTS.add(assign_name)
+                                
                 elif ext == ".txt":
                     with open(full_path, "r", encoding="utf-8") as f:
                         lines = [ln.strip() for ln in f if ln.strip()]
                         _COMPONENTS[assign_name] = lines
                         globals()[assign_name] = lines
+                        
+                        # Visibility logic: Only files in the root of prompt_components are visible in UI,
+                        # unless explicitly forced via FORCESHOW.list. HIDDEN.list overrides both.
+                        if assign_name not in hidden:
+                            if root == components_dir or assign_name in force_show:
+                                _TOP_LEVEL_COMPONENTS.add(assign_name)
+                                
             except Exception as e:
                 print(f"Error loading prompt component {filename} from {root}: {e}", file=sys.stderr)
 

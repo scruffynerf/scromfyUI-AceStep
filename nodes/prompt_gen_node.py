@@ -6,6 +6,9 @@ from .includes.prompt_utils import get_available_components, get_visible_compone
 
 def _choices_for(items):
     """Build the dropdown list: none, random, random2, then all items (deduplicated and friendly formatting)."""
+    if not items:
+        return ["none", "random", "random2"]
+        
     if isinstance(items, dict):
         items = items.keys()
     
