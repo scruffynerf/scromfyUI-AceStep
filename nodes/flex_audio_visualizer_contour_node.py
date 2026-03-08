@@ -176,9 +176,10 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         # Get final dimensions
         batch_size, screen_height, screen_width = mask.shape
             
-        # Disable ghosting for waveform mode as it tends to be too messy/overlapping
         if kwargs.get("visualization_feature") == "waveform":
             kwargs["ghost_mask_strength"] = 0.0
+            
+        kwargs['mask'] = mask
 
         # Find contours here so we can use them for adaptive density
         mask_uint8 = (mask[0].cpu().numpy() * 255).astype(np.uint8)
