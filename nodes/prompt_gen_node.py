@@ -94,7 +94,7 @@ class ScromfyAceStepPromptGen:
             else:
                 # Explicit selection - map friendly (WILDCARD) back to __WILDCARD__
                 if choice.startswith("(") and choice.endswith(")") and len(choice) > 2:
-                    resolved = f"__{choice[1:-1]}__"
+                    resolved = f"__{choice[1:-1].upper()}__"
                 else:
                     resolved = resolve_item(choice)
                 results[out_name] = expand_wildcards(resolved, rng)
