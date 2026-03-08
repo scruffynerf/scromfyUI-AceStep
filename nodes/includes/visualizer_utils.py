@@ -437,12 +437,22 @@ class FlexAudioVisualizerBase(FlexBase):
             "feature_mode": feature_mode,
             "feature_threshold": feature_threshold,
         }
-        # Add all relevant kwargs (excluding large objects)
+        # Add all relevant kwargs (excluding large objects and non-serializable types)
         for k, v in kwargs.items():
-            if k not in ["opt_video", "opt_feature", "lyric_settings", "background", "mask", "item_freqs"]:
+            if k in ["opt_video", "opt_feature", "lyric_settings", "background", "mask", "item_freqs"] or k.startswith("_"):
+                continue
+            
+            if isinstance(v, (np.ndarray, torch.Tensor)):
+                settings_dict[k] = f"<{v.__class__.__name__} {v.shape}>"
+            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], (np.ndarray, torch.Tensor)):
+                settings_dict[k] = f"<List of {len(v)} {v[0].__class__.__name__}s>"
+            else:
                 settings_dict[k] = v
         
-        settings_str = json.dumps(settings_dict, indent=4)
+        try:
+            settings_str = json.dumps(settings_dict, indent=4)
+        except Exception as e:
+            settings_str = f"Error serializing settings: {str(e)}\nKeys: {list(settings_dict.keys())}"
 
         audio_duration = len(audio['waveform'].squeeze(0).mean(axis=0)) / audio['sample_rate']
         
