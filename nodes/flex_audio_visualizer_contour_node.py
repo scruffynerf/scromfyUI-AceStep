@@ -42,7 +42,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "fft_size": ("INT", {"default": 2048, "min": 256, "max": 8192, "step": 256}),
                 "min_frequency": ("FLOAT", {"default": 20.0, "min": 20.0, "max": 20000.0, "step": 10.0}),
                 "max_frequency": ("FLOAT", {"default": 8000.0, "min": 20.0, "max": 20000.0, "step": 10.0}),
-                "bar_length": ("FLOAT", {"default": 20.0, "min": 5.0, "max": 100.0, "step": 1.0}),
+                "bar_length": ("FLOAT", {"default": 20.0, "min": 0.01, "max": 1000.0, "step": 0.1}),
+                "bar_length_mode": (["absolute", "relative"], {"default": "absolute"}),
                 "line_width": ("INT", {"default": 2, "min": 1, "max": 10, "step": 1}),
                 "contour_smoothing": ("INT", {"default": 0, "min": 0, "max": 50, "step": 1}),
                 "ghost_mask_strength": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -70,7 +71,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         return ["smoothing", "rotation", "num_points", "fft_size", 
                 "min_frequency", "max_frequency", "bar_length", "line_width",
                 "contour_smoothing", "min_contour_area", "max_contours", 
-                "color_shift", "saturation", "brightness", "ghost_mask_strength", "ghost_use_custom_color", "adaptive_point_density", "None"]
+                "color_shift", "saturation", "brightness", "ghost_mask_strength", 
+                "ghost_use_custom_color", "adaptive_point_density", "bar_length_mode", "None"]
 
     RETURN_TYPES = ("IMAGE", "MASK", "MASK", "STRING")
     RETURN_NAMES = ("IMAGE", "MASK", "SOURCE_MASK", "SETTINGS")
@@ -86,21 +88,23 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             kwargs["visualization_method"] = s_rng.choice(["bar", "line"])
             kwargs["visualization_feature"] = s_rng.choice(["frequency", "waveform"])
             kwargs["color_mode"] = s_rng.choice(["spectrum", "custom", "amplitude", "radial", "angular", "path", "screen"])
-            # Average in 20s for frequency: 5.0 + (mean of distribution ~0.15 * 95) = ~20
-            # For waveform, cap it lower (under 20)
+            kwargs["bar_length_mode"] = "relative"
+            
+            # For relative scaling, values are percentages (5.0 to 25.0)
             if kwargs["visualization_feature"] == "waveform":
-                kwargs["bar_length"] = 5.0 + (s_rng.random() ** 1.5) * 10.0
+                kwargs["bar_length"] = s_rng.uniform(5.0, 12.0)
             else:
-                kwargs["bar_length"] = 5.0 + (s_rng.random() ** 2.2) * 95.0
+                kwargs["bar_length"] = s_rng.uniform(10.0, 25.0)
+                
             kwargs["line_width"] = s_rng.randint(1, 10)
             kwargs["distribute_by"] = "perimeter"
             kwargs["direction"] = s_rng.choice(["outward", "inward", "both"])
             kwargs["max_contours"] = 50
             kwargs["min_contour_area"] = 0
             kwargs["contour_smoothing"] = 0
-            kwargs["ghost_mask_strength"] = 0.07
+            kwargs["ghost_mask_strength"] = 0.1
             kwargs["ghost_use_custom_color"] = True
-            kwargs["smoothing"] = s_rng.uniform(0.0, 0.1)
+            kwargs["smoothing"] = 0
             kwargs["rotation"] = s_rng.uniform(0.0, 360.0)
             kwargs["contour_color_shift"] = s_rng.uniform(0.0, 0.75)
             
@@ -204,8 +208,15 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 kwargs["num_points"] = int(total_perimeter * (kwargs.get("num_points", 100) / 2000.0))
                 kwargs["num_points"] = max(10, min(kwargs["num_points"], 4000))
         
-        # Pass derived contours to internal to avoid re-finding
-        kwargs["_valid_contours"] = valid_contours
+        # Calculate mask scale for relative bar lengths
+        if valid_contours:
+            # Get combined bounding box of all valid contours
+            all_pts = np.vstack([c.reshape(-1, 2) for c in valid_contours])
+            x, y, w, h = cv2.boundingRect(all_pts)
+            mask_scale = (w + h) / 2.0
+            kwargs["_mask_scale"] = mask_scale
+        else:
+            kwargs["_mask_scale"] = 100.0 # Fallback
 
         images, masks, settings = super().apply_effect(
             audio, frame_rate, screen_width, screen_height,
@@ -235,6 +246,15 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         batch_size, screen_height, screen_width = mask.shape
         line_width = kwargs.get('line_width', 2)
         bar_length = kwargs.get('bar_length', 20.0)
+        bar_length_mode = kwargs.get('bar_length_mode', 'absolute')
+        mask_scale = kwargs.get('_mask_scale', 100.0)
+        
+        if bar_length_mode == "relative":
+            # Treat bar_length as a percentage (e.g. 5.0 means 5% of mask scale)
+            effective_bar_length = (bar_length / 100.0) * mask_scale
+        else:
+            effective_bar_length = bar_length
+
         contour_smoothing = kwargs.get('contour_smoothing', 0)
         rotation = kwargs.get('rotation', 0.0) % 360.0
         direction = kwargs.get('direction', 'outward')
@@ -333,7 +353,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             if visualization_method == 'bar':
                 for i, amplitude in enumerate(contour_data):
                     x1, y1 = int(x_coords[i]), int(y_coords[i])
-                    bar_h = amplitude * bar_length * direction_multiplier
+                    bar_h = amplitude * effective_bar_length * direction_multiplier
                     x2, y2 = int(x1 + normals_x[i] * bar_h), int(y1 + normals_y[i] * bar_h)
                     
                     # Determine color
@@ -371,8 +391,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     cv2.line(image, (x1, y1), (x2, y2), color, thickness=line_width)
             else:
                 pts = np.column_stack([
-                    x_coords + normals_x * contour_data * bar_length * direction_multiplier,
-                    y_coords + normals_y * contour_data * bar_length * direction_multiplier
+                    x_coords + normals_x * contour_data * effective_bar_length * direction_multiplier,
+                    y_coords + normals_y * contour_data * effective_bar_length * direction_multiplier
                 ]).astype(np.int16) # Use int16 for coordinates
                 
                 if color_mode == "spectrum" and item_freqs is not None:
