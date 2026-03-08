@@ -47,7 +47,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "rotation": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 360.0, "step": 1.0}),
                 "direction": (["outward", "inward", "both"], {"default": "outward"}),
                 "min_contour_area": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 10000.0, "step": 10.0}),
-                "max_contours": ("INT", {"default": 5, "min": 1, "max": 20, "step": 1}),
+                "max_contours": ("INT", {"default": 5, "min": 1, "max": 50, "step": 1}),
                 "distribute_by": (["area", "perimeter", "equal"], {"default": "perimeter"}),
                 "contour_color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
@@ -86,7 +86,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             kwargs["line_width"] = s_rng.randint(2, 10)
             kwargs["distribute_by"] = s_rng.choice(["area", "perimeter"])
             kwargs["direction"] = s_rng.choice(["outward", "inward", "both"])
-            kwargs["max_contours"] = s_rng.randint(5, 20)
+            kwargs["max_contours"] = s_rng.randint(5, 50)
             kwargs["contour_smoothing"] = s_rng.randint(0, 0) # subtle smoothing
             kwargs["smoothing"] = s_rng.uniform(0.0, 0.1)
             kwargs["rotation"] = s_rng.uniform(0.0, 360.0)
