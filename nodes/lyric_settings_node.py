@@ -3,9 +3,24 @@ import json
 class ScromfyLyricSettingsNode:
     @classmethod
     def INPUT_TYPES(cls):
+        import os
+        # Base directory is the workspace root
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        fonts_dir = os.path.join(base_dir, "fonts")
+        
+        font_files = ["default"]
+        if os.path.exists(fonts_dir):
+            file_list = [f for f in os.listdir(fonts_dir) if f.lower().endswith(('.ttf', '.otf'))]
+            if file_list:
+                font_files = sorted(file_list)
+        
+        # Use Noto Sans as default if available
+        default_font = "NotoSans-Regular.ttf" if "NotoSans-Regular.ttf" in font_files else (font_files[0] if font_files else "default")
+
         return {
             "required": {
                 "lrc_text": ("STRING", {"multiline": True, "default": ""}),
+                "font_name": (font_files, {"default": default_font}),
                 "font_size": ("INT", {"default": 24, "min": 10, "max": 200}),
                 "highlight_color": ("COLOR", {"default": "#34d399"}),
                 "normal_color": ("COLOR", {"default": "#f3f4f6"}),

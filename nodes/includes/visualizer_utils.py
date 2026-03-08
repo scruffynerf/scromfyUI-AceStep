@@ -136,7 +136,7 @@ def get_color_for_frequency(freq, shift=0.0, saturation=1.0, brightness=1.0):
 
 class LyricRenderer:
     def __init__(self, lrc_text, width, height, font_size, highlight_color, normal_color, 
-                 background_alpha, blur_radius, active_blur_radius, y_position, max_lines, line_spacing, font_path=""):
+                 background_alpha, blur_radius, active_blur_radius, y_position, max_lines, line_spacing, font_name="NotoSans-Regular.ttf"):
         self.width = width
         self.height = height
         self.font_size = font_size
@@ -157,25 +157,37 @@ class LyricRenderer:
         self.high_rgb = parse_color(highlight_color, fallback=(52, 211, 153), to_float=False)
         self.norm_rgb = parse_color(normal_color, fallback=(156, 163, 175), to_float=False)
 
-        # Load font
-        try:
-            if font_path and os.path.exists(font_path):
-                self.f_reg = ImageFont.truetype(font_path, font_size)
-                self.f_bold = ImageFont.truetype(font_path, int(font_size * 1.3))
-            else:
-                base_font_dir = os.path.join(os.path.dirname(__file__), "fonts")
-                roboto_reg = os.path.join(base_font_dir, "Roboto-Regular.ttf")
-                roboto_bold = os.path.join(base_font_dir, "Roboto-Bold.ttf")
-                
-                if os.path.exists(roboto_reg):
-                    self.f_reg = ImageFont.truetype(roboto_reg, font_size)
-                    self.f_bold = ImageFont.truetype(roboto_bold, int(font_size * 1.3))
-                else:
-                    self.f_reg = ImageFont.load_default()
-                    self.f_bold = self.f_reg
-        except:
-            self.f_reg = ImageFont.load_default()
-            self.f_bold = self.f_reg
+        # Load font from root /fonts directory
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_font_dir = os.path.join(base_dir, "fonts")
+        
+        def try_load_font(name, size):
+            # Try absolute path first, then relative to base_font_dir
+            paths = [name]
+            if base_font_dir:
+                paths.append(os.path.join(base_font_dir, name))
+                # Fallback versions
+                paths.append(os.path.join(base_font_dir, "NotoSans-Regular.ttf"))
+                paths.append(os.path.join(base_font_dir, "Roboto-Regular.ttf"))
+            
+            for p in paths:
+                if p and os.path.exists(p):
+                    try:
+                        return ImageFont.truetype(p, size)
+                    except:
+                        continue
+            return ImageFont.load_default()
+
+        self.f_reg = try_load_font(font_name, font_size)
+        
+        # Determine bold version name
+        bold_name = font_name.replace("-Regular", "-Bold").replace("Regular", "Bold")
+        if bold_name == font_name: # Didn't find pattern
+             bold_name = "NotoSans-Bold.ttf" # Hard fallback for bold
+        
+        self.f_bold = try_load_font(bold_name, int(font_size * 1.3))
+        if self.f_bold == self.f_reg: # If failed to get distinct bold, use reg
+             self.f_bold = self.f_reg
 
         # Pre-allocate scratch buffer
         self.max_box_w = int(width * 0.8)
@@ -482,7 +494,8 @@ class FlexAudioVisualizerBase(FlexBase):
                 kwargs.get("lyric_active_blur", 20),
                 kwargs.get("lyric_y_position", 0.5),
                 kwargs.get("lyric_max_lines", 5),
-                kwargs.get("lyric_line_spacing", 1.5)
+                kwargs.get("lyric_line_spacing", 1.5),
+                kwargs.get("lyric_font_name", "NotoSans-Regular.ttf")
             )
 
         result = []
