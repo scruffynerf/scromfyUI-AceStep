@@ -286,8 +286,9 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         total_weight = sum(weights)
         weights = [w / total_weight for w in weights] if total_weight > 0 else [1/len(weights)]*len(weights)
 
-        data = processor.spectrum
-        
+        data = self.transform_sequence(processor.spectrum, sequence_direction)
+        if item_freqs is not None:
+            item_freqs = self.transform_sequence(item_freqs, sequence_direction)
         def process_contour(contour, start_idx, end_idx, direction_multiplier=1.0, contour_idx=0, total_contours=1):
             if contour_smoothing > 0:
                 epsilon = contour_smoothing * cv2.arcLength(contour, True) * 0.01

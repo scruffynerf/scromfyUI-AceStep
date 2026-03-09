@@ -123,12 +123,14 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         center_x = screen_width * position_x
         center_y = screen_height * position_y
 
-        # Angles logic based on sequence_direction
+        # Angles logic based on sequence_direction. 
+        # For 'centered' and 'both ends', we use standard clockwise distribution 
+        # and transform the data instead.
         if sequence_direction == "left":
             # Anticlockwise: start 0, end -2PI
             angles = np.linspace(0, -2 * np.pi, num_points, endpoint=False)
         else:
-            # Clockwise (right): standard 0 to 2PI
+            # Clockwise (right, centered, both ends): standard 0 to 2PI
             angles = np.linspace(0, 2 * np.pi, num_points, endpoint=False)
             
         # Offset by -90 degrees (-PI/2) to start at top
@@ -137,7 +139,9 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         rotation_rad = np.deg2rad(rotation)
         angles += rotation_rad
 
-        data = processor.spectrum
+        data = self.transform_sequence(processor.spectrum, sequence_direction)
+        if item_freqs is not None:
+             item_freqs = self.transform_sequence(item_freqs, sequence_direction)
         max_dist = base_radius + effective_amplitude_scale
 
         if visualization_method == 'bar':

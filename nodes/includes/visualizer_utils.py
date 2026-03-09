@@ -424,6 +424,27 @@ class FlexAudioVisualizerBase(FlexBase):
         # Check both common names, default to 64
         return kwargs.get('num_points', kwargs.get('num_bars', 64))
 
+    def transform_sequence(self, data, sequence_direction):
+        """Transform data array (spectrum) based on sequence direction."""
+        if not isinstance(data, np.ndarray) or len(data) <= 1:
+            return data
+            
+        if sequence_direction == "left":
+            return data[::-1]
+        elif sequence_direction == "centered":
+            # [High...Low | Low...High] -> Low in middle
+            half = len(data) // 2
+            left_half = data[:half][::-1]
+            right_half = data[:len(data) - half]
+            return np.concatenate([left_half, right_half])
+        elif sequence_direction == "both ends":
+            # [Low...High | High...Low] -> Low at ends
+            half = (len(data) + 1) // 2
+            left_half = data[:half]
+            right_half = data[:len(data) // 2][::-1]
+            return np.concatenate([left_half, right_half])
+        return data # right (default)
+
     def validate_param(self, param_name, param_value):
         valid_params = {
             'fft_size': lambda x: max(256, int(2 ** np.round(np.log2(x)))) if x > 0 else 256,

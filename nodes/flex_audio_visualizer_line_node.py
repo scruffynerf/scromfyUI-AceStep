@@ -141,17 +141,14 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         else:
             visualization_length = length
 
-        padding = int(max(visualization_length, effective_max_height) * 0.5)
-        padded_width = int(visualization_length + 2 * padding)
-        padded_height = int(screen_height + 2 * padding)
+        padding = int(max(visualization_length, effective_max_height, screen_width, screen_height) * 0.5)
+        padded_width = int(max(visualization_length, screen_width) + 2 * padding)
+        padded_height = int(max(screen_height, effective_max_height) + 2 * padding)
         padded_image = np.zeros((padded_height, padded_width, 3), dtype=np.float32)
 
-        data = processor.spectrum
-        if sequence_direction == "left":
-            # Right-to-Left: reverse the data array
-            data = data[::-1]
-            if item_freqs is not None:
-                item_freqs = item_freqs[::-1]
+        data = self.transform_sequence(processor.spectrum, sequence_direction)
+        if item_freqs is not None:
+            item_freqs = self.transform_sequence(item_freqs, sequence_direction)
 
         if visualization_method == 'bar':
             curvature = kwargs.get('curvature', 0.0)
@@ -191,10 +188,17 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
 
                 if curvature > 0 and rect_width > 1 and rect_height > 1:
                     radius = max(1, min(int(curvature), rect_width // 2, rect_height // 2))
-                    mask = np.full((rect_height, rect_width), 0, dtype=np.uint8)
-                    cv2.rectangle(mask, (0, 0), (rect_width - 1, rect_height - 1), 255, -1)
-                    if radius > 1:
-                        mask = cv2.GaussianBlur(mask, (radius * 2 + 1, radius * 2 + 1), 0)
+                    mask = np.zeros((rect_height, rect_width), dtype=np.uint8)
+                    r = radius
+                    # 4 corner circles
+                    cv2.circle(mask, (r, r), r, 255, -1)
+                    cv2.circle(mask, (rect_width - r, r), r, 255, -1)
+                    cv2.circle(mask, (r, rect_height - r), r, 255, -1)
+                    cv2.circle(mask, (rect_width - r, rect_height - r), r, 255, -1)
+                    # 2 overlapping rectangles to fill the middle
+                    cv2.rectangle(mask, (r, 0), (rect_width - r, rect_height), 255, -1)
+                    cv2.rectangle(mask, (0, r), (rect_width, rect_height - r), 255, -1)
+                    
                     padded_image[y_start:y_start+rect_height, x:x+rect_width][mask > 0] = color
                 else:
                     cv2.rectangle(padded_image, (x, y_start), (x_end, y_end), color, thickness=-1)
@@ -231,12 +235,23 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
 
         target_x = int(screen_width * position_x)
         target_y = int(screen_height * position_y)
-        start_x = padded_width // 2 - target_x
-        start_y = padded_height // 2 - target_y
+        start_x = max(0, padded_width // 2 - target_x)
+        start_y = max(0, padded_height // 2 - target_y)
         
         # CRITICAL: Use .copy() to return a new array instead of a view of the huge padded_image.
         # This allows the padded_image to be garbage collected for each frame.
-        image = padded_image[start_y:start_y + screen_height, start_x:start_x + screen_width].copy()
+        # We also ensure the slice stays within bounds of the padded_image.
+        end_y = min(start_y + screen_height, padded_height)
+        end_x = min(start_x + screen_width, padded_width)
+        image = padded_image[start_y:end_y, start_x:end_x].copy()
+        
+        # If the slice was smaller than expected, pad it back to the target size
+        if image.shape[0] != screen_height or image.shape[1] != screen_width:
+            final_img = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
+            h, w = image.shape[:2]
+            final_img[:h, :w] = image
+            image = final_img
+
         return image
 
     def smooth_curve(self, y, window_size):
