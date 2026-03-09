@@ -182,7 +182,7 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                 x_end = int(x + bar_width)
                 
                 # Determine color using shared helper
-                color = self.get_draw_color(i, num_bars, bar_value, item_freqs,
+                color = self.get_draw_color(i, num_bars, bar_value,
                                             x, y_start, padded_width // 2, padded_height // 2, 
                                             max(screen_width, screen_height), **kwargs)
                 
@@ -212,7 +212,7 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
             amplitude = min_height + data_smooth * (max_height - min_height)
             num_pts = len(amplitude)
             x_values = np.linspace(x_offset, x_offset + visualization_length, num_pts)
-            y_values = (baseline_y + amplitude) if reflect else (baseline_y - amplitude)
+            y_values = (baseline_y + amplitude) if direction == 'inward' else (baseline_y - amplitude)
             points = np.array([x_values, y_values]).T.astype(np.int32)
             
             if len(points) > 1:
@@ -220,7 +220,7 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                 for i in range(len(points) - 1):
                     p1 = points[i]
                     p2 = points[i+1]
-                    color = self.get_draw_color(i, num_pts, data[i], item_freqs,
+                    color = self.get_draw_color(i, num_pts, data[i],
                                                 p1[0], p1[1], padded_width // 2, baseline_y,
                                                 max(visualization_length, effective_max_height), **kwargs)
                     cv2.line(padded_image, tuple(p1), tuple(p2), color, line_width)

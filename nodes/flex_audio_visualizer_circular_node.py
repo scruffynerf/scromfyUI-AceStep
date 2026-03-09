@@ -160,7 +160,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                     y_end = center_y + (base_radius + amplitude * effective_amplitude_scale) * np.sin(angle)
                 
                 # Determine color using shared helper
-                color = self.get_draw_color(i, num_points, amplitude, item_freqs, 
+                color = self.get_draw_color(i, num_points, amplitude,
                                             x_start, y_start, center_x, center_y, max_dist, **kwargs)
                 
                 cv2.line(image, (int(x_start), int(y_start)), (int(x_end), int(y_end)),
@@ -179,7 +179,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                     p2 = points[(i+1) % num_pts]
                     
                     # Determine color for this segment
-                    color = self.get_draw_color(i, num_points, data[i], item_freqs,
+                    color = self.get_draw_color(i, num_points, data[i],
                                                 p1[0], p1[1], center_x, center_y, max_dist, **kwargs)
                     
                     cv2.line(image, tuple(p1), tuple(p2), color, line_width)

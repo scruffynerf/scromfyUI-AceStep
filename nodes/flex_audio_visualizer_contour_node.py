@@ -323,7 +323,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     x2, y2 = int(x1 + normals_x[i] * bar_h), int(y1 + normals_y[i] * bar_h)
                     
                     # Determine color
-                    color = self.get_draw_color(start_idx + i, total_pts, amplitude, item_freqs,
+                    color = self.get_draw_color(start_idx + i, total_pts, amplitude,
                                                 x1, y1, cx, cy, max_dist, **kwargs)
                     
                     # Apply contour-specific color shift if in custom/spectrum mode
@@ -345,7 +345,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 for i in range(len(pts) - 1):
                     p1 = pts[i]
                     p2 = pts[i+1]
-                    color = self.get_draw_color(start_idx + i, total_pts, contour_data[i], item_freqs,
+                    color = self.get_draw_color(start_idx + i, total_pts, contour_data[i],
                                                 p1[0], p1[1], cx, cy, max_dist, **kwargs)
                     
                     # Apply contour-specific color shift
@@ -359,7 +359,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     cv2.line(image, tuple(p1), tuple(p2), color, line_width)
                 
                 # Close loop
-                color = self.get_draw_color(end_idx - 1, total_pts, contour_data[-1], item_freqs,
+                color = self.get_draw_color(end_idx - 1, total_pts, contour_data[-1],
                                             pts[-1][0], pts[-1][1], cx, cy, max_dist, **kwargs)
                 cv2.line(image, tuple(pts[-1]), tuple(pts[0]), color, line_width)
 

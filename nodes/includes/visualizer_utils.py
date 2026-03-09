@@ -437,11 +437,12 @@ class FlexAudioVisualizerBase(FlexBase):
         else:
             return param_value
 
-    def get_draw_color(self, i, num_pts, amplitude, item_freqs, x, y, cx, cy, max_dist, **kwargs):
+    def get_draw_color(self, i, num_pts, amplitude, x, y, cx, cy, max_dist, **kwargs):
         color_mode = kwargs.get('color_mode', 'white')
         color_shift = kwargs.get('color_shift', 0.0)
         saturation = kwargs.get('saturation', 1.0)
         brightness = kwargs.get('brightness', 1.0)
+        item_freqs = kwargs.get('item_freqs')
         
         if color_mode == "white":
             return (1.0, 1.0, 1.0)
