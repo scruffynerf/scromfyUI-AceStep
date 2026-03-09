@@ -15,7 +15,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         # Remove parameters handled by base/settings
         for param in ["position_x", "position_y",
                       "color_mode", "randomize", "seed", "visualization_method",
-                      "visualization_feature", "smoothing", "num_points", "fft_size",
+                      "visualization_feature", "smoothing", "fft_size",
                       "min_frequency", "max_frequency", "line_width", "rotation"]:
             if param in base_required:
                 del base_required[param]

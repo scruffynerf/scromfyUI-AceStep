@@ -18,7 +18,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         # Remove parameters not used by contour or handled by base
         for param in ["position_x", "position_y",
                       "color_mode", "randomize", "seed", "visualization_method",
-                      "visualization_feature", "smoothing", "num_points", "fft_size",
+                      "visualization_feature", "smoothing", "fft_size",
                       "min_frequency", "max_frequency", "line_width", "rotation"]:
             if param in base_required:
                 del base_required[param]
@@ -43,7 +43,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 "adaptive_point_density": ("BOOLEAN", {"default": False}),
                 "min_contour_area": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 10000.0, "step": 10.0}),
                 "max_contours": ("INT", {"default": 5, "min": 1, "max": 50, "step": 1}),
-                "distribute_by": (["area", "perimeter", "equal"], {"default": "perimeter"}),
+                "distribute_by": (["area", "perimeter", "equal", "angular"], {"default": "angular"}),
                 "contour_layers": ("STRING", {"default": "0"}),
                 "contour_color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
@@ -336,7 +336,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
 
         if distribute_by == 'area':
             weights = [cv2.contourArea(c) for c in valid_contours]
-        elif distribute_by == 'perimeter':
+        elif distribute_by == 'perimeter' or distribute_by == 'angular':
             weights = [cv2.arcLength(c, True) for c in valid_contours]
         else:
             weights = [1] * len(valid_contours)
@@ -363,11 +363,33 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             contour_data = data[start_idx:end_idx]
             num_pts = len(contour_data)
             if num_pts == 0: return
+            
+            # num_pts for this contour. If angular, it's the total number of points in the data sequence.
+            # If not angular, it's the number of points assigned to this contour based on weights.
+            current_contour_num_pts = num_pts if distribute_by == 'angular' else len(data[start_idx:end_idx])
+            if current_contour_num_pts == 0: return
 
-            indices = (np.linspace(0, contour_length - 1, num_pts, endpoint=False) + rotation_offset) % (contour_length - 1)
+            indices = (np.linspace(0, contour_length - 1, current_contour_num_pts, endpoint=False) + rotation_offset) % (contour_length - 1)
             x_coords = np.interp(indices, range(contour_length), contour[:, 0])
             y_coords = np.interp(indices, range(contour_length), contour[:, 1])
             
+            # Logic for data sampling
+            if distribute_by == 'angular':
+                # Map each point to its angle relative to center (consistent for all contours)
+                p_angles = (np.arctan2(x_coords - cx, -(y_coords - cy)) + np.pi * 2) % (np.pi * 2)
+                # Map [0, 2PI] to [0, total_pts-1]
+                # We don't apply rotation here because it's already handled globally or via indices
+                # Actually, the user might want frequencies to rotate too.
+                # If we apply rotation, the "High" frequency point moves.
+                indices_data = np.clip((p_angles / (np.pi * 2) * (total_pts - 1)).astype(np.int32), 0, total_pts - 1)
+                contour_data = data[indices_data]
+            else:
+                # Standard sequence distribution (linear along perimeters)
+                contour_data = data[start_idx:end_idx]
+            
+            num_pts = len(contour_data) # Update num_pts to reflect actual data points used
+            if num_pts == 0: return
+
             dx = np.gradient(x_coords)
             dy = np.gradient(y_coords)
             lengths = np.sqrt(dx**2 + dy**2)
@@ -404,7 +426,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     x2, y2 = int(x1 + normals_x[i] * bar_h), int(y1 + normals_y[i] * bar_h)
                     
                     # Determine color
-                    color = self.get_draw_color(start_idx + i, total_pts, amplitude,
+                    current_idx = indices_data[i] if distribute_by == 'angular' else (start_idx + i)
+                    color = self.get_draw_color(current_idx, total_pts, amplitude,
                                                 x1, y1, cx, cy, max_dist, **kwargs)
                     
                     # Apply contour-specific color shift if in custom/spectrum mode
@@ -426,7 +449,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                 for i in range(len(pts) - 1):
                     p1 = pts[i]
                     p2 = pts[i+1]
-                    color = self.get_draw_color(start_idx + i, total_pts, contour_data[i],
+                    current_idx = indices_data[i] if distribute_by == 'angular' else (start_idx + i)
+                    color = self.get_draw_color(current_idx, total_pts, contour_data[i],
                                                 p1[0], p1[1], cx, cy, max_dist, **kwargs)
                     
                     # Apply contour-specific color shift
@@ -440,7 +464,8 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                     cv2.line(image, tuple(p1), tuple(p2), color, line_width)
                 
                 # Close loop
-                color = self.get_draw_color(end_idx - 1, total_pts, contour_data[-1],
+                current_idx = indices_data[-1] if distribute_by == 'angular' else (end_idx - 1)
+                color = self.get_draw_color(current_idx, total_pts, contour_data[-1],
                                             pts[-1][0], pts[-1][1], cx, cy, max_dist, **kwargs)
                 cv2.line(image, tuple(pts[-1]), tuple(pts[0]), color, line_width)
 

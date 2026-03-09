@@ -22,6 +22,7 @@ class ScromfyFlexVisualizerSettingsNode:
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "visualization_method": (["bar", "line"], {"default": "bar"}),
                 "visualization_feature": (["frequency", "waveform"], {"default": "frequency"}),
+                "num_points": ("INT", {"default": 64, "min": 4, "max": 1024, "step": 1}),
                 "color_mode": (["white", "spectrum", "custom", "amplitude", "radial", "angular", "path", "screen"], {"default": "spectrum"}),
                 "color_schema": (cls._get_schema_names(), {"default": "none"}),
                 "custom_color": ("COLOR", {"default": "#00ffff"}),
