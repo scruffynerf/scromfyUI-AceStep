@@ -687,6 +687,10 @@ class FlexAudioVisualizerBase(FlexBase):
 
             image = self.apply_effect_internal(processor, **processed_kwargs)
             
+            # Ensure image is exactly screen size for lyric renderer
+            if image.shape[0] != actual_height or image.shape[1] != actual_width:
+                image = cv2.resize(image, (actual_width, actual_height))
+            
             # Ensure image is uint8 [0, 255] for lyric renderer and efficient processing
             if image.dtype != np.uint8:
                 # Force to [0, 1] range then to [0, 255] for consistency

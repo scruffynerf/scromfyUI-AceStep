@@ -52,8 +52,8 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
     RETURN_TYPES = ("IMAGE", "MASK", "STRING")
     RETURN_NAMES = ("IMAGE", "MASK", "SETTINGS")
 
-    def apply_effect(self, audio, frame_rate, strength, feature_param, feature_mode,
-                     feature_threshold, opt_feature=None, **kwargs):
+    def apply_effect(self, audio, frame_rate, screen_width, screen_height, strength, feature_param,
+                     feature_mode, feature_threshold, opt_feature=None, **kwargs):
         
         seed = kwargs.get("seed", 0)
         import random
