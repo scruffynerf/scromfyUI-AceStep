@@ -156,6 +156,7 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         valid_contours.sort(key=cv2.contourArea, reverse=True)
         valid_contours = valid_contours[:max_contours]
 
+        sequence_direction = kwargs.get("sequence_direction", "right")
         if sequence_direction == "left":
             # Reverse point order for all selected contours
             valid_contours = [c[::-1] for c in valid_contours]
