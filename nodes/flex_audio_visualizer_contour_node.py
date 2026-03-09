@@ -301,6 +301,22 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             valid_contours = valid_contours[:max_contours]
         
         if not valid_contours: return image
+
+        # Sort final valid contours by angle from center to ensure spatial symmetry 
+        # in distribution modes like 'perimeter'. 
+        if len(valid_contours) > 1:
+            def get_contour_angle(cnt):
+                M = cv2.moments(cnt)
+                if M["m00"] > 0:
+                    mx = M["m10"] / M["m00"]
+                    my = M["m01"] / M["m00"]
+                else:
+                    # Fallback to mean of all points in contour
+                    mx, my = np.mean(cnt.squeeze(), axis=0)
+                # Angle from 12 o'clock (0 to 2PI clockwise)
+                return (np.arctan2(mx - cx, -(my - cy)) + np.pi * 2) % (np.pi * 2)
+            
+            valid_contours.sort(key=get_contour_angle)
         
         # Option 1: Draw ghost mask (filled dimmed area) if enabled
         ghost_mask_strength = kwargs.get("ghost_mask_strength", 0.0)

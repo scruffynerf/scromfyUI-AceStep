@@ -496,18 +496,23 @@ class FlexAudioVisualizerBase(FlexBase):
         if sequence_direction == "left":
             return data[::-1]
         elif sequence_direction == "centered":
-            # [High...Low...High] -> uses all data by interleaving
-            # left half gets odd indices reversed, right gets even indices
-            left_half = data[1::2][::-1]
-            right_half = data[0::2]
+            # [High...Low...High] -> Mirror spectrum with Low in middle
+            n = len(data)
+            half_n = (n + 1) // 2
+            # Interpolate to half length to use all frequency info smoothly
+            half_data = np.interp(np.linspace(0, 1, half_n), np.linspace(0, 1, n), data)
+            left_half = half_data[::-1]
+            right_half = half_data[n % 2:] # Don't repeat middle point if n is odd
             return np.concatenate([left_half, right_half])
         elif sequence_direction == "both ends":
-            # [Low...High...Low] -> uses all data by interleaving
-            # left half gets even indices, right gets odd indices reversed
-            left_half = data[0::2]
-            right_half = data[1::2][::-1]
+            # [Low...High...Low] -> Mirror spectrum with High in middle
+            n = len(data)
+            half_n = (n + 1) // 2
+            half_data = np.interp(np.linspace(0, 1, half_n), np.linspace(0, 1, n), data)
+            left_half = half_data
+            right_half = half_data[:len(half_data) - (n % 2)][::-1]
             return np.concatenate([left_half, right_half])
-        return data # right (default)
+        return data
 
     def validate_param(self, param_name, param_value):
         valid_params = {
