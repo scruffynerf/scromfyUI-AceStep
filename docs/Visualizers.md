@@ -32,22 +32,42 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 ### Color & Style
 | Parameter | Description |
 | :--- | :--- |
-| `color_mode` | Mode: Spectrum, Custom, Amplitude, Radial, Angular, Path, Screen. |
-| `color_schema` | Preset palette selection (Ice, Fire, Sunset, etc.). |
-| `custom_color` | Static color for `custom` mode. |
-| `color_shift` | Offsets the hue mapping along the sequence. |
-| `saturation` | Intensity of colors. |
-| `brightness` | Overall brilliance of colors. |
-| `line_width` | Global thickness for all drawn lines and bars. |
+| `color_mode` | Selection logic for colors (see **Color Modes** section below). |
+| `color_schema` | Preset palette from `color_schemas/`. **Used only in 'Schema' mode.** |
+| `custom_color` | Static hex color. **Used only in 'Custom' mode.** |
+| `color_shift` | Hue offset (0.0 to 1.0) applied as a cycle. |
+| `saturation` | Color intensity (0.0 to 1.0). |
+| `brightness` | Overall brilliance (0.0 to 1.0). |
+| `line_width` | Drawing thickness in **pixels**. |
 
 ### Motion & Direction
 | Parameter | Description |
 | :--- | :--- |
-| `visualization_method` | `bar` (discrete segments) vs `line` (smooth connected path). |
-| `direction` | `outward`, `inward`, `both`, `centroid`, `starburst`. |
-| `sequence_direction` | `left`, `right`, `centered`, `both ends`. |
-| `direction_skew` | Rotation of individual drawing vectors (in degrees). |
-| `centroid_offset_x/y` | Manual offset for the expansion/contraction center. |
+| `visualization_method` | `bar` (discrete) vs `line` (smooth). |
+| `direction` | Vector orientation (Outward, Inward, Both, Centroid, Starburst). |
+| `sequence_direction` | Data flow mapping (Left, Right, Centered, Both Ends). |
+| `direction_skew` | Global tilt of all drawing vectors in **degrees**. |
+| `centroid_offset_x/y` | Shift the focal point in **% of screen size** (-1.0 to 1.0). |
+
+---
+
+## Color Modes
+The `color_mode` setting defines how colors are assigned to individual points or bars.
+
+| Mode | Logic |
+| :--- | :--- |
+| **White** | All elements are pure white. |
+| **Spectrum** | Colors are derived from the audio frequency (Low=Red, High=Violet). |
+| **Custom** | Every element uses the `custom_color` hex value. |
+| **Schema** | Uses the selected `.json` palette from `color_schemas/`. **User-Addable.** |
+| **Amplitude** | Color is based on the volume of the specific point (mapping 0-1 to the Hue circle). |
+| **Radial** | Color changes based on distance from the center. |
+| **Angular** | Color maps to the angle (0-360) around the center. |
+| **Path** | Color transitions linearly from the first point to the last point. |
+| **Screen** | Color is based on the X/Y coordinate on the screen. |
+
+> [!TIP]
+> **Custom Schemas**: You can add your own `.json` palettes to the `/color_schemas` directory. They will appear automatically in the `color_schema` dropdown. See the [Schema Guide](file:///Users/scohn/code/AceStep15-gradio2comfy/color_schemas/README.md) for details.
 
 ---
 
@@ -57,44 +77,42 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 ### Circular Node (Shape/Placement)
 | Parameter | Description |
 | :--- | :--- |
-| `radius` | Maximum expansion radius. |
-| `base_radius` | The resting radius of the circle. |
-| `amplitude_scale` | Sensitivity to audio volume. |
+| `radius` | Maximum expansion radius in **pixels**. |
+| `base_radius` | The resting radius in **pixels**. |
+| `amplitude_scale` | Sensitivity multiplier for audio movement. |
 | `bar_length_mode` | `absolute` (pixels) vs `relative` (% of base_radius). |
-| `position_x / y` | Screen placement (0.5 = center). |
-| `rotation` | Overall rotation of the circular shape. |
+| `position_x / y` | Center coordinate (0.5 = center of screen). |
+| `rotation` | Global rotation of the circle in **degrees**. |
 
 ### Line Node (Shape/Placement)
 | Parameter | Description |
 | :--- | :--- |
-| `num_bars` | (Local Override) Number of elements to draw. |
-| `max_height` | Ceiling for bar/amplitude length. |
-| `min_height` | Floor for bar/amplitude length. |
-| `bar_length_mode` | `absolute` vs `relative` (% of screen). |
-| `length` | Physical length of the base line (0 = full screen). |
-| `separation` | Gap between bars. |
-| `curvature` | Visual rounding of bar caps. |
-| `curve_smoothing` | Path smoothing for `line` method. |
-| `position_x / y` | Screen placement. |
-| `rotation` | Horizontal, Vertical, or Diagonal line angle. |
+| `max_height / min` | Height bounds for bars in **pixels** (or **%** if relative). |
+| `bar_length_mode` | `absolute` vs `relative` (% of screen height). |
+| `length` | Physical length of the base line in **pixels** (0 = full width). |
+| `separation` | Gap between bars in **pixels**. |
+| `curvature` | Roundness of bar ends (visual only). |
+| `curve_smoothing` | Smoothness factor for `line` method (0.0 to 1.0). |
+| `position_x / y` | Midpoint coordinate of the line (0.0 to 1.0). |
+| `rotation` | Angle of the line in **degrees**. |
 
 ### Contour Node (Shape/Source)
 | Parameter | Description |
 | :--- | :--- |
-| `installed_mask` | Preset mask selection. |
-| `mask_scale` | Size of the mask relative to the screen. |
-| `mask_top_margin` | Vertical shift of the mask. |
-| `bar_length` | Height of the visualizer elements. |
+| `installed_mask` | Select a built-in mask or "random". |
+| `mask_scale` | Size of the mask content (0.01 to 1.0 multiplier). |
+| `mask_top_margin` | Vertical offset of mask content (0.0 to 0.5 percentage). |
+| `bar_length` | Visualizer height in **pixels** (or **%** of mask scale). |
 | `bar_length_mode` | `absolute` vs `relative` (% of mask scale). |
-| `distribute_by` | Strategy: `area`, `perimeter`, `equal`, `angular`. |
-| `contour_layers` | Hierarchy selection (0 = outer only, or specific indices). |
-| `contour_color_shift` | Color variance between distinct shapes. |
-| `adaptive_point_density`| Scales point count based on perimeter length. |
-| `min_contour_area` | Noise reduction threshold. |
-| `max_contours` | Maximum number of shapes to process. |
-| `ghost_mask_strength` | Alpha for the original shape preview. |
-| `ghost_use_custom_color`| Toggle custom ghost color vs white. |
-| `contour_smoothing` | Simplifies complex mask paths. |
+| `distribute_by` | Strategy for spreading points across the contour hierarchy. |
+| `contour_layers` | Comma-separated list of target layers (e.g. `0,1`). |
+| `contour_color_shift` | Hue variance between different layers (0.0 to 1.0). |
+| `adaptive_point_density`| If True, `num_points` is scaled by the mask perimeter length. |
+| `min_contour_area` | Ignores shapes smaller than this area in **square pixels**. |
+| `max_contours` | Maximum number of individual shapes to process. |
+| `ghost_mask_strength` | Opacity of the original mask shape preview (0.0 to 1.0). |
+| `ghost_use_custom_color`| If True, ghost uses `custom_color`; else defaults to white/gray. |
+| `contour_smoothing` | Level of geometric simplification (0 to 50). |
 
 #### Contour Outputs
 | Name | Type | Description |

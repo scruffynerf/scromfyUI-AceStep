@@ -33,7 +33,7 @@ class ScromfyFlexVisualizerSettingsNode:
 
                 # --- Color & Style ---
                 "visualization_method": (["bar", "line"], {"default": "bar"}),
-                "color_mode": (["white", "spectrum", "custom", "amplitude", "radial", "angular", "path", "screen"], {"default": "spectrum"}),
+                "color_mode": (["white", "spectrum", "custom", "schema", "amplitude", "radial", "angular", "path", "screen"], {"default": "spectrum"}),
                 "color_schema": (cls._get_schema_names(), {"default": "none"}),
                 "custom_color": ("COLOR", {"default": "#00ffff"}),
                 "color_shift": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),

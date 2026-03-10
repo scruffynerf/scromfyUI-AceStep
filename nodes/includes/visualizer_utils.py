@@ -558,9 +558,13 @@ class FlexAudioVisualizerBase(FlexBase):
         cx = cx + kwargs.get('centroid_offset_x', 0.0) * screen_width
         cy = cy + kwargs.get('centroid_offset_y', 0.0) * screen_height
 
-        # Schema overrides color_mode entirely
-        if color_schema and color_schema != 'none':
-            return get_schema_color(color_schema, float(amplitude), color_shift, saturation, brightness)
+        # Schema mode now exclusively uses the color_schema setting
+        if color_mode == "schema":
+            if color_schema and color_schema != 'none':
+                return get_schema_color(color_schema, float(amplitude), color_shift, saturation, brightness)
+            else:
+                # Fallback to spectrum if no schema is selected
+                color_mode = "spectrum"
 
         if color_mode == "white":
             return (1.0, 1.0, 1.0)
