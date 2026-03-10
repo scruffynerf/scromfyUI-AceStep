@@ -653,7 +653,11 @@ class FlexAudioVisualizerBase(FlexBase):
         
         # Normalize mask parameters (ComfyUI often passes optional inputs as keywords)
         if source_mask is None:
-            source_mask = kwargs.get("mask") or kwargs.get("opt_mask")
+            source_mask = kwargs.pop("mask", None) or kwargs.pop("opt_mask", None)
+        else:
+            # Ensure it is removed from kwargs even if passed formally
+            kwargs.pop("mask", None)
+            kwargs.pop("opt_mask", None)
         
         # Unpack visualizer settings if provided
         ext_settings = kwargs.get("visualizer_settings", {})
