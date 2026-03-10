@@ -114,7 +114,6 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         bar_length_mode = kwargs.get('bar_length_mode', 'absolute')
         
         if bar_length_mode == "relative":
-            # Treat max_height as a percentage of screen_height
             effective_max_height = (max_height / 100.0) * screen_height
             effective_min_height = (min_height / 100.0) * screen_height
         else:
@@ -128,8 +127,35 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         item_freqs = kwargs.get('item_freqs', None)
         line_width = kwargs.get('line_width', 2)
 
-        baseline_y = screen_height * position_y
-        
+        center_x = screen_width * position_x
+        center_y = screen_height * position_y
+
+        # Initialize image with background or black
+        background = kwargs.get("background")
+        if background is not None:
+            image = background.copy().astype(np.float32)
+            if image.shape[0] != screen_height or image.shape[1] != screen_width:
+                image = cv2.resize(image, (screen_width, screen_height))
+        else:
+            image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
+
+        # For geometric color/direction logic, find the center of the mask if provided
+        mask = kwargs.get("source_mask")
+        if mask is not None:
+            frame_idx = min(kwargs.get("frame_index", 0), mask.shape[0] - 1)
+            mask_np = (mask[frame_idx].cpu().numpy() * 255).astype(np.uint8)
+            M = cv2.moments(mask_np)
+            if M["m00"] > 0:
+                cx, cy = M["m10"] / M["m00"], M["m01"] / M["m00"]
+            else:
+                cx, cy = center_x, center_y
+        else:
+            cx, cy = center_x, center_y
+
+        # Apply user-specified CoM offset
+        cx += kwargs.get("centroid_offset_x", 0.0) * screen_width
+        cy += kwargs.get("centroid_offset_y", 0.0) * screen_height
+
         # Determine effective length
         if length == 0.0:
             rotation_rad = np.deg2rad(rotation)
@@ -142,40 +168,22 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
         else:
             visualization_length = length
 
-        padding = int(max(visualization_length, effective_max_height, screen_width, screen_height) * 0.5)
-        padded_width = int(max(visualization_length, screen_width) + 2 * padding)
-        padded_height = int(max(screen_height, effective_max_height) + 2 * padding)
-        padded_image = np.zeros((padded_height, padded_width, 3), dtype=np.float32)
-
-        # Baseline point calculation (unpadded)
-        center_x = screen_width * position_x
-        center_y = screen_height * position_y
-
-        # For geometric color/direction logic, find the center of the mask if provided
-        mask = kwargs.get("source_mask")
-        if mask is not None:
-            # mask is likely a torch tensor [batch, height, width]
-            frame_idx = min(kwargs.get("frame_index", 0), mask.shape[0] - 1)
-            mask_np = (mask[frame_idx].cpu().numpy() * 255).astype(np.uint8)
-            M = cv2.moments(mask_np)
-            if M["m00"] > 0:
-                cx_rel, cy_rel = M["m10"] / M["m00"], M["m01"] / M["m00"]
-            else:
-                cx_rel, cy_rel = center_x, center_y
-        else:
-            cx_rel, cy_rel = center_x, center_y
-
-        # Apply user-specified CoM offset
-        cx_rel += kwargs.get("centroid_offset_x", 0.0) * screen_width
-        cy_rel += kwargs.get("centroid_offset_y", 0.0) * screen_height
-
-        # Final cx/cy in the PADDED coordinate space for drawing
-        cx = cx_rel + (padded_width - screen_width) // 2
-        cy = cy_rel + (padded_height - screen_height) // 2
-
         data = self.transform_sequence(processor.spectrum, sequence_direction)
         if item_freqs is not None:
             item_freqs = self.transform_sequence(item_freqs, sequence_direction)
+
+        # Rotation matrix for coordinate transformation
+        rot_rad = np.deg2rad(-rotation) # negative because screen-Y is down
+        cos_rot = np.cos(rot_rad)
+        sin_rot = np.sin(rot_rad)
+
+        def rotate_point(px, py, pivot_x, pivot_y):
+            # px, py are relative to pivot
+            rx = px * cos_rot - py * sin_rot
+            ry = px * sin_rot + py * cos_rot
+            return rx + pivot_x, ry + pivot_y
+
+        direction_skew = kwargs.get("direction_skew", 0.0)
 
         if visualization_method == 'bar':
             curvature = kwargs.get('curvature', 0.0)
@@ -183,17 +191,20 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
             total_separation = separation * (num_bars - 1)
             total_bar_width = visualization_length - total_separation
             bar_width = total_bar_width / num_bars
-            baseline_y_padded = baseline_y + padding
-            x_offset = (padded_width - visualization_length) // 2
-
-            direction_skew = kwargs.get("direction_skew", 0.0)
+            
+            # Local space: line goes from -visualization_length/2 to +visualization_length/2
+            start_x_local = -visualization_length / 2.0
 
             for i, bar_value in enumerate(data):
-                x_base = x_offset + i * (bar_width + separation) + bar_width / 2
-                y_base = baseline_y_padded
+                # Calculate bar center in local space (horizontal line along X axis)
+                x_local = start_x_local + i * (bar_width + separation) + bar_width / 2
+                y_local = 0
                 
                 bar_h = effective_min_height + (effective_max_height - effective_min_height) * bar_value
                 
+                # Global space base point (after rotation)
+                x_base, y_base = rotate_point(x_local, y_local, center_x, center_y)
+
                 # Determine direction vector (vx, vy)
                 if direction in ('centroid', 'starburst'):
                     dx_com, dy_com = cx - x_base, cy - y_base
@@ -201,75 +212,72 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                     if dist_com > 0:
                         vx, vy = dx_com / dist_com, dy_com / dist_com
                     else:
-                        vx, vy = 0, -1
+                        # Fallback to local vertical rotated
+                        _, vy_rot = rotate_point(0, -1, 0, 0)
+                        vx, vy = 0, vy_rot
                     if direction == 'starburst':
                         vx, vy = -vx, -vy
                 else:
-                    # upward/downward
-                    vx, vy = 0, -1
-                    if direction == 'inward':
-                        vx, vy = 0, 1
+                    # upward/downward in rotated local space
+                    # Unrotated vertical vector is (0, -1)
+                    v_local_y = -1.0 if direction != 'inward' else 1.0
+                    vx, vy = rotate_point(0, v_local_y, 0, 0)
+                    # Note: rotate_point already adds pivot, but here we want a pure vector
+                    vx -= 0
+                    vy -= 0
 
                 # Apply skew
                 if direction_skew != 0:
                     skew_rad = np.deg2rad(direction_skew)
                     s_cos, s_sin = np.cos(skew_rad), np.sin(skew_rad)
-                    vx, vy = vx * s_cos - vy * s_sin, vx * s_sin + vy * s_cos
+                    vx_new = vx * s_cos - vy * s_sin
+                    vy_new = vx * s_sin + vy * s_cos
+                    vx, vy = vx_new, vy_new
 
                 # Draw point calculation
                 if direction == 'both':
                     half = bar_h / 2.0
-                    # For 'both', we use the vertical radial-like expansion on the baseline
-                    x1, y1 = int(x_base), int(y_base - half)
-                    x2, y2 = int(x_base), int(y_base + half)
-                    # We override vx, vy for color mapping below if needed, but for 'both' 
-                    # we stick to standard rectangle logic if no skew
+                    # For both, we use the local vertical rotated
+                    vx_v, vy_v = rotate_point(0, -1, 0, 0)
+                    vx_v -= 0; vy_v -= 0
+                    x1, y1 = x_base - half * vx_v, y_base - half * vy_v
+                    x2, y2 = x_base + half * vx_v, y_base + half * vy_v
                 else:
-                    x1, y1 = int(x_base), int(y_base)
-                    x2, y2 = int(x_base + vx * bar_h), int(y_base + vy * bar_h)
+                    x1, y1 = x_base, y_base
+                    x2, y2 = x_base + vx * bar_h, y_base + vy * bar_h
 
-                # Determine color using shared helper
-                # Pass cx, cy (potentially offset) to get_draw_color
                 color = self.get_draw_color(i, num_bars, bar_value,
                                             x1, y1, cx, cy, 
                                             max(screen_width, screen_height), **kwargs)
                 
-                # Draw logic: if we have skew or centroid, we MUST use cv2.line.
-                # If we have curvature and it's vertical, we use the original mask logic.
-                is_vertical = (vx == 0 and direction_skew == 0 and direction != 'both') or (direction == 'both' and direction_skew == 0)
+                # Check if we can use simple rectangle (no rotation/skew/centroid)
+                is_simple = (rotation == 0 and direction_skew == 0 and direction in ('outward', 'inward', 'both'))
                 
-                if not is_vertical:
+                if not is_simple or curvature > 0:
                     thickness = max(1, int(bar_width))
-                    cv2.line(padded_image, (x1, y1), (x2, y2), color, thickness)
+                    # Curvature on rotated lines is much harder without padding.
+                    # For now, we use rounded lines if curvature > 0
+                    if curvature > 0:
+                        # Draw a line with rounded caps
+                        p1 = (int(x1), int(y1))
+                        p2 = (int(x2), int(y2))
+                        cv2.line(image, p1, p2, color, thickness, lineType=cv2.LINE_AA)
+                        # Draw circles at ends for "curvature" look
+                        if curvature > 2:
+                            cv2.circle(image, p1, thickness // 2, color, -1, lineType=cv2.LINE_AA)
+                            cv2.circle(image, p2, thickness // 2, color, -1, lineType=cv2.LINE_AA)
+                    else:
+                        cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), color, thickness)
                 else:
-                    # Original rectangle/curvature logic
+                    # Original fast rectangle logic for zero rotation
                     rect_x_start = int(x_base - bar_width / 2)
                     rect_x_end = int(rect_x_start + bar_width)
-                    rect_y_start, rect_y_end = y1, y2
-                    if rect_y_start > rect_y_end: rect_y_start, rect_y_end = rect_y_end, rect_y_start
-                    
-                    rect_w = max(1, int(rect_x_end - rect_x_start))
-                    rect_h = max(1, int(rect_y_end - rect_y_start))
-                    
-                    if curvature > 0 and rect_w > 1 and rect_h > 1:
-                        radius = max(1, min(int(curvature), rect_w // 2, rect_h // 2))
-                        mask = np.zeros((rect_h, rect_w), dtype=np.uint8)
-                        r = radius
-                        cv2.circle(mask, (r, r), r, 255, -1)
-                        cv2.circle(mask, (rect_w - r, r), r, 255, -1)
-                        cv2.circle(mask, (r, rect_h - r), r, 255, -1)
-                        cv2.circle(mask, (rect_w - r, rect_h - r), r, 255, -1)
-                        cv2.rectangle(mask, (r, 0), (rect_w - r, rect_h), 255, -1)
-                        cv2.rectangle(mask, (0, r), (rect_w, rect_h - r), 255, -1)
-                        padded_image[rect_y_start:rect_y_start+rect_h, rect_x_start:rect_x_start+rect_w][mask > 0] = color
-                    else:
-                        cv2.rectangle(padded_image, (rect_x_start, rect_y_start), (rect_x_end, rect_y_end), color, thickness=-1)
+                    ry1, ry2 = int(y1), int(y2)
+                    if ry1 > ry2: ry1, ry2 = ry2, ry1
+                    cv2.rectangle(image, (rect_x_start, ry1), (rect_x_end, ry2), color, thickness=-1)
 
         elif visualization_method == 'line':
             curve_smoothing = kwargs.get('curve_smoothing', 0.0)
-            baseline_y_padded = baseline_y + padding
-            x_offset = (padded_width - visualization_length) // 2
-            
             if curve_smoothing > 0:
                 window_size = int(len(data) * curve_smoothing)
                 if window_size % 2 == 0: window_size += 1
@@ -279,14 +287,17 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                 
             amplitudes = effective_min_height + data_smooth * (effective_max_height - effective_min_height)
             num_pts = len(amplitudes)
-            x_bases = np.linspace(x_offset, x_offset + visualization_length, num_pts)
             
-            direction_skew = kwargs.get("direction_skew", 0.0)
+            # Local space: horizontal line from -vis_len/2 to +vis_len/2
+            x_bases_local = np.linspace(-visualization_length/2.0, visualization_length/2.0, num_pts)
+            
             pts = []
-            
             for i in range(num_pts):
-                xb, yb = x_bases[i], baseline_y_padded
+                xb_local = x_bases_local[i]
                 amp = amplitudes[i]
+                
+                # Base point in global space
+                xb, yb = rotate_point(xb_local, 0, center_x, center_y)
                 
                 # Determine direction vector (vx, vy)
                 if direction in ('centroid', 'starburst'):
@@ -295,20 +306,23 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                     if dist_com > 0:
                         vx, vy = dx_com / dist_com, dy_com / dist_com
                     else:
-                        vx, vy = 0, -1
+                        _, vy_rot = rotate_point(0, -1, 0, 0)
+                        vx, vy = 0, vy_rot
                     if direction == 'starburst':
                         vx, vy = -vx, -vy
                 else:
                     # upward/downward
-                    vx, vy = 0, -1
-                    if direction == 'inward':
-                        vx, vy = 0, 1
+                    v_local_y = -1.0 if direction != 'inward' else 1.0
+                    vx, vy = rotate_point(0, v_local_y, 0, 0)
+                    vx -= 0; vy -= 0
                 
                 # Apply skew
                 if direction_skew != 0:
                     skew_rad = np.deg2rad(direction_skew)
                     s_cos, s_sin = np.cos(skew_rad), np.sin(skew_rad)
-                    vx, vy = vx * s_cos - vy * s_sin, vx * s_sin + vy * s_cos
+                    vx_new = vx * s_cos - vy * s_sin
+                    vy_new = vx * s_sin + vy * s_cos
+                    vx, vy = vx_new, vy_new
                 
                 pts.append([xb + vx * amp, yb + vy * amp])
                 
@@ -321,31 +335,8 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
                     p2 = points[i+1]
                     color = self.get_draw_color(i, num_pts, data[i],
                                                 p1[0], p1[1], cx, cy,
-                                                max(visualization_length, effective_max_height), **kwargs)
-                    cv2.line(padded_image, tuple(p1), tuple(p2), color, line_width)
-
-        if rotation != 0:
-            M = cv2.getRotationMatrix2D((padded_width // 2, padded_height // 2), rotation, 1.0)
-            padded_image = cv2.warpAffine(padded_image, M, (padded_width, padded_height))
-
-        target_x = int(screen_width * position_x)
-        target_y = int(screen_height * position_y)
-        start_x = max(0, padded_width // 2 - target_x)
-        start_y = max(0, padded_height // 2 - target_y)
-        
-        # CRITICAL: Use .copy() to return a new array instead of a view of the huge padded_image.
-        # This allows the padded_image to be garbage collected for each frame.
-        # We also ensure the slice stays within bounds of the padded_image.
-        end_y = min(start_y + screen_height, padded_height)
-        end_x = min(start_x + screen_width, padded_width)
-        image = padded_image[start_y:end_y, start_x:end_x].copy()
-        
-        # If the slice was smaller than expected, pad it back to the target size
-        if image.shape[0] != screen_height or image.shape[1] != screen_width:
-            final_img = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
-            h, w = image.shape[:2]
-            final_img[:h, :w] = image
-            image = final_img
+                                                max(screen_width, screen_height), **kwargs)
+                    cv2.line(image, tuple(p1), tuple(p2), color, line_width)
 
         return image
 

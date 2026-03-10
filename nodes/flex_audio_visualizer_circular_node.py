@@ -120,7 +120,14 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
         brightness = kwargs.get('brightness', 1.0)
         item_freqs = kwargs.get('item_freqs', None)
         
-        image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
+        # Use background if provided, else black
+        background = kwargs.get("background")
+        if background is not None:
+            image = background.copy().astype(np.float32)
+            if image.shape[0] != screen_height or image.shape[1] != screen_width:
+                image = cv2.resize(image, (screen_width, screen_height))
+        else:
+            image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
         center_x = screen_width * position_x
         center_y = screen_height * position_y
 

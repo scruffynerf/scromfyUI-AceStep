@@ -270,7 +270,14 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         item_freqs = kwargs.get('item_freqs', None)
 
         frame_index = processor.current_frame
-        image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
+        # Use background if provided, else black
+        background = kwargs.get("background")
+        if background is not None:
+            image = background.copy().astype(np.float32)
+            if image.shape[0] != screen_height or image.shape[1] != screen_width:
+                image = cv2.resize(image, (screen_width, screen_height))
+        else:
+            image = np.zeros((screen_height, screen_width, 3), dtype=np.float32)
         
         frame_idx = min(frame_index, batch_size - 1)
         mask_uint8 = (mask[frame_idx].cpu().numpy() * 255).astype(np.uint8)
