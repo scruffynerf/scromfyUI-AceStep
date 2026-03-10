@@ -714,15 +714,13 @@ class FlexAudioVisualizerBase(FlexBase):
             settings_str = f"Error serializing settings: {str(e)}\nKeys: {list(settings_dict.keys())}"
 
         audio_duration = len(audio['waveform'].squeeze(0).mean(axis=0)) / audio['sample_rate']
+        num_frames = int(audio_duration * frame_rate)
         
-        # Determine number of frames and resolution from video if provided
+        # Determine resolution from video if provided, but follow audio for num_frames
         if opt_video is not None:
-            num_frames = opt_video.shape[0]
             v_height, v_width = opt_video.shape[1], opt_video.shape[2]
-            # Use video resolution as override
             actual_width, actual_height = v_width, v_height
         else:
-            num_frames = int(audio_duration * frame_rate)
             actual_width, actual_height = screen_width, screen_height
 
         processor = BaseAudioProcessor(audio, num_frames, actual_height, actual_width, frame_rate)
@@ -754,8 +752,11 @@ class FlexAudioVisualizerBase(FlexBase):
             # Get video frame for background if available
             background_np = None
             if opt_video is not None:
-                # Get i-th frame, wrap around or clamp if video shorter than audio (though we clamped num_frames above)
-                v_idx = min(i, opt_video.shape[0] - 1)
+                num_v_frames = opt_video.shape[0]
+                if kwargs.get("loop_background", True):
+                    v_idx = i % num_v_frames
+                else:
+                    v_idx = min(i, num_v_frames - 1)
                 background_np = (opt_video[v_idx].cpu().numpy() * 255).astype(np.uint8)
 
             processor.current_frame = i

@@ -41,6 +41,7 @@ class ScromfyFlexVisualizerSettingsNode:
                 "centroid_offset_y": ("FLOAT", {"default": 0.0, "min": -1.0, "max": 1.0, "step": 0.01}),
                 "direction_skew": ("FLOAT", {"default": 0.0, "min": -180.0, "max": 180.0, "step": 0.5,
                                              "tooltip": "Rotate direction vectors by this many degrees. Positive=clockwise, negative=counter-clockwise. Works on all direction modes."}),
+                "loop_background": ("BOOLEAN", {"default": True}),
             }
         }
 
