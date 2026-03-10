@@ -824,8 +824,8 @@ class FlexAudioVisualizerBase(FlexBase):
                 else:
                     visualizer_layer = np.clip(visualizer_layer, 0, 255).astype(np.uint8)
 
-            # 5. Apply Mask Blocking to Visualizer Layer
-            if f_mask is not None:
+            # 5. Apply Mask Blocking to Visualizer Layer (Optional)
+            if f_mask is not None and processed_kwargs.get("use_mask_as_visibility_filter", False):
                 visualizer_layer = (visualizer_layer.astype(np.float32) * f_mask).astype(np.uint8)
 
             # 6. Composite onto Background

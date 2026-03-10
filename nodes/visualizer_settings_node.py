@@ -22,6 +22,7 @@ class ScromfyFlexVisualizerSettingsNode:
                 "randomize": ("BOOLEAN", {"default": False}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "loop_background": ("BOOLEAN", {"default": True}),
+                "use_mask_as_visibility_filter": ("BOOLEAN", {"default": False}),
                 
                 # --- Audio Analysis ---
                 "visualization_feature": (["frequency", "waveform"], {"default": "frequency"}),
