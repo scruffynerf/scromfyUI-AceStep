@@ -201,8 +201,7 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                     x_end, y_end = x_base + half * rx, y_base + half * ry
                 else:
                     x_start, y_start = x_base, y_base
-                    x_end, y_end = x_base + bar_len * vx
-                    y_end = y_base + bar_len * vy
+                    x_end, y_end = x_base + bar_len * vx, y_base + bar_len * vy
                 
                 # Determine color using shared helper
                 # Pass cx, cy (potentially offset) to get_draw_color
@@ -212,28 +211,50 @@ class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
                 cv2.line(image, (int(x_start), int(y_start)), (int(x_end), int(y_end)),
                          color, thickness=line_width)
         elif visualization_method == 'line':
-            # Radial expansion logic for circular lines
-            if direction == 'inward':
-                radii = base_radius - data * effective_amplitude_scale
-            else: # outward and others by default
-                radii = base_radius + data * effective_amplitude_scale
-                
-            x_values = center_x + radii * np.cos(angles)
-            y_values = center_y + radii * np.sin(angles)
-            points = np.array([x_values, y_values]).T.astype(np.int32)
+            pts = []
+            skew = kwargs.get("direction_skew", 0.0)
             
-            if len(points) > 2:
-                # For line mode, we draw segments to allow multi-color
-                num_pts = len(points)
-                for i in range(num_pts):
-                    p1 = points[i]
-                    p2 = points[(i+1) % num_pts]
+            for i, (angle, amplitude) in enumerate(zip(angles, data)):
+                rx, ry = np.cos(angle), np.sin(angle)
+                x_base = center_x + base_radius * rx
+                y_base = center_y + base_radius * ry
+                
+                # Determine direction vector (vx, vy)
+                if direction in ('centroid', 'starburst'):
+                    dx_com, dy_com = cx - x_base, cy - y_base
+                    dist_com = np.sqrt(dx_com**2 + dy_com**2)
+                    if dist_com > 0:
+                        vx, vy = dx_com / dist_com, dy_com / dist_com
+                    else:
+                        vx, vy = rx, ry
+                    if direction == 'starburst':
+                        vx, vy = -vx, -vy
+                else:
+                    # inward/outward use radial vector
+                    vx, vy = rx, ry
+                    if direction == 'inward':
+                        vx, vy = -vx, -vy
+                
+                # Apply skew
+                if skew != 0:
+                    skew_rad = np.deg2rad(skew)
+                    s_cos, s_sin = np.cos(skew_rad), np.sin(skew_rad)
+                    vx, vy = vx * s_cos - vy * s_sin, vx * s_sin + vy * s_cos
+                
+                bar_len = amplitude * effective_amplitude_scale
+                pts.append([x_base + bar_len * vx, y_base + bar_len * vy])
+                
+            points = np.array(pts).astype(np.int32)
+            num_pts = len(points)
+            for i in range(num_pts):
+                p1 = points[i]
+                p2 = points[(i+1) % num_pts]
                     
-                    # Determine color for this segment
-                    color = self.get_draw_color(i, num_points, data[i],
-                                                p1[0], p1[1], cx, cy, max_dist, **kwargs)
-                    
-                    cv2.line(image, tuple(p1), tuple(p2), color, line_width)
+                # Determine color for this segment
+                color = self.get_draw_color(i, num_points, data[i],
+                                            p1[0], p1[1], cx, cy, max_dist, **kwargs)
+                
+                cv2.line(image, tuple(p1), tuple(p2), color, line_width)
 
         return image.copy()
 

@@ -267,19 +267,52 @@ class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
 
         elif visualization_method == 'line':
             curve_smoothing = kwargs.get('curve_smoothing', 0.0)
-            baseline_y = padded_height // 2
+            baseline_y_padded = baseline_y + padding
             x_offset = (padded_width - visualization_length) // 2
+            
             if curve_smoothing > 0:
                 window_size = int(len(data) * curve_smoothing)
                 if window_size % 2 == 0: window_size += 1
                 data_smooth = self.smooth_curve(data, window_size) if window_size > 2 else data
             else:
                 data_smooth = data
-            amplitude = min_height + data_smooth * (max_height - min_height)
-            num_pts = len(amplitude)
-            x_values = np.linspace(x_offset, x_offset + visualization_length, num_pts)
-            y_values = (baseline_y + amplitude) if direction == 'inward' else (baseline_y - amplitude)
-            points = np.array([x_values, y_values]).T.astype(np.int32)
+                
+            amplitudes = effective_min_height + data_smooth * (effective_max_height - effective_min_height)
+            num_pts = len(amplitudes)
+            x_bases = np.linspace(x_offset, x_offset + visualization_length, num_pts)
+            
+            direction_skew = kwargs.get("direction_skew", 0.0)
+            pts = []
+            
+            for i in range(num_pts):
+                xb, yb = x_bases[i], baseline_y_padded
+                amp = amplitudes[i]
+                
+                # Determine direction vector (vx, vy)
+                if direction in ('centroid', 'starburst'):
+                    dx_com, dy_com = cx - xb, cy - yb
+                    dist_com = np.sqrt(dx_com**2 + dy_com**2)
+                    if dist_com > 0:
+                        vx, vy = dx_com / dist_com, dy_com / dist_com
+                    else:
+                        vx, vy = 0, -1
+                    if direction == 'starburst':
+                        vx, vy = -vx, -vy
+                else:
+                    # upward/downward
+                    vx, vy = 0, -1
+                    if direction == 'inward':
+                        vx, vy = 0, 1
+                
+                # Apply skew
+                if direction_skew != 0:
+                    skew_rad = np.deg2rad(direction_skew)
+                    s_cos, s_sin = np.cos(skew_rad), np.sin(skew_rad)
+                    vx, vy = vx * s_cos - vy * s_sin, vx * s_sin + vy * s_cos
+                
+                pts.append([xb + vx * amp, yb + vy * amp])
+                
+            points = np.array(pts).astype(np.int32)
             
             if len(points) > 1:
                 # Draw segments to support multi-color modes
