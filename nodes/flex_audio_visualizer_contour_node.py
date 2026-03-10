@@ -104,6 +104,13 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
     def apply_effect(self, audio, frame_rate, screen_width, screen_height, strength, feature_param,
                      feature_mode, feature_threshold, mask=None, opt_feature=None, **kwargs):
         
+        # Unpack visualizer settings if provided (to get the seed for mask selection)
+        ext_settings = kwargs.get("visualizer_settings", {})
+        if isinstance(ext_settings, dict):
+            for k, v in ext_settings.items():
+                if k not in kwargs:
+                    kwargs[k] = v
+
         # Use seed from kwargs (might be from visualizer_settings or direct)
         seed = kwargs.get("seed", 0)
         s_rng = random.Random(seed)
