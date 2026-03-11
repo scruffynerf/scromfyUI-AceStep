@@ -10,12 +10,17 @@ class ScromfyLyricSettingsNode:
         
         font_files = ["default"]
         if os.path.exists(fonts_dir):
-            file_list = [f for f in os.listdir(fonts_dir) if f.lower().endswith(('.ttf', '.otf'))]
+            file_list = [f for f in os.listdir(fonts_dir) if f.lower().endswith(('.ttf', '.otf', '.ttc'))]
             if file_list:
                 font_files = sorted(file_list)
         
-        # Use Noto Sans as default if available
-        default_font = "NotoSans-Regular.ttf" if "NotoSans-Regular.ttf" in font_files else (font_files[0] if font_files else "default")
+        # Prefer CJK Pan-Regional font as default for broader support
+        if "NotoSansCJK-Regular.ttc" in font_files:
+            default_font = "NotoSansCJK-Regular.ttc"
+        elif "NotoSans-Regular.ttf" in font_files:
+            default_font = "NotoSans-Regular.ttf"
+        else:
+            default_font = font_files[0] if font_files else "default"
 
         return {
             "required": {

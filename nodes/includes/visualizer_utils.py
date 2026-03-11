@@ -238,13 +238,16 @@ class LyricRenderer:
             paths = [name]
             if base_font_dir:
                 paths.append(os.path.join(base_font_dir, name))
-                # Fallback versions
+                # Broad CJK Fallback (High priority broad coverage)
+                paths.append(os.path.join(base_font_dir, "NotoSansCJK-Regular.ttc"))
+                # Latin fallbacks
                 paths.append(os.path.join(base_font_dir, "NotoSans-Regular.ttf"))
                 paths.append(os.path.join(base_font_dir, "Roboto-Regular.ttf"))
             
             for p in paths:
                 if p and os.path.exists(p):
                     try:
+                        # ImageFont.truetype handles .ttc, .ttf, .otf
                         return ImageFont.truetype(p, size)
                     except:
                         continue
