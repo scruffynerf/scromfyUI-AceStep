@@ -274,6 +274,20 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
                         cv2.putText(l_map, txt, (lcx+1, lcy+1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
                         cv2.putText(l_map, txt, (lcx, lcy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
+                # Overlay Total Counts
+                max_depth = 0
+                for i in range(len(f_contours)):
+                    parent = f_hierarchy[i][3]
+                    d = 0
+                    while parent != -1:
+                        d += 1
+                        parent = f_hierarchy[parent][3]
+                    max_depth = max(max_depth, d)
+                
+                stats_text = f"Contours: {len(f_contours)} | Layers: {max_depth + 1}"
+                cv2.putText(l_map, stats_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 4) # Shadow
+                cv2.putText(l_map, stats_text, (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2) # Text
+
             l_map_tensor = torch.from_numpy(l_map.astype(np.float32) / 255.0).unsqueeze(0)
             layer_maps.append(l_map_tensor)
         
