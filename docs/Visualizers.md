@@ -11,9 +11,11 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 ---
 
 ## 1. Global Settings
+
 *Located in the `Flex Visualizer Settings (Scromfy)` node.*
 
 ### System
+
 | Parameter | Description |
 | :--- | :--- |
 | `randomize` | Automatically vary parameters for each batch. |
@@ -22,6 +24,7 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 | `use_mask_as_visibility_filter` | **Blocking**: If True, visualizer elements only appear where the `source_mask` is white. (Default: False). |
 
 ### Audio Processing
+
 | Parameter | Description |
 | :--- | :--- |
 | `visualization_feature` | Switch between `frequency` (FFT) and `waveform` analysis. |
@@ -32,6 +35,7 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 | `max_frequency` | Upper bound of frequency analysis (Treble). |
 
 ### Color & Style
+
 | Parameter | Description |
 | :--- | :--- |
 | `color_mode` | Selection logic for colors (see **Color Modes** section below). |
@@ -43,6 +47,7 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 | `line_width` | Drawing thickness in **pixels**. |
 
 ### Motion & Direction
+
 | Parameter | Description |
 | :--- | :--- |
 | `visualization_method` | `bar` (discrete) vs `line` (smooth). |
@@ -54,6 +59,7 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 ---
 
 ## Color Modes
+
 The `color_mode` setting defines how colors are assigned to individual points or bars.
 
 | Mode | Logic |
@@ -74,9 +80,11 @@ The `color_mode` setting defines how colors are assigned to individual points or
 ---
 
 ## 2. Node-Specific Settings
+
 *Exclusive to individual visualizer nodes.*
 
 ### Circular Node (Shape/Placement)
+
 | Parameter | Description |
 | :--- | :--- |
 | `radius` | Maximum expansion radius in **pixels**. |
@@ -87,6 +95,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 | `rotation` | Global rotation of the circle in **degrees**. |
 
 ### Line Node (Shape/Placement)
+
 | Parameter | Description |
 | :--- | :--- |
 | `max_height / min` | Height bounds for bars in **pixels** (or **%** if relative). |
@@ -99,6 +108,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 | `rotation` | Angle of the line in **degrees**. |
 
 ### Contour Node (Shape/Source)
+
 | Parameter | Description |
 | :--- | :--- |
 | `installed_mask` | Select a built-in mask or "random". |
@@ -117,6 +127,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 | `contour_smoothing` | Level of geometric simplification (0 to 50). |
 
 #### Contour Outputs
+
 | Name | Type | Description |
 | :--- | :--- | :--- |
 | `IMAGE` | Image | The final audio visualization. |
@@ -128,9 +139,11 @@ The `color_mode` setting defines how colors are assigned to individual points or
 ---
 
 ## 3. Lyrics Integration
+
 *The Lyrics system consists of an overlay node and a dedicated settings node.*
 
 ### Lyric Settings Node
+
 *A standalone master node for text styling.*
 
 | Parameter | Category | Description |
@@ -148,6 +161,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 | `line_spacing` | Layout | Gap between lines of text. |
 
 ### Flex Lyrics Node (The Overlay)
+
 *This node combines a background (image/video) with the styling from a Lyric Settings node.*
 
 | Parameter | Type | Description |

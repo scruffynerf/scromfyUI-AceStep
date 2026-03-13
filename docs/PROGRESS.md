@@ -58,6 +58,7 @@ All nodes are implemented and refactored. **63 node files** — 47 active, 16 ob
 - [x] [REMOVED] `ObsoleteFlacPreviewAudio` — `obsolete_preview_audio_node.py`
 - [x] `AceStepConditioningMixerLoader` — `load_mixed_conditioning_node.py`
 - [x] `AceStepTimbreTensorLoader` — `load_timbre_tensor_node.py`
+- [x] `ScromfyMaskPicker` — `mask_picker_node.py` (Recursive image/mask selector)
 
 #### Lyrics
 - [x] `AceStepLyricsFormatter` — `lyrics_formatter_node.py`
@@ -80,6 +81,12 @@ All nodes are implemented and refactored. **63 node files** — 47 active, 16 ob
 
 #### Radio & Visualizers
 - [x] `RadioPlayer` — `radio_node.py`
+- [x] `ScromfyEmojiSpinner` — `emoji_spinner_node.py` (Slot machine animation + Iconify integration)
+    - [x] Integrated `pyconify` for dynamic emoji fetching (25 icons per wheel)
+    - [x] Integrated `svglib` for SVG-to-Mask rendering (Standardized 1024px quality)
+    - [x] Supports 4 render modes: `color`, `white_solid`, `white_outline`, `white_solid_black_outline`
+    - [x] Supports combined result mask for Contour Visualizer
+    - [x] Configurable `slot_icon_size`, `reel_padding`, `render_mode`, and `bw_stroke_width`
 - [x] `AceStepWebAmpRadio` — `webamp_node.py`
     - [x] Large library optimization (500+ presets)
     - [x] Hot-swapping skins & visualizers
@@ -103,10 +110,11 @@ All nodes are implemented and refactored. **63 node files** — 47 active, 16 ob
 
 ## Progress Statistics
 
-- **Total Nodes: 64/64 complete (100%)** ✅
-- **Active Nodes: 48** ✅
+- **Total Nodes: 65/65 complete (100%)** ✅
+- **Active Nodes: 49** ✅
 - **Obsolete Nodes: 16** (deprecated, to be removed)
 - **Refactoring: Complete** ✅
+- **Maintenance: Pyre Configuration Added** ✅
 - **Dynamic Loading: Functional** ✅
 - **Frontend Extensions: 3** (Radio, WebAmp, Lyricer) ✅
 
@@ -119,6 +127,7 @@ scromfyUI-AceStep/
 ├── __init__.py           # Dynamic node scanner + WEB_DIRECTORY
 ├── nodes/
 │   ├── includes/         # Shared utility modules
+│   │   ├── emoji_utils.py
 │   │   ├── fsq_utils.py
 │   │   ├── lyrics_utils.py
 │   │   ├── prompt_utils.py

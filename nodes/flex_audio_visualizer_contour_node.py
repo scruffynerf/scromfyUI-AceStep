@@ -32,8 +32,11 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
         masks_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "masks")
         installed_masks = ["random"]
         if os.path.exists(masks_dir):
-            masks_list = sorted([f for f in os.listdir(masks_dir) if f.lower().endswith(".png")])
-            installed_masks.extend(masks_list)
+            import glob
+            pattern = os.path.join(masks_dir, "**", "*.png")
+            full_paths = glob.glob(pattern, recursive=True)
+            relative_paths = sorted([os.path.relpath(p, masks_dir) for p in full_paths])
+            installed_masks.extend(relative_paths)
 
         new_inputs = {
             "required": {
@@ -145,7 +148,10 @@ class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
             installed_mask = kwargs.get("installed_mask", "random")
             
             if installed_mask == "random":
-                masks_list = [f for f in os.listdir(masks_dir) if f.lower().endswith(".png")] if os.path.exists(masks_dir) else []
+                import glob
+                pattern = os.path.join(masks_dir, "**", "*.png")
+                full_paths = glob.glob(pattern, recursive=True)
+                masks_list = [os.path.relpath(p, masks_dir) for p in full_paths]
                 installed_mask = s_rng.choice(masks_list) if masks_list else None
             
             mask_path = os.path.join(masks_dir, installed_mask) if installed_mask else ""
