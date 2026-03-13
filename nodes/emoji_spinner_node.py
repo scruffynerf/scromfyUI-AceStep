@@ -130,22 +130,35 @@ class ScromfyEmojiSpinnerNode:
                 wheel_duration = spin_duration + i * stop_stagger
                 t = min(time_at_f / wheel_duration, 1.0)
                 
+                # Blank Start Logic:
+                # We want to start from total silence/blank. 
+                # We'll use a virtual 'starting offset'. 
+                # If we start current_pos_items at a very large negative or positive number
+                # outside the icon range, we get a blank start.
+                # However, it's simpler to just make early frames blank if t is near 0 
+                # OR start the item index at a value that isn't icon-aligned.
+                
                 total_spins = 4 + i
                 total_items_to_move = total_spins * icons_per_wheel + target_indices[i]
                 eased_t = 1 - math.pow(1 - t, 3)
-                current_pos_items = eased_t * total_items_to_move
+                
+                # We start from a 'virtual' position that is empty.
+                # Offset by 2 spins so no icon is centered at t=0
+                start_offset = 2.0 
+                current_pos_items = (eased_t * (total_items_to_move + start_offset)) - start_offset
                 
                 center_item_idx_float = current_pos_items
-                # How many icons to check for visibility?
                 show_range = 2 
-                
                 direction = spin_directions[i]
                 
                 for offset in range(-show_range, show_range + 1):
                     item_idx = int(math.floor(center_item_idx_float)) + offset
-                    # Apply direction to y_offset
                     y_offset = direction * (item_idx - center_item_idx_float) * total_item_stride
                     
+                    # If item_idx is negative (before our spin starts), we show nothing
+                    if item_idx < 0:
+                        continue
+                        
                     actual_idx = item_idx % icons_per_wheel
                     icon_ref = wheels_icons[i][actual_idx]
                     
