@@ -28,6 +28,8 @@ class ScromfyEmojiSpinnerNode:
                 "render_size": ("INT", {"default": 1024, "min": 256, "max": 2048, "step": 64}),
                 "slot_icon_size": ("INT", {"default": 128, "min": 64, "max": 512, "step": 8}),
                 "reel_padding": ("INT", {"default": 10, "min": 0, "max": 100, "step": 2}),
+                "reel_inner_padding": ("INT", {"default": 15, "min": 0, "max": 100, "step": 2}),
+                "reel_top_padding": ("INT", {"default": 15, "min": 0, "max": 100, "step": 2}),
                 "render_mode": (["color", "white_solid", "white_outline", "white_solid_black_outline"], {"default": "white_outline"}),
                 "bw_stroke_width": ("FLOAT", {"default": 0.3, "min": 0.1, "max": 2.0, "step": 0.1}),
             }
@@ -38,28 +40,33 @@ class ScromfyEmojiSpinnerNode:
     FUNCTION = "spin"
     CATEGORY = "Scromfy/Ace-Step/Visualizers"
 
-    def spin(self, seed, icon_set, width, height, fps, spin_duration, stop_stagger, render_size, slot_icon_size, reel_padding, render_mode="white_outline", bw_stroke_width=0.3):
+    def spin(self, seed, icon_set, width, height, fps, spin_duration, stop_stagger, render_size, slot_icon_size, reel_padding, reel_inner_padding=15, reel_top_padding=15, render_mode="white_outline", bw_stroke_width=0.3):
         rng = random.Random(seed)
         
         # 1. Fetch icons
         all_names = get_emoji_icon_names(icon_set, count=25, seed=seed)
         if not all_names:
-            return (torch.zeros((1, height, width, 3)), torch.zeros((1, 64, 64, 3)), torch.zeros((1, 64, 64, 3)), torch.zeros((1, 64, 64, 3)), "", "", "", torch.zeros((1, 64, 64)), torch.zeros((1, 64, 64)), torch.zeros((1, 64, 64)), torch.zeros((1, height, width)), "Error fetching icons")
+            return (torch.zeros((1, height, width, 3)), torch.zeros((1, 64, 64, 3)), torch.zeros((1, 64, 64, 3)), torch.zeros((1, 64, 64, 3)), "", "", "", torch.zeros((1, 64, 64)), torch.zeros((1, 64, 64)), torch.zeros((1, 64, 64)), torch.zeros((1, 128, width)), "Error fetching icons")
 
         # 2. Assign to 3 wheels
         wheel_count = 3
         wheels_icons = []
         icons_per_wheel = 25
         for i in range(wheel_count):
-            # Shuffle for each wheel to have different sequences but potentially same icons
             wheel_icons = list(all_names)
             rng.shuffle(wheel_icons)
             wheels_icons.append(wheel_icons)
 
-        # 3. Calculate animation parameters
-        num_frames = int(fps * (spin_duration + (wheel_count - 1) * stop_stagger))
-        wheel_width = (width - (wheel_count - 1) * reel_padding) // wheel_count
-        wheel_centers_x = [i * (wheel_width + reel_padding) + wheel_width // 2 for i in range(wheel_count)]
+        # 3. Layout: Reels are focused on icon size + padding
+        reel_width = slot_icon_size + 2 * reel_inner_padding
+        # Viewport height is now focused on one icon + top/bottom padding
+        viewport_height = slot_icon_size + 2 * reel_top_padding
+        
+        # Total content width for centering
+        total_content_width = wheel_count * reel_width + (wheel_count - 1) * reel_padding
+        start_x = (width - total_content_width) // 2
+        
+        wheel_centers_x = [start_x + i * (reel_width + reel_padding) + reel_width // 2 for i in range(wheel_count)]
         
         target_indices = [rng.randint(0, icons_per_wheel - 1) for i in range(wheel_count)]
         target_names = [wheels_icons[i][target_indices[i]] for i in range(wheel_count)]
@@ -72,19 +79,16 @@ class ScromfyEmojiSpinnerNode:
         e2_img, m2 = pil_to_tensor(target_pil_images[1])
         e3_img, m3 = pil_to_tensor(target_pil_images[2])
         
-        # Create combined mask (result frame)
-        # For non-color modes, background is black. For color, we use black but in RGBA.
-        combined_result_pil = Image.new("RGBA", (width, height), (0, 0, 0, 255))
+        # Create combined mask (result frame) using the focused viewport
+        combined_result_pil = Image.new("RGBA", (width, viewport_height), (0, 0, 0, 0))
         for i, img in enumerate(target_pil_images):
             fit_img = img.copy()
-            # Constrain to wheel_width or slot_icon_size
-            target_fit_size = min(wheel_width, height, slot_icon_size)
-            if fit_img.width > target_fit_size or fit_img.height > target_fit_size:
-                fit_img.thumbnail((target_fit_size, target_fit_size), Image.LANCZOS)
+            if fit_img.width != slot_icon_size or fit_img.height != slot_icon_size:
+                fit_img.thumbnail((slot_icon_size, slot_icon_size), Image.LANCZOS)
                 
             x = wheel_centers_x[i] - fit_img.width // 2
-            y = height // 2 - fit_img.height // 2
-            combined_result_pil.paste(fit_img, (x, y), fit_img)
+            y = viewport_height // 2 - fit_img.height // 2
+            combined_result_pil.paste(fit_img, (int(x), int(y)), fit_img)
         
         _, combined_mask = pil_to_tensor(combined_result_pil)
 
@@ -92,16 +96,19 @@ class ScromfyEmojiSpinnerNode:
         slot_icons_cache = {}
 
         # Rendering frames
+        num_frames = int(fps * (spin_duration + (wheel_count - 1) * stop_stagger))
+        # Total vertical step between icons in the reel
+        total_item_stride = slot_icon_size + 2 * reel_top_padding
+        
         for f in range(num_frames):
             time_at_f = f / fps
-            frame_img = Image.new("RGB", (width, height), (20, 20, 20)) # Dark background
+            frame_img = Image.new("RGBA", (width, viewport_height), (20, 20, 20, 255)) 
             draw = ImageDraw.Draw(frame_img)
             
             # Draw dividers
             for i in range(1, wheel_count):
-                x_start = i * (wheel_width + reel_padding) - reel_padding
-                x_end = x_start + reel_padding
-                draw.rectangle([x_start, 0, x_end, height], fill=(40, 40, 40))
+                x_mid = start_x + i * (reel_width + reel_padding) - reel_padding // 2
+                draw.line([x_mid, 0, x_mid, viewport_height], fill=(40, 40, 40, 255), width=max(1, reel_padding))
 
             for i in range(wheel_count):
                 wheel_duration = spin_duration + i * stop_stagger
@@ -113,11 +120,12 @@ class ScromfyEmojiSpinnerNode:
                 current_pos_items = eased_t * total_items_to_move
                 
                 center_item_idx_float = current_pos_items
-                show_range = height // (slot_icon_size if slot_icon_size > 0 else 1) + 2
+                # How many icons to check for visibility?
+                show_range = 2 
                 
                 for offset in range(-show_range, show_range + 1):
                     item_idx = int(math.floor(center_item_idx_float)) + offset
-                    y_offset = (item_idx - center_item_idx_float) * slot_icon_size
+                    y_offset = (item_idx - center_item_idx_float) * total_item_stride
                     
                     actual_idx = item_idx % icons_per_wheel
                     icon_name = wheels_icons[i][actual_idx]
@@ -132,9 +140,9 @@ class ScromfyEmojiSpinnerNode:
                     
                     icon_img = slot_icons_cache[icon_key]
                     x = wheel_centers_x[i] - icon_img.width // 2
-                    y = height // 2 + y_offset - icon_img.height // 2
+                    y = viewport_height // 2 + y_offset - icon_img.height // 2
                     
-                    if y + icon_img.height > 0 and y < height:
+                    if y + icon_img.height > 0 and y < viewport_height:
                         frame_img.paste(icon_img, (int(x), int(y)), icon_img)
 
             img_tensor, _ = pil_to_tensor(frame_img)

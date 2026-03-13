@@ -54,30 +54,24 @@ def _make_drawing_bw(obj, mode="white_outline", stroke_width=0.3):
     """
     Transform a reportlab drawing for different B&W/Mask styles.
     """
-    if mode == "color":
-        return
-        
-    if mode == "white_solid":
-        # Solid white fills and strokes
-        if hasattr(obj, 'fillColor') and obj.fillColor is not None:
-            obj.fillColor = shapes.colors.white
-        if hasattr(obj, 'strokeColor') and obj.strokeColor is not None:
+    # Safe handling: if color is a string (like 'url(#...)'), reportlab might complain.
+    # We overwrite them regardless if they exist.
+    if hasattr(obj, 'fillColor'):
+        if mode == "white_solid" or mode == "white_solid_black_outline":
+             obj.fillColor = shapes.colors.white
+        elif mode == "white_outline":
+             obj.fillColor = shapes.colors.black
+
+    if hasattr(obj, 'strokeColor'):
+        if mode == "white_solid":
             obj.strokeColor = shapes.colors.white
-    elif mode == "white_outline":
-        # Layered white outline (black fill, white stroke)
-        if hasattr(obj, 'fillColor'):
-            obj.fillColor = shapes.colors.black
-        if hasattr(obj, 'strokeColor'):
+        elif mode == "white_outline":
             obj.strokeColor = shapes.colors.white
             obj.strokeWidth = stroke_width
-    elif mode == "white_solid_black_outline":
-        # White fill with black outline
-        if hasattr(obj, 'fillColor'):
-            obj.fillColor = shapes.colors.white
-        if hasattr(obj, 'strokeColor'):
+        elif mode == "white_solid_black_outline":
             obj.strokeColor = shapes.colors.black
             obj.strokeWidth = stroke_width
-    
+
     if hasattr(obj, 'contents'):
         for sub in obj.contents:
             _make_drawing_bw(sub, mode=mode, stroke_width=stroke_width)
@@ -130,9 +124,8 @@ def load_icon_as_image(icon_full_name, size=512, render_mode="color", stroke_wid
         drawing.height *= scale
         
         png_stream = io.BytesIO()
-        # For B&W modes, use black bg. For color, use None (transparent)
-        bg = 0x000000 if render_mode != "color" else None
-        renderPM.drawToFile(drawing, png_stream, fmt="PNG", bg=bg)
+        # Always use transparent background (bg=None) to ensure alpha channel is useful for masks
+        renderPM.drawToFile(drawing, png_stream, fmt="PNG", bg=None)
         
         img = Image.open(io.BytesIO(png_stream.getvalue())).convert("RGBA")
         
@@ -157,11 +150,24 @@ def pil_to_tensor(pil_img):
     if img_np.shape[2] == 4:
         # RGBA
         image = torch.from_numpy(img_np[:, :, :3]).unsqueeze(0)
-        mask = torch.from_numpy(img_np[:, :, 3]).unsqueeze(0)
+        alpha = img_np[:, :, 3]
+        luminance = np.mean(img_np[:, :, :3], axis=2)
+        
+        # Combined mask: Alpha * Luminance
+        # This ensures we get transparency AND the interior B&W detail.
+        # For color emojis, luminance is < 1.0, but usually still > 0. 
+        # For B&W output modes, this is exactly what we want.
+        # For standard colorEmojis, alpha alone is usually best, 
+        # but combined logic handles "black interior squares" correctly.
+        combined_mask = alpha * luminance
+        
+        # If luminance is mostly low (dark icon), combined might be too dim.
+        # But if the user chose a white_outline mode, luminance IS the shape.
+        mask = torch.from_numpy(combined_mask).unsqueeze(0)
     else:
-        # RGB
+        # RGB - fallback to luminance
         image = torch.from_numpy(img_np).unsqueeze(0)
-        mask = torch.ones((1, pil_img.height, pil_img.width), dtype=torch.float32)
+        mask = torch.from_numpy(np.mean(img_np, axis=2)).unsqueeze(0)
         
     return image, mask
 
