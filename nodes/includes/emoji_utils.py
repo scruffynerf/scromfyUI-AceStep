@@ -125,27 +125,48 @@ def _make_drawing_bw(obj, mode="white_outline", stroke_width=0.3):
 
 def load_icon_as_image(icon_full_name, size=512, render_mode="color", stroke_width=0.3):
     """
-    Load an icon (e.g. 'twemoji:rocket') as a PIL Image.
+    Load an icon (e.g. 'twemoji:rocket' or 'local_icon') as a PIL Image.
     Uses caching to avoid repeated API calls and conversions.
     """
+    mode_suffixes = {
+        "color": "",
+        "white_solid": "_ws",
+        "white_outline": "_wo",
+        "white_solid_black_outline": "_wb"
+    }
+    
+    suffix = mode_suffixes.get(render_mode, "")
+    if render_mode != "color":
+        suffix += f"_{stroke_width}"
+
+    # 1. Handle root-level local icons (no colon)
     if ":" not in icon_full_name:
-        return Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        # Try with suffix first
+        cache_path = os.path.join(CACHE_DIR, f"{icon_full_name}{suffix}.png")
+        if os.path.exists(cache_path):
+            try:
+                return Image.open(cache_path).convert("RGBA")
+            except Exception:
+                pass # Fallback to base if corrupted
         
+        # Try base image
+        base_path = os.path.join(CACHE_DIR, f"{icon_full_name}.png")
+        if os.path.exists(base_path):
+            img = Image.open(base_path).convert("RGBA")
+            # If we wanted B/W transform for PNGs, we'd do it here. 
+            # For now, just return the base image.
+            return img
+        
+        # Fallback to empty
+        return Image.new("RGBA", (size, size), (0, 0, 0, 0))
+
+    # 2. Handle collection-prefixed icons
     collection, name = icon_full_name.split(":", 1)
     safe_collection = collection.replace("/", "_")
     safe_name = name.replace("/", "_")
     
-    # Suffix for cache based on mode and stroke
-    mode_suffixes = {
-        "color": "",
-        "white_solid": "_ws",
-        "white_outline": f"_wo_{stroke_width}",
-        "white_solid_black_outline": f"_wb_{stroke_width}"
-    }
-    suffix = mode_suffixes.get(render_mode, "")
-    
-    set_cache_dir = ensure_cache_dir(safe_collection)
-    cache_path = os.path.join(set_cache_dir, f"{safe_name}{suffix}.png")
+    subdir = ensure_cache_dir(safe_collection)
+    cache_path = os.path.join(subdir, f"{safe_name}{suffix}.png")
     
     if os.path.exists(cache_path):
         try:

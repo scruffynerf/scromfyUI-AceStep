@@ -34,12 +34,12 @@ class ScromfyEmojiSpinnerNode:
             "required": {
                 "seed": ("INT", {"default": 1, "min": 0, "max": 0xffffffffffffffff}),
                 "icon_set": (collection_list, {"default": "fluent-emoji-flat"}),
-                "width": ("INT", {"default": 1024, "min": 256, "max": 2048, "step": 64}),
-                "height": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 64}),
-                "fps": ("INT", {"default": 30, "min": 1, "max": 120}),
+                "width": ("INT", {"default": 512, "min": 256, "max": 2048, "step": 64}),
+                "height": ("INT", {"default": 256, "min": 64, "max": 2048, "step": 64}),
+                "fps": ("INT", {"default": 24, "min": 1, "max": 120}),
                 "spin_duration": ("FLOAT", {"default": 1.0, "min": 0.5, "max": 10.0, "step": 0.1}),
-                "stop_stagger": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 2.0, "step": 0.05}),
-                "render_size": ("INT", {"default": 1024, "min": 256, "max": 2048, "step": 64}),
+                "stop_stagger": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 2.0, "step": 0.05}),
+                "render_size": ("INT", {"default": 256, "min": 256, "max": 2048, "step": 64}),
                 "slot_icon_size": ("INT", {"default": 128, "min": 64, "max": 512, "step": 8}),
                 "reel_padding": ("INT", {"default": 10, "min": 0, "max": 100, "step": 2}),
                 "reel_inner_padding": ("INT", {"default": 15, "min": 0, "max": 100, "step": 2}),
@@ -81,6 +81,9 @@ class ScromfyEmojiSpinnerNode:
         target_indices = [rng.randint(0, icons_per_wheel - 1) for i in range(wheel_count)]
         target_names = [wheels_icons[i][target_indices[i]] for i in range(wheel_count)]
         
+        # Randomize spin direction (1 = moves UP, -1 = moves DOWN)
+        spin_directions = [rng.choice([-1, 1]) for _ in range(wheel_count)]
+        
         frames = []
         
         # Prepare target images and masks for output (High quality)
@@ -120,7 +123,8 @@ class ScromfyEmojiSpinnerNode:
             if reel_padding > 0:
                 for i in range(1, wheel_count):
                     x_mid = start_x + i * (reel_width + reel_padding) - reel_padding // 2
-                    draw.line([x_mid, 0, x_mid, viewport_height], fill=(20, 20, 20, 255), width=reel_padding)
+                    # Pure black divider to match background
+                    draw.line([x_mid, 0, x_mid, viewport_height], fill=(0, 0, 0, 255), width=reel_padding)
 
             for i in range(wheel_count):
                 wheel_duration = spin_duration + i * stop_stagger
@@ -135,9 +139,12 @@ class ScromfyEmojiSpinnerNode:
                 # How many icons to check for visibility?
                 show_range = 2 
                 
+                direction = spin_directions[i]
+                
                 for offset in range(-show_range, show_range + 1):
                     item_idx = int(math.floor(center_item_idx_float)) + offset
-                    y_offset = (item_idx - center_item_idx_float) * total_item_stride
+                    # Apply direction to y_offset
+                    y_offset = direction * (item_idx - center_item_idx_float) * total_item_stride
                     
                     actual_idx = item_idx % icons_per_wheel
                     icon_ref = wheels_icons[i][actual_idx]
@@ -161,9 +168,12 @@ class ScromfyEmojiSpinnerNode:
             frames.append(img_tensor)
 
         final_images = torch.cat(frames, dim=0)
-        desc = f"{target_names[0]}, {target_names[1]}, {target_names[2]}"
         
-        return (final_images, e1_img, e2_img, e3_img, target_names[0], target_names[1], target_names[2], m1, m2, m3, combined_mask, desc)
+        # Strip prefixes for output names
+        clean_names = [name.split(":")[-1] if ":" in name else name for name in target_names]
+        desc = f"{clean_names[0]}, {clean_names[1]}, {clean_names[2]}"
+        
+        return (final_images, e1_img, e2_img, e3_img, clean_names[0], clean_names[1], clean_names[2], m1, m2, m3, combined_mask, desc)
 
 NODE_CLASS_MAPPINGS = {
     "ScromfyEmojiSpinner": ScromfyEmojiSpinnerNode,
