@@ -139,10 +139,9 @@ class ScromfyEmojiSpinnerVisualizerNode(ScromfyFlexAudioVisualizerContourNode):
         phase1_masks = torch.zeros((spin_num_frames, out_h, out_w), dtype=torch.float32)
         full_masks = torch.cat([phase1_masks, masks.view(b2, out_h, out_w)], dim=0)
         
-        # Combine layer maps
-        b2_lm, h2_lm, w2_lm, c2_lm = layer_map.shape 
-        phase1_layer_maps = torch.zeros((spin_num_frames, out_h, out_w, 3), dtype=torch.float32)
-        full_layer_maps = torch.cat([phase1_layer_maps, layer_map.view(b2_lm, out_h, out_w, 3)], dim=0)
+        # Layer Map: Just return the first frame from Phase 2 (diagnostic preview)
+        # We don't need to pad this with Phase 1 frames as it's a static preview of the mask.
+        full_layer_maps = layer_map[0:1]
         
         # Concatenate Audio
         s_wav = spinner_audio['waveform']
