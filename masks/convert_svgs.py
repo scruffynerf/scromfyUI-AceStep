@@ -8,7 +8,7 @@ import random
 
 # Path setup
 BASE_DIR = "."
-LDR_DIR = os.path.join(BASE_DIR, "masks", "LDR")
+LDR_DIR = os.path.join(BASE_DIR, "svg")
 SIZE = 512
 
 def _force_white(obj):
