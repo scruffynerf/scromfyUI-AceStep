@@ -213,3 +213,4 @@ __marimo__/
 referencecode/
 .DS_Store
 keys/*.txt
+masks/donotcommit/
