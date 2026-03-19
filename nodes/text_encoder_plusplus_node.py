@@ -98,13 +98,13 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     "default": True,
                     "tooltip": "If True: Uses SFT-style 'Enriched CoT' (YAML) formatting for better fine-tuned model performance. If False: Uses native ComfyUI encoding logic",
                 }),
-                "instrumental": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "Force [Instrumental] as lyrics",
-                }),
                 "generate_audio_codes": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "Enable LLM audio code generation for semantic structure. Recommended to keep enabled even with reference_audio.",
+                }),
+                "instrumental": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Force [Instrumental] as lyrics",
                 }),
             },
             "optional": {
