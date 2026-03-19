@@ -18,7 +18,7 @@ def get_keyscales():
     accidentals = ['', '#', 'b']
     modes = ['major', 'minor']
     
-    keyscales = ["Auto-detect"]
+    keyscales = ["Auto-decide"]
     for note in notes:
         for acc in accidentals:
             for mode in modes:
