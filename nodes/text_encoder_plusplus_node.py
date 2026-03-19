@@ -95,11 +95,11 @@ class ScromfyAceStepTextEncoderPlusPlus:
                 }),
                 "enhanced_prompt": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "If True: Uses SFT-style 'Enriched CoT' (YAML) formatting for better fine-tuned model performance. If False: Uses native ComfyUI encoding logic.",
+                    "tooltip": "If True: Uses SFT-style 'Enriched CoT' (YAML) formatting for better fine-tuned model performance. If False: Uses native ComfyUI encoding logic",
                 }),
                 "instrumental": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Force [Instrumental] in lyrics.",
+                    "tooltip": "Force [Instrumental] as lyrics",
                 }),
             },
             "optional": {
@@ -108,13 +108,22 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     "default": "[Instrumental]",
                     "placeholder": "Song lyrics or [Instrumental]",
                 }),
+                "trigger_word": ("STRING", {
+                    "default": "",
+                    "tooltip": "Model trigger word(s) to prepend to the start of the caption",
+                }),
+                "style_tags": ("STRING", {
+                    "default": "", 
+                    "forceInput": True,
+                    "tooltip": "Tags to append to the end of the caption",
+                }),
                 "bpm": ("INT", {
                     "default": 0, "min": 0, "max": 300,
-                    "tooltip": "Beats per minute. 0 = auto decide.",
+                    "tooltip": "Beats per minute. 0 = auto decide",
                 }),
                 "duration": ("FLOAT", {
-                    "default": -1.0, "min": -1.0, "max": 600.0, "step": 0.1,
-                    "tooltip": "Duration in seconds. -1 = auto decide.",
+                    "default": 0, "min": 0, "max": 600.0, "step": 0.1,
+                    "tooltip": "Duration in seconds. 0 = auto decide",
                 }),
                 "keyscale": (cls.VALID_KEYSCALES, {"default": "Auto-decide"}),
                 "timesignature": (cls.VALID_TIME_SIGNATURES, {"default": "Auto-decide"}),
@@ -131,15 +140,6 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     "default": "",
                     "placeholder": "Negative prompt for audio code generation",
                 }),
-                "style_tags": ("STRING", {
-                    "default": "", 
-                    "forceInput": True,
-                    "tooltip": "Tags to append to the end of the caption.",
-                }),
-                "trigger_word": ("STRING", {
-                    "default": "",
-                    "tooltip": "Word to prepend to the start of the caption.",
-                }),
             }
         }
 
@@ -148,13 +148,13 @@ class ScromfyAceStepTextEncoderPlusPlus:
     FUNCTION = "encode"
     CATEGORY = "Scromfy/Ace-Step/Prompt"
 
-    def encode(self, clip, caption, enhanced_prompt=True, instrumental=True, lyrics="[Instrumental]", 
+    def encode(self, clip, caption="", enhanced_prompt=True, instrumental=True, lyrics="[Instrumental]", 
                bpm=120, duration=60.0, keyscale="Auto-detect", timesignature="4/4", language="English", 
                seed=0, cfg_scale=2.0, temperature=0.85, top_p=0.9, top_k=0, min_p=0.0, 
                repetition_penalty=1.3, negative_prompt="", style_tags="", trigger_word=""):
         
         # 1. Assemble Full Caption
-        full_caption = caption
+        full_caption = caption.strip()
         if trigger_word and trigger_word.strip():
             full_caption = f"{trigger_word.strip()} {full_caption}"
         if style_tags and style_tags.strip():
@@ -165,10 +165,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
         language_iso = self.LANGUAGE_MAP.get(language, "en")
         timesig_code = self.TIMESIG_MAP.get(timesignature, "4")
         
-        bpm_val = -1 if bpm <= 20 else bpm # Align with base detection
+        bpm_val = 0 if bpm <= 20 else bpm # Align with base detection
         ks_val = "" if keyscale == "Auto-detect" else keyscale
         
-        tok_bpm = 120 if bpm_val == -1 else bpm_val
+        tok_bpm = 120 if bpm_val == 0 else bpm_val
         tok_ts = int(timesig_code)
         tok_ks = "C major" if ks_val == "" else ks_val
 
@@ -194,9 +194,9 @@ class ScromfyAceStepTextEncoderPlusPlus:
         if enhanced_prompt:
             inner_tok = getattr(clip.tokenizer, "qwen3_06b", None)
             if inner_tok is not None:
-                dur_ceil = int(math.ceil(duration)) if duration > 0 else -1
+                dur_ceil = int(math.ceil(duration)) if duration > 0 else 0
                 cot_items = {}
-                if bpm_val != -1:
+                if bpm_val != 0:
                     cot_items["bpm"] = bpm_val
                 cot_items["caption"] = full_caption
                 cot_items["duration"] = dur_ceil
