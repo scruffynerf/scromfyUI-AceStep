@@ -90,6 +90,26 @@ class ScromfyAceStepSampler:
     RETURN_NAMES = ("latent", "audio")
     FUNCTION = "sample"
     CATEGORY = "Scromfy/Ace-Step/Sampler"
+    @classmethod
+    def IS_CHANGED(cls, model, positive, negative, latent_image, seed, steps, cfg, 
+                   sampler_name, scheduler, denoise, shift=3.0, custom_timesteps="",
+                   vae=None, source_audio=None, reference_audio=None, 
+                   reference_as_cover=False, audio_cover_strength=0.0,
+                   sampler_settings=None, vae_decode_settings=None, mask=None):
+        import hashlib
+        m = hashlib.sha256()
+        # Hash all numeric/text inputs that affect the output
+        for v in [seed, steps, cfg, sampler_name, scheduler, denoise, shift, 
+                 custom_timesteps, reference_as_cover, audio_cover_strength]:
+            m.update(str(v).encode('utf-8'))
+        
+        # Include custom settings dictionaries
+        if sampler_settings:
+            m.update(str(sorted(sampler_settings.items())).encode('utf-8'))
+        if vae_decode_settings:
+            m.update(str(sorted(vae_decode_settings.items())).encode('utf-8'))
+            
+        return m.hexdigest()
 
 
     def sample(self, model, positive, negative, latent_image, seed, steps, cfg, 

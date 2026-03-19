@@ -199,11 +199,12 @@ class ScromfyAceStepTextEncoderPlusPlus:
             tok_ts = 4 if ts_is_auto else int(timesig_code)
             tok_ks = "C major" if ks_is_auto else ks_val
 
+            duration_val = None if (duration == -1 or duration <= 0) else duration
             # 1. Initial Tokenization (Generates audio codes if requested)
             tokens = clip.tokenize(full_caption, 
                                     lyrics=actual_lyrics, 
                                     bpm=tok_bpm, 
-                                    duration=duration, 
+                                    duration=duration_val, 
                                     timesignature=tok_ts, 
                                     language=language_iso, 
                                     keyscale=tok_ks, 
@@ -256,10 +257,12 @@ class ScromfyAceStepTextEncoderPlusPlus:
 
         # --- PATH B: STANDARD PROMPT (ACESTEP 1.5 LOGIC) ---
         else:
+            bpm_val_final = None if bpm_val == -1 else bpm_val
+            duration_val = None if (duration == -1 or duration <= 0) else duration
             tokens = clip.tokenize(full_caption, 
                                     lyrics=actual_lyrics, 
-                                    bpm=bpm_val, 
-                                    duration=duration, 
+                                    bpm=bpm_val_final, 
+                                    duration=duration_val, 
                                     timesignature=timesig_code, 
                                     language=language_iso, 
                                     keyscale=ks_val, 
