@@ -102,6 +102,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     "default": True,
                     "tooltip": "Force [Instrumental] as lyrics",
                 }),
+                "generate_audio_codes": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Enable LLM audio code generation for semantic structure. Recommended to keep enabled even with reference_audio.",
+                }),
             },
             "optional": {
                 "lyrics": ("STRING", {
@@ -148,11 +152,27 @@ class ScromfyAceStepTextEncoderPlusPlus:
     RETURN_NAMES = ("conditioning", "zero_conditioning")
     FUNCTION = "encode"
     CATEGORY = "Scromfy/Ace-Step/Prompt"
+    
+    @classmethod
+    def IS_CHANGED(cls, clip, caption="", enhanced_prompt=True, instrumental=True, lyrics="[Instrumental]", 
+                bpm=0, duration=0, keyscale="Auto-decide", timesignature="0", language="English", 
+                seed=0, cfg_scale=2.0, temperature=0.85, top_p=0.9, top_k=0, min_p=0.0, 
+                repetition_penalty=1.3, negative_prompt="", style_tags="", trigger_word="", 
+                generate_audio_codes=True):
+        import hashlib
+        m = hashlib.sha256()
+        for v in [caption, enhanced_prompt, instrumental, lyrics, bpm, duration, keyscale, 
+                timesignature, language, seed, cfg_scale, temperature, top_p, top_k, 
+                min_p, repetition_penalty, negative_prompt, style_tags, trigger_word, 
+                generate_audio_codes]:
+            m.update(str(v).encode('utf-8'))
+        return m.hexdigest()
 
     def encode(self, clip, caption="", enhanced_prompt=True, instrumental=True, lyrics="[Instrumental]", 
                bpm=0, duration=0, keyscale="Auto-decide", timesignature="0", language="English", 
                seed=0, cfg_scale=2.0, temperature=0.85, top_p=0.9, top_k=0, min_p=0.0, 
-               repetition_penalty=1.3, negative_prompt="", style_tags="", trigger_word=""):
+               repetition_penalty=1.3, negative_prompt="", style_tags="", trigger_word="", 
+               generate_audio_codes=True):
         
         # 1. Assemble Full Caption
         full_caption = caption.strip()
@@ -174,6 +194,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
         tok_ks = "C major" if ks_val == "" else ks_val
 
         # 3. Base Tokenization
+        # If enhanced_prompt is True, we delay audio code generation until after we've enriched the prompt
+        # so that the 5Hz LM uses the CoT/YAML structure.
+        initial_gen_codes = generate_audio_codes and not enhanced_prompt
+
         tokens = clip.tokenize(full_caption, 
                                 lyrics=actual_lyrics, 
                                 bpm=bpm_val, 
@@ -181,7 +205,7 @@ class ScromfyAceStepTextEncoderPlusPlus:
                                 timesignature=timesig_code, 
                                 language=language_iso, 
                                 keyscale=ks_val, 
-                                generate_audio_codes=True, 
+                                generate_audio_codes=initial_gen_codes, 
                                 seed=seed, 
                                 cfg_scale=cfg_scale, 
                                 temperature=temperature, 
@@ -223,6 +247,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     False,
                     disable_weights=True,
                 )
+                
+                # Ensure the generate_audio_codes flag is set for the encoder
+                # to pick up if it was delayed during the initial tokenization
+                tokens["generate_audio_codes"] = generate_audio_codes
                 
                 if negative_prompt:
                     tokens["lm_prompt_negative"] = inner_tok.tokenize_with_weights(
