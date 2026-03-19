@@ -9,11 +9,16 @@ import comfy.model_management
 import comfy.utils
 import latent_preview
 import node_helpers
-from .includes.sft_sampling_utils import (
-    MomentumBuffer, apg_guidance, adg_guidance, 
-    apply_omega_scale, apply_erg_to_conditioning,
-    clone_conditioning, zero_conditioning_value,
-    build_text_only_conditioning, build_processed_text_only_conditioning
+from .includes.sampling_utils import (
+    MomentumBuffer,
+    apg_guidance,
+    adg_guidance,
+    apply_omega_scale,
+    apply_erg_to_conditioning,
+    clone_conditioning,
+    zero_conditioning_value,
+    build_text_only_conditioning,
+    build_processed_text_only_conditioning
 )
 
 # Credit goes to https://github.com/jeankassio/ComfyUI-AceStep_SFT
@@ -142,7 +147,7 @@ class ScromfyAceStepSampler:
                 ref_latent = ref_latent.repeat(math.ceil(batch_size / ref_latent.shape[0]), 1, 1)[:batch_size]
             
             is_cover = reference_as_cover
-            denoise = 1.0 # Parity: auto-set to 1.0 with reference audio
+            denoise = 1.0 # Parity: auto-set to 1.0 with reference audio - NOTE MIGHT WANT TO CHANGE THIS
             positive = node_helpers.conditioning_set_values(positive, {
                 "refer_audio_acoustic_hidden_states_packed": ref_latent,
                 "refer_audio_order_mask": torch.arange(batch_size, device=ref_latent.device, dtype=torch.long),

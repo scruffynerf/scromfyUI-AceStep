@@ -1,5 +1,5 @@
-"""AceStepZeroOutConditioning node for ACE-Step"""
 import torch
+from .includes.sampling_utils import zero_out
 
 class AceStepZeroOutConditioning:
     """Zero out conditioning tensors and remove audio_codes.
@@ -13,21 +13,11 @@ class AceStepZeroOutConditioning:
         return {"required": {"conditioning": ("CONDITIONING",)}}
 
     RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "zero_out"
+    FUNCTION = "execute"
     CATEGORY = "Scromfy/Ace-Step/Conditioning"
 
-    def zero_out(self, conditioning):
-        c = []
-        for t in conditioning:
-            d = t[1].copy()
-            pooled_output = d.get("pooled_output", None)
-            if pooled_output is not None:
-                d["pooled_output"] = torch.zeros_like(pooled_output)
-            # Remove audio_codes so they don't leak into the negative/empty conditioning
-            d.pop("audio_codes", None)
-            n = [torch.zeros_like(t[0]), d]
-            c.append(n)
-        return (c,)
+    def execute(self, conditioning):
+        return (zero_out(conditioning),)
 
 
 NODE_CLASS_MAPPINGS = {

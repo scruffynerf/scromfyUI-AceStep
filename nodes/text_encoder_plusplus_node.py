@@ -2,6 +2,7 @@ import yaml
 import math
 import torch
 from .includes.prompt_utils import get_keyscales
+from .includes.sampling_utils import zero_out
 
 class ScromfyAceStepTextEncoderPlusPlus:
     """Merged Text Encoder for ACE-Step 1.5.
@@ -143,13 +144,13 @@ class ScromfyAceStepTextEncoderPlusPlus:
             }
         }
 
-    RETURN_TYPES = ("CONDITIONING",)
-    RETURN_NAMES = ("conditioning",)
+    RETURN_TYPES = ("CONDITIONING", "CONDITIONING")
+    RETURN_NAMES = ("conditioning", "zero_conditioning")
     FUNCTION = "encode"
     CATEGORY = "Scromfy/Ace-Step/Prompt"
 
     def encode(self, clip, caption="", enhanced_prompt=True, instrumental=True, lyrics="[Instrumental]", 
-               bpm=120, duration=60.0, keyscale="Auto-detect", timesignature="4/4", language="English", 
+               bpm=0, duration=0, keyscale="Auto-decide", timesignature="0", language="English", 
                seed=0, cfg_scale=2.0, temperature=0.85, top_p=0.9, top_k=0, min_p=0.0, 
                repetition_penalty=1.3, negative_prompt="", style_tags="", trigger_word=""):
         
@@ -163,10 +164,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
         # 2. Handle Auto/Defaults
         actual_lyrics = "[Instrumental]" if instrumental else lyrics
         language_iso = self.LANGUAGE_MAP.get(language, "en")
-        timesig_code = self.TIMESIG_MAP.get(timesignature, "4")
+        timesig_code = self.TIMESIG_MAP.get(timesignature, "0")
         
         bpm_val = 0 if bpm <= 20 else bpm # Align with base detection
-        ks_val = "" if keyscale == "Auto-detect" else keyscale
+        ks_val = "" if keyscale == "Auto-decide" else keyscale
         
         tok_bpm = 120 if bpm_val == 0 else bpm_val
         tok_ts = int(timesig_code)
@@ -233,7 +234,10 @@ class ScromfyAceStepTextEncoderPlusPlus:
         # 5. Final Encoding
         conditioning = clip.encode_from_tokens_scheduled(tokens)
         
-        return (conditioning,)
+        # 6. Zero-ed out conditioning
+        zero_conditioning = zero_out(conditioning)
+        
+        return (conditioning, zero_conditioning)
 
 NODE_CLASS_MAPPINGS = {"ScromfyAceStepTextEncoderPlusPlus": ScromfyAceStepTextEncoderPlusPlus}
 NODE_DISPLAY_NAME_MAPPINGS = {"ScromfyAceStepTextEncoderPlusPlus": "ACE-Step Text Encoder PLUSPLUS"}
