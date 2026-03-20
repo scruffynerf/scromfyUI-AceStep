@@ -2,6 +2,7 @@
 import os
 import sys
 from lyricsgenius import Genius
+from .includes.lyrics_utils import load_lyrics_from_disk, save_lyrics_to_disk
 
 class AceStepGeniusLyricsSearch:
     """Fetch lyrics from Genius.com using their API"""
@@ -12,6 +13,7 @@ class AceStepGeniusLyricsSearch:
             "required": {
                 "artist_name": ("STRING", {"default": "Flume"}),
                 "song_title": ("STRING", {"default": "Say Nothing"}),
+                "save_lyrics": ("BOOLEAN", {"default": True}),
             }
         }
     
@@ -20,7 +22,13 @@ class AceStepGeniusLyricsSearch:
     FUNCTION = "get_lyrics"
     CATEGORY = "Scromfy/Ace-Step/Lyrics"
 
-    def get_lyrics(self, artist_name, song_title):
+    def get_lyrics(self, artist_name, song_title, save_lyrics=True):
+        # Check cache first
+        cached_lyrics = load_lyrics_from_disk(artist_name, song_title)
+        if cached_lyrics:
+            print(f"[GeniusSearch] Loading lyrics from cache for '{song_title}' by '{artist_name}'")
+            return (cached_lyrics,)
+
         # Resolve path to the keys file
         base_dir = os.path.dirname(os.path.dirname(__file__))
         key_path = os.path.join(base_dir, "keys", "genius_api_key.txt")
@@ -47,6 +55,7 @@ class AceStepGeniusLyricsSearch:
             )
             
             # Search for the song
+            print(f"[GeniusSearch] Searching Genius for '{song_title}' by '{artist_name}'...")
             song = genius.search_song(title=song_title, artist=artist_name)
             
             if song is None:
@@ -57,9 +66,10 @@ class AceStepGeniusLyricsSearch:
             if not lyrics.strip():
                 return (f"Song found on Genius, but no lyrics were returned for '{song_title}' by '{artist_name}'.",)
                 
-            # Clean up the lyrics: Genius often adds '10 Contributors' or 'Lyrics' at the start
-            # and 'Embed' or social share info at the end.
-            # While the library does some cleanup, sometimes extra metadata persists.
+            # Save to disk if requested
+            if save_lyrics:
+                save_lyrics_to_disk(artist_name, song_title, lyrics)
+                print(f"[GeniusSearch] Saved lyrics to disk for '{song_title}' by '{artist_name}'")
             
             return (lyrics,)
             

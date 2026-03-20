@@ -3,6 +3,7 @@ import os
 import sys
 import random
 from lyricsgenius import Genius
+from .includes.lyrics_utils import get_random_cached_lyric, save_lyrics_to_disk
 
 
 class AceStepRandomLyrics:
@@ -16,6 +17,7 @@ class AceStepRandomLyrics:
         return {
             "required": {
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+                "mode": (["save", "offline", "no-save"], {"default": "save"}),
             },
             "optional": {
                 "max_retries": ("INT", {"default": 20, "min": 1, "max": 100}),
@@ -28,10 +30,19 @@ class AceStepRandomLyrics:
     CATEGORY = "Scromfy/Ace-Step/Lyrics"
 
     @classmethod
-    def IS_CHANGED(cls, seed, max_retries=20):
+    def IS_CHANGED(cls, seed, mode="save", max_retries=20):
         return seed
 
-    def fetch_random(self, seed, max_retries=20):
+    def fetch_random(self, seed, mode="save", max_retries=20):
+        # Offline mode: pick from cache
+        if mode == "offline":
+            lyrics, title, artist = get_random_cached_lyric(seed)
+            if lyrics:
+                print(f"[RandomLyrics] Picked offline lyric: '{title}' by {artist}")
+                return (lyrics, title, artist)
+            else:
+                return ("No cached lyrics found in /lyrics folder. Please run in 'save' mode first.", "", "")
+
         # Load API key
         base_dir = os.path.dirname(os.path.dirname(__file__))
         key_path = os.path.join(base_dir, "keys", "genius_api_key.txt")
@@ -77,8 +88,14 @@ class AceStepRandomLyrics:
 
                 if lyrics and lyrics.strip():
                     lowerlyrics = lyrics.lower()
-                    if ("[chorus]" in lowerlyrics or "[verse " in lowerlyrics or "[bridge]" in lowerlyrics or "[outro]" in lowerlyrics or "[intro]" in lowerlyrics or "[Hook]" in lowerlyrics):
+                    if ("[chorus]" in lowerlyrics or "[verse " in lowerlyrics or "[bridge]" in lowerlyrics or "[outro]" in lowerlyrics or "[intro]" in lowerlyrics or "[hook]" in lowerlyrics):
                         print(f"[RandomLyrics] Found: '{title}' by {artist} (id={song_id}, attempt {attempts})")
+                        
+                        # Save if requested
+                        if mode == "save":
+                            save_lyrics_to_disk(artist, title, lyrics)
+                            print(f"[RandomLyrics] Saved lyrics to disk for '{title}' by {artist}")
+                            
                         return (lyrics, title, artist)
 
             return (f"No lyrics found after {max_retries} attempts.", "", "")
