@@ -50,9 +50,13 @@ class ScromfyAceStepModelLoader:
         clip_path1 = folder_paths.get_full_path_or_raise("text_encoders", text_encoder_1)
         clip_path2 = folder_paths.get_full_path_or_raise("text_encoders", text_encoder_2)
         
-        # ACE-Step uses a specialized CLIP type that takes two checkpoints
+        # If they are the same, try loading only once as a single-element list.
+        # This is an experiment to see if it avoids the CUDA crash for duplicates.
+        ckpt_paths = [clip_path1] if text_encoder_1 == text_encoder_2 else [clip_path1, clip_path2]
+
+        # ACE-Step uses a specialized CLIP type that takes checkpoints
         clip = comfy.sd.load_clip(
-            ckpt_paths=[clip_path1, clip_path2],
+            ckpt_paths=ckpt_paths,
             embedding_directory=folder_paths.get_folder_paths("embeddings"),
             clip_type=comfy.sd.CLIPType.ACE,
         )
