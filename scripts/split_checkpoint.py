@@ -4,7 +4,7 @@ import torch
 from safetensors.torch import load_file, save_file
 import argparse
 
-def split_checkpoint(checkpoint_path, output_dir, strip_prefix=True):
+def split_checkpoint(checkpoint_path, output_dir, strip=False, list_keys=False):
     """
     Splits a consolidated ACE-Step 1.5 safetensors checkpoint into its components.
     Specifically targets the dual CLIP encoders.
@@ -20,11 +20,27 @@ def split_checkpoint(checkpoint_path, output_dir, strip_prefix=True):
         print(f"Error loading safetensors: {e}")
         return
 
-    # Check for keys and group them
-    # Common prefixes in ACE-Step 1.5 (SFT)
-    # text_encoders.qwen3_06b  <- Small Qwen (Vocab ~151k, Dim 1024)
-    # text_encoders.qwen3_2b   <- Large Qwen (Vocab ~217k, Dim 2048)
-    
+    if list_keys:
+        print("\n--- Key Audit (First 20 keys) ---")
+        for i, key in enumerate(list(tensors.keys())[:20]):
+            print(f"{i+1}: {key} - {tensors[key].shape}")
+        
+        # Analyze prefixes
+        prefixes = set()
+        for key in tensors.keys():
+            parts = key.split('.')
+            if len(parts) > 1:
+                prefixes.add(".".join(parts[:2]))
+            else:
+                prefixes.add(parts[0])
+        
+        print("\n--- Detected Prefixes ---")
+        for p in sorted(list(prefixes)):
+            count = sum(1 for k in tensors.keys() if k.startswith(p))
+            print(f"{p} ({count} keys)")
+        return
+
+    # Refined grouping logic based on user feedback
     groups = {
         "qwen_0.6b": [],
         "qwen_2b": [],
@@ -40,13 +56,14 @@ def split_checkpoint(checkpoint_path, output_dir, strip_prefix=True):
             groups["qwen_2b"].append(key)
         elif key.startswith("model.diffusion_model"):
             groups["diffusion"].append(key)
-        elif key.startswith("vae."):
+        elif key.startswith("vae"):
             groups["vae"].append(key)
         else:
-            # Fallback for unknown / root VAE keys if any
-            if key == "vae" or key.startswith("vae "):
-                groups["vae"].append(key)
-            pass
+            # Check for generic qwen3 if others missing
+            if key.startswith("text_encoders.qwen3_"):
+                # Figure out which one it is by shape/count if needed
+                # For now, just skip if not matched above
+                pass
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -61,6 +78,8 @@ def split_checkpoint(checkpoint_path, output_dir, strip_prefix=True):
         
         out_tensors = {}
         prefix_to_strip = ""
+        
+        # Determine prefix to strip if requested
         if group_name == "qwen_0.6b":
             if any(k.startswith("text_encoders.qwen3_06b") for k in keys):
                 prefix_to_strip = "text_encoders.qwen3_06b."
@@ -71,11 +90,22 @@ def split_checkpoint(checkpoint_path, output_dir, strip_prefix=True):
         elif group_name == "diffusion":
             prefix_to_strip = "model.diffusion_model."
         elif group_name == "vae":
-            prefix_to_strip = "vae."
+            # ACE-Step usually has 'vae.decoder' etc.
+            if any(k.startswith("vae.") for k in keys):
+                prefix_to_strip = "vae."
+            else:
+                prefix_to_strip = "vae"
+
+        # NOTE: For ACE-Step dual loads, we usually NEED the prefixes to avoid key collisions.
+        # But for VAE/Diffusion, they are often used in standalone loaders that expect no prefix.
+        should_strip = strip
+        if group_name in ["diffusion", "vae"] and strip is False:
+            # Maybe auto-strip these? No, stay predictable.
+            pass
 
         for k in keys:
             new_key = k
-            if strip_prefix and prefix_to_strip and k.startswith(prefix_to_strip):
+            if should_strip and prefix_to_strip and k.startswith(prefix_to_strip):
                 new_key = k[len(prefix_to_strip):]
             out_tensors[new_key] = tensors[k]
 
@@ -92,7 +122,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split ACE-Step 1.5 consolidated checkpoints.")
     parser.add_argument("checkpoint", type=str, help="Path to the source .safetensors file.")
     parser.add_argument("--out_dir", type=str, default="split_models", help="Directory to save pieces.")
-    parser.add_argument("--no_strip", action="store_true", help="Do not strip prefixes from keys.")
+    parser.add_argument("--strip", action="store_true", help="Strip prefixes from keys (not recommended for ACE-Step dual loads).")
+    parser.add_argument("--list", action="store_true", help="Just list prefixes and keys, do not split.")
 
     args = parser.parse_args()
-    split_checkpoint(args.checkpoint, args.out_dir, not args.no_strip)
+    split_checkpoint(args.checkpoint, args.out_dir, args.strip, args.list)
