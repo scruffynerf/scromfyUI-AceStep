@@ -1,0 +1,10 @@
+{
+    "name": "Amethyst Geode",
+    "stops": [
+        [0.0, "#190033", "Deep Crystal Shadow"],
+        [0.3, "#330066", "Royal Purple"],
+        [0.6, "#6600cc", "Vibrant Violet"],
+        [0.85, "#9933ff", "Bright Lilac"],
+        [1.0, "#e6ccff", "Geode Core"]
+    ]
+}

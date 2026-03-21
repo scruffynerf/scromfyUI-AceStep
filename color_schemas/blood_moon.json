@@ -1,0 +1,10 @@
+{
+    "name": "Blood Moon",
+    "stops": [
+        [0.0, "#080000", "Void Black"],
+        [0.3, "#3a0004", "Dried Blood"],
+        [0.6, "#820015", "Deep Red"],
+        [0.85, "#be0027", "Vibrant Crimson"],
+        [1.0, "#ff3333", "Glowing Halo"]
+    ]
+}

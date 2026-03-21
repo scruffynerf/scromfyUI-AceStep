@@ -1,0 +1,10 @@
+{
+    "name": "Pure Gold",
+    "stops": [
+        [0.0, "#2c1c04", "Dark Bronze"],
+        [0.3, "#54390b", "Antique Gold"],
+        [0.6, "#a4791e", "Rich Gold"],
+        [0.85, "#e5bc53", "Bright Gold"],
+        [1.0, "#fff5d0", "Golden Highlight"]
+    ]
+}

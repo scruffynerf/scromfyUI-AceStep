@@ -1,0 +1,10 @@
+{
+    "name": "Cotton Candy",
+    "stops": [
+        [0.0, "#ffb3ba", "Soft Pink"],
+        [0.4, "#ffdfba", "Pastel Orange"],
+        [0.6, "#ffffba", "Pale Yellow"],
+        [0.8, "#baffc9", "Mint Green"],
+        [1.0, "#bae1ff", "Baby Blue"]
+    ]
+}

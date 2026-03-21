@@ -1,0 +1,10 @@
+{
+    "name": "Synthwave",
+    "stops": [
+        [0.0, "#120458", "Dark Midnight Sky"],
+        [0.4, "#7a04eb", "Retro Purple"],
+        [0.7, "#fe10c9", "Magenta Laser"],
+        [0.9, "#ff8e2b", "Grid Orange"],
+        [1.0, "#f9e076", "Sun Yellow"]
+    ]
+}

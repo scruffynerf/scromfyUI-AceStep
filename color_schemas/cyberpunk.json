@@ -1,0 +1,10 @@
+{
+    "name": "Cyberpunk",
+    "stops": [
+        [0.0, "#01012b", "Deep Matrix Blue"],
+        [0.3, "#0d0221", "Dark Violet"],
+        [0.6, "#ff007f", "Neon Pink"],
+        [0.85, "#00f0ff", "Cyan Glow"],
+        [1.0, "#ffffff", "White Hot Center"]
+    ]
+}

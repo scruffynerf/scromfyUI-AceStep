@@ -1,0 +1,10 @@
+{
+    "name": "Magma Core",
+    "stops": [
+        [0.0, "#1a0000", "Cooling Rock"],
+        [0.4, "#590000", "Deep Crimson"],
+        [0.7, "#cc0000", "Flowing Lava"],
+        [0.9, "#ff6600", "Intense Orange"],
+        [1.0, "#ffff66", "White Hot Core"]
+    ]
+}

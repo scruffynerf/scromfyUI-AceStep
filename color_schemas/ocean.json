@@ -1,0 +1,10 @@
+{
+    "name": "Deep Ocean",
+    "stops": [
+        [0.0, "#000b18", "Abyss Black"],
+        [0.3, "#001b3a", "Midnight Blue"],
+        [0.6, "#004369", "Deep Water"],
+        [0.85, "#01949a", "Coral Teal"],
+        [1.0, "#81d8d0", "Foam Cyan"]
+    ]
+}

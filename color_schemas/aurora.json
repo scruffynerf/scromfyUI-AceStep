@@ -1,0 +1,10 @@
+{
+    "name": "Aurora Borealis",
+    "stops": [
+        [0.0, "#000000", "Night Sky"],
+        [0.3, "#003b46", "Deep Teal"],
+        [0.6, "#07575b", "Muted Green"],
+        [0.85, "#66a5ad", "Vibrant Aurora"],
+        [1.0, "#c4dfe6", "Glowing Pale Blue"]
+    ]
+}

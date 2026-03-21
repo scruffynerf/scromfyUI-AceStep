@@ -1,0 +1,10 @@
+{
+    "name": "Desert Sands",
+    "stops": [
+        [0.0, "#2b1c11", "Deep Shade"],
+        [0.3, "#5e3a21", "Terracotta"],
+        [0.6, "#a66838", "Warm Sand"],
+        [0.85, "#d9975b", "Sunlit Dune"],
+        [1.0, "#f2c79b", "Bright Dust"]
+    ]
+}
