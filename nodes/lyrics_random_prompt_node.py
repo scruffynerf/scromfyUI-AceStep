@@ -40,8 +40,8 @@ class AceStepRandomLyricPrompt:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING",)
-    RETURN_NAMES = ("lyric_prompt", "song_prompt",)
+    RETURN_TYPES = ("STRING", "STRING", "STRING",)
+    RETURN_NAMES = ("lyric_prompt", "song_prompt", "combined_prompt",)
     FUNCTION = "generate"
     CATEGORY = "Scromfy/Ace-Step/Lyrics"
 
@@ -115,7 +115,12 @@ class AceStepRandomLyricPrompt:
         # ── Build song prompt ──────────────────────────────────────────────────
         song_prompt = build_song_prompt(rng, song_template)
 
-        return (lyric_prompt, song_prompt)
+        if song_prompt:
+            combined_prompt = f"{lyric_prompt}\n\nPlease ensure the lyrics match the style and vibe of this musical description:\n{song_prompt}"
+        else:
+            combined_prompt = lyric_prompt
+
+        return (lyric_prompt, song_prompt, combined_prompt)
 
 
 NODE_CLASS_MAPPINGS = {

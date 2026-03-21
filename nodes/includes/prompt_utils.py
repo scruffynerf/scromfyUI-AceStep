@@ -246,6 +246,7 @@ def expand_wildcards(text, rng, max_depth=5):
 # Unified song prompt logic for both random prompt nodes
 SONG_PROMPT_TEMPLATES_LIST = [
     "random",
+    "none",
     "genre + mood",
     "adjective + genre",
     "genre + instrument",
@@ -268,6 +269,9 @@ def build_song_prompt(rng, template="random"):
     Build a music/song prompt (genre, mood, etc) based on the specified template combo.
     Combines logic for random prompt node and lyric random prompt node.
     """
+    if template == "none":
+        return ""
+
     if template == "random":
         song_templates = get_component("SONG_PROMPT_TEMPLATES") or ["__MOODS__ __GENRES__"]
         wildcard_pattern = rng.choice(song_templates)
