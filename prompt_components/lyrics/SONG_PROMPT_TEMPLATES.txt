@@ -1,0 +1,16 @@
+__GENRES__ with a __MOODS__ feel
+__ADJECTIVES__ __GENRES__
+__GENRES__ with __VOCAL_QUALITIES__ vocals
+__GENRES__ performed by a __PERFORMERS__
+__ADJECTIVES__ __GENRES__ with a __MOODS__ atmosphere
+__CULTURES__ __GENRES__ with a __MOODS__ feel
+__GENRES__ with __VOCAL_QUALITIES__ vocals and a __MOODS__ atmosphere
+__ADJECTIVES__ __GENRES__ performed by a __PERFORMERS__
+__ADJECTIVES__ __GENRES__ with __VOCAL_QUALITIES__ vocals
+__CULTURES__ __GENRES__ with __VOCAL_QUALITIES__ vocals
+__ADJECTIVES__ __GENRES__ with a __MOODS__ feel, performed by a __PERFORMERS__
+__CULTURES__ __ADJECTIVES__ __GENRES__ featuring __INSTRUMENTS__
+__GENRES__ featuring __INSTRUMENTS__ with a __MOODS__ atmosphere
+__ADJECTIVES__ __GENRES__ with __VOCAL_QUALITIES__ vocals, performed by a __PERFORMERS__
+__CULTURES__ __GENRES__ with __VOCAL_QUALITIES__ vocals and a __MOODS__ feel
+__ADJECTIVES__ __CULTURES__ __GENRES__ featuring __INSTRUMENTS__, performed by a __PERFORMERS__
