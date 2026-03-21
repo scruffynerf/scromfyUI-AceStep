@@ -242,3 +242,89 @@ def expand_wildcards(text, rng, max_depth=5):
             break
         text = new_text
     return text
+
+# Unified song prompt logic for both random prompt nodes
+SONG_PROMPT_TEMPLATES_LIST = [
+    "random",
+    "genre + mood",
+    "adjective + genre",
+    "genre + instrument",
+    "mood + genre + instrument",
+    "adjective + mood + genre",
+    "cultural + genre + instrument",
+    "genre + vocal quality",
+    "genre + performer",
+    "genre + mood + vocal quality",
+    "genre + mood + instrument + performer",
+    "cultural + adjective + genre + mood",
+    "genre + place/scene",
+    "adjective + genre + place/scene",
+    "full description",
+    "full description + culture",
+]
+
+def build_song_prompt(rng, template="random"):
+    """
+    Build a music/song prompt (genre, mood, etc) based on the specified template combo.
+    Combines logic for random prompt node and lyric random prompt node.
+    """
+    if template == "random":
+        song_templates = get_component("SONG_PROMPT_TEMPLATES") or ["__MOODS__ __GENRES__"]
+        wildcard_pattern = rng.choice(song_templates)
+        return expand_wildcards(wildcard_pattern, rng)
+
+    genres          = get_component("GENRES")         or get_component("GENRE")         or ["music"]
+    moods           = get_component("MOODS")          or get_component("MOOD")           or ["ambient"]
+    instruments     = get_component("INSTRUMENTS")    or get_component("INSTRUMENT")     or ["piano"]
+    adjectives      = get_component("ADJECTIVES")     or get_component("ADJECTIVE")      or ["melodic"]
+    cultures        = get_component("CULTURES")       or get_component("CULTURE")        or ["american"]
+    vocal_qualities = get_component("VOCAL_QUALITIES") or get_component("VOCAL_QUALITY") or ["soulful"]
+    performers      = get_component("PERFORMERS")     or get_component("PERFORMER")      or ["band"]
+    places          = get_component("PLACES")         or []
+
+    def pick(lst, fallback=""):
+        val = rng.choice(lst) if lst else fallback
+        return expand_wildcards(val, rng)
+
+    genre      = pick(genres, "music")
+    mood       = pick(moods, "ambient")
+    instrument = pick(instruments, "piano")
+    adjective  = pick(adjectives, "melodic")
+    culture    = pick(cultures, "american")
+    vocal      = pick(vocal_qualities, "soulful")
+    performer  = pick(performers, "band")
+    place      = pick(places, "")
+
+    if template == "genre + mood":
+        return f"{mood} {genre}"
+    elif template == "adjective + genre":
+        return f"{adjective} {genre}"
+    elif template == "genre + instrument":
+        return f"{genre} featuring {instrument}"
+    elif template == "mood + genre + instrument":
+        return f"{mood} {genre} featuring {instrument}"
+    elif template == "adjective + mood + genre":
+        return f"{adjective}, {mood} {genre}"
+    elif template == "cultural + genre + instrument":
+        return f"{culture} {genre} with {instrument}"
+    elif template == "genre + vocal quality":
+        return f"{genre} with {vocal} vocals"
+    elif template == "genre + performer" or template == "genre + performer type":
+        return f"{genre} performed by a {performer}"
+    elif template == "genre + mood + vocal quality":
+        return f"{mood} {genre} with {vocal} vocals"
+    elif template == "genre + mood + instrument + performer":
+        return f"{mood} {genre} featuring {instrument}, performed by a {performer}"
+    elif template == "cultural + adjective + genre + mood":
+        return f"{adjective} {culture} {genre} with a {mood} feel"
+    elif template == "genre + place/scene":
+        return f"{genre} from {place}" if place else f"{mood} {genre}"
+    elif template == "adjective + genre + place/scene":
+        return f"{adjective} {genre} from {place}" if place else f"{adjective} {genre}"
+    elif template == "full description":
+        return f"{adjective} {mood} {genre} featuring {instrument} with {vocal} vocals, performed by a {performer}"
+    elif template == "full description + culture":
+        return f"{adjective} {culture} {genre} with a {mood} feel, featuring {instrument} and {vocal} vocals"
+    
+    # Fallback if combo not found
+    return f"{mood} {genre}"

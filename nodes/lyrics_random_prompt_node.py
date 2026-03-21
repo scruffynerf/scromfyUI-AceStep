@@ -1,6 +1,6 @@
 """AceStepRandomLyricPrompt node – generate random lyric direction prompts for LLM lyrics nodes"""
 import random
-from .includes.prompt_utils import get_component, expand_wildcards
+from .includes.prompt_utils import get_component, expand_wildcards, SONG_PROMPT_TEMPLATES_LIST, build_song_prompt
 
 
 class AceStepRandomLyricPrompt:
@@ -36,19 +36,7 @@ class AceStepRandomLyricPrompt:
                     "full: situation + setting + perspective + constraint",
                     "full: emotional + situation + singer + setting + constraint",
                 ], {"default": "random"}),
-                "song_template": ([
-                    "random",
-                    "genre + mood",
-                    "adjective + genre",
-                    "genre + vocal quality",
-                    "genre + performer",
-                    "genre + mood + vocal quality",
-                    "culture + genre + mood",
-                    "genre + instrument + mood",
-                    "culture + genre + vocal quality",
-                    "full: adjective + genre + mood + vocal + performer",
-                    "full: culture + adjective + genre + instrument + performer",
-                ], {"default": "random"}),
+                "song_template": (SONG_PROMPT_TEMPLATES_LIST, {"default": "random"}),
             }
         }
 
@@ -75,16 +63,6 @@ class AceStepRandomLyricPrompt:
         lyric_singers      = get_component("LYRIC_SINGER")        or ["a woman"]
         lyric_templates    = get_component("LYRIC_TEMPLATES")     or ["__LYRIC_VERBS__ __LYRIC_THEMES__"]
 
-        # ── Load song-description components ───────────────────────────────────
-        genres          = get_component("GENRES")          or get_component("GENRE")          or ["indie pop"]
-        moods           = get_component("MOODS")           or get_component("MOOD")           or ["melancholic"]
-        adjectives      = get_component("ADJECTIVES")      or get_component("ADJECTIVE")      or ["dreamy"]
-        cultures        = get_component("CULTURES")        or get_component("CULTURE")        or ["american"]
-        vocal_qualities = get_component("VOCAL_QUALITIES") or get_component("VOCAL_QUALITY")  or ["soulful"]
-        performers      = get_component("PERFORMERS")      or get_component("PERFORMER")      or ["singer-songwriter"]
-        instruments     = get_component("INSTRUMENTS")     or get_component("INSTRUMENT")     or ["guitar"]
-        song_templates  = get_component("SONG_PROMPT_TEMPLATES") or ["__GENRES__ with a __MOODS__ feel"]
-
         # ── Helper: pick + expand wildcards ────────────────────────────────────
         def pick(lst, fallback=""):
             val = rng.choice(lst) if lst else fallback
@@ -108,9 +86,9 @@ class AceStepRandomLyricPrompt:
         elif t == "verb + situation":
             lyric_prompt = f"{verb} {situation}"
         elif t == "verb + emotional + theme":
-            lyric_prompt = f"{verb} a {emotion} story about {theme}"
+            lyric_prompt = f"{verb} {theme} — feel: {emotion}"
         elif t == "verb + emotional + situation":
-            lyric_prompt = f"{verb} a {emotion} story about {situation}"
+            lyric_prompt = f"{verb} {situation} — feel: {emotion}"
         elif t == "verb + theme + setting":
             lyric_prompt = f"{verb} {theme}, set {setting}"
         elif t == "verb + situation + setting":
@@ -132,40 +110,10 @@ class AceStepRandomLyricPrompt:
         elif t == "full: situation + setting + perspective + constraint":
             lyric_prompt = f"{verb} {situation}, set {setting}, {perspective}, written {constraint}"
         else:  # full: emotional + situation + singer + setting + constraint
-            lyric_prompt = f"{verb} a {emotion} story about {situation}, as told by {singer}, set {setting}, written {constraint}"
+            lyric_prompt = f"{verb} {situation}, as told by {singer}, set {setting}, written {constraint} — feel: {emotion}"
 
         # ── Build song prompt ──────────────────────────────────────────────────
-        genre       = pick(genres)
-        mood        = pick(moods)
-        adjective   = pick(adjectives)
-        culture     = pick(cultures)
-        vocal       = pick(vocal_qualities)
-        performer   = pick(performers)
-        instrument  = pick(instruments)
-
-        s = song_template
-        if s == "random":
-            song_prompt = expand_wildcards(pick(song_templates), rng)
-        elif s == "genre + mood":
-            song_prompt = f"{genre} with a {mood} feel"
-        elif s == "adjective + genre":
-            song_prompt = f"{adjective} {genre}"
-        elif s == "genre + vocal quality":
-            song_prompt = f"{genre} with {vocal} vocals"
-        elif s == "genre + performer":
-            song_prompt = f"{genre} performed by a {performer}"
-        elif s == "genre + mood + vocal quality":
-            song_prompt = f"{genre} with a {mood} feel and {vocal} vocals"
-        elif s == "culture + genre + mood":
-            song_prompt = f"{culture} {genre} with a {mood} feel"
-        elif s == "genre + instrument + mood":
-            song_prompt = f"{genre} featuring {instrument} with a {mood} atmosphere"
-        elif s == "culture + genre + vocal quality":
-            song_prompt = f"{culture} {genre} with {vocal} vocals"
-        elif s == "full: adjective + genre + mood + vocal + performer":
-            song_prompt = f"{adjective} {genre} with a {mood} feel and {vocal} vocals, performed by a {performer}"
-        else:  # full: culture + adjective + genre + instrument + performer
-            song_prompt = f"{adjective} {culture} {genre} featuring {instrument}, performed by a {performer}"
+        song_prompt = build_song_prompt(rng, song_template)
 
         return (lyric_prompt, song_prompt)
 
