@@ -5,7 +5,21 @@ import urllib.request
 from .includes.lyrics_utils import get_lyrics_messages, clean_markdown_formatting, load_api_key
 
 class AceStepOpenAILyrics:
-    """Generate lyrics using OpenAI API"""
+    """Generate lyrics using OpenAI API.
+    
+    Constructs a chat payload requesting song lyrics matching the provided
+    style and theme, formatted with ACE-Step standard structural tags.
+    
+    Inputs:
+        style (STRING): Music style prompt.
+        theme (STRING): Song subject prompt.
+        model (STRING): Specific model string.
+        max_tokens (INT): Output length limit.
+        seed (INT): Deterministic seed.
+        
+    Outputs:
+        lyrics (STRING): Generated raw lyrics.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

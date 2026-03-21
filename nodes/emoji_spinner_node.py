@@ -54,7 +54,7 @@ class ScromfyEmojiSpinnerNode:
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "STRING", "STRING", "STRING", "MASK", "MASK", "MASK", "MASK", "STRING", "AUDIO", "FLOAT")
     RETURN_NAMES = ("IMAGE", "emoji_1_image", "emoji_2_image", "emoji_3_image", "emoji_1_name", "emoji_2_name", "emoji_3_name", "emoji_1_mask", "emoji_2_mask", "emoji_3_mask", "combined_mask", "combined_description", "AUDIO", "fps")
     FUNCTION = "spin"
-    CATEGORY = "Scromfy/Ace-Step/Visualizers"
+    CATEGORY = "Scromfy/Ace-Step/Misc"
 
     def spin(self, seed, icon_set, width, height, fps, spin_duration, stop_stagger, render_size, slot_icon_size, reel_padding, reel_inner_padding=15, reel_top_padding=15, render_mode="white_outline", bw_stroke_width=0.3, sample_rate=44100, sound="silence"):
         rng = random.Random(seed)

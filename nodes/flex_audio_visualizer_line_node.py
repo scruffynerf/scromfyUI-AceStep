@@ -4,6 +4,41 @@ import torch
 from .includes.visualizer_utils import FlexAudioVisualizerBase, BaseAudioProcessor, get_color_for_frequency, parse_color
 
 class ScromfyFlexAudioVisualizerLineNode(FlexAudioVisualizerBase):
+    """Generates an audio-reactive linear visualization driven by the Flex System.
+    
+    Reacts to audio parameters established by a visualizer settings node to render
+    straight, responsive waveform or frequency spectrum lines with variable spacing.
+    
+    Inputs:
+        audio (AUDIO): Base waveform for synchronization and analysis.
+        frame_rate (FLOAT): Target FPS for the output sequence.
+        screen_width (INT): Output pixel width.
+        screen_height (INT): Output pixel height.
+        strength (FLOAT): Opacity of the rendered visualizer overlay.
+        feature_param (STRING): Dynamic parameter mapped to the feature_mode logic.
+        feature_mode (STRING): Mathematical operation applied to feature_param.
+        feature_threshold (FLOAT): Activation gate for feature modulation.
+        max_height (FLOAT): Peak bar height.
+        min_height (FLOAT): Minimum resting bar height.
+        bar_length_mode (STRING): Evaluate height as 'absolute' pixels or 'relative' screen percentages.
+        length (FLOAT): Total base length of the line.
+        separation (FLOAT): Spacing in pixels between individual bars.
+        curvature (FLOAT): End-cap rounding intensity for discrete bars.
+        curve_smoothing (FLOAT): Smoothing factor applying Gaussian blur to the output points.
+    
+    Optional Inputs:
+        mask (MASK): Reference geometry mask passed downwards or used as a rendering bounds clipper.
+        opt_feature (FLOAT): Injection array for specific feature parameters.
+        background (IMAGE): Optional underlying background overlay for blending.
+        settings (VISUALIZER_SETTINGS): The master configuration dictionary controlling colors and frequencies.
+        
+    Outputs:
+        IMAGE: The fully composed visualizer sequence frames.
+        MASK: An alpha channel sequence of the generated solid pixels.
+        SETTINGS (STRING): A JSON-safe debug record of all active parameters on the node.
+        SOURCE_MASK: The passed-through or auto-generated reference mask.
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         base_inputs = super().INPUT_TYPES()

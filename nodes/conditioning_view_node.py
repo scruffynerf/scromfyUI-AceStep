@@ -4,7 +4,18 @@ import torch
 import lovely_tensors as lt
 
 class AceStepConditioningExplore:
-    """Show conditioning content summarized with lovely-tensors"""
+    """Explores and formats a complex conditioning object into a human-readable JSON string.
+    
+    Recursively inspects the standard ComfyUI CONDITIONING tuple (which can contain 
+    tensors, dictionaries, raw texts, and lists) and uses the `lovely-tensors` library 
+    to provide statistical summaries of tensors instead of dumping raw values.
+    
+    Inputs:
+        text_cond (CONDITIONING): Any standard or ACE-Step conditioning bundle.
+        
+    Outputs:
+        json_text (STRING): A formatted, readable JSON string representation of the bundle.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

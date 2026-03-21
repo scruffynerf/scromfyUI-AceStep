@@ -3,7 +3,15 @@ import random
 from .includes.prompt_utils import get_component, expand_wildcards, SONG_PROMPT_TEMPLATES_LIST, build_song_prompt
 
 class AceStepRandomPrompt:
-    """Generate random music prompts from predefined templates"""
+    """Generate random music prompts from predefined templates.
+    
+    Inputs:
+        seed (INT): Deterministic seed for randomization.
+        template (STRING): Dropdown of predefined song structure templates or "random".
+        
+    Outputs:
+        prompt (STRING): The fully resolved, randomized song prompt.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

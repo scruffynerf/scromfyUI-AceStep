@@ -2,7 +2,24 @@
 import torch
 
 class AceStepTensorMaskGenerator:
-    """Generate masks (shape [1, N, 1]) for tensor operations"""
+    """Generates a temporal mask (0.0 to 1.0) synchronized to an exact tensor length.
+    
+    Unlike the Audio Mask node which calculates length from seconds and sample rates, 
+    this node directly inspects an existing tensor (e.g., `timbre_tensor`) to match 
+    its length (N), using logical sequence indices rather than seconds.
+    
+    Inputs:
+        context_tensor (TENSOR): The reference tensor used purely to determine sequence length.
+        mode (STRING): Masking shape (range, fraction, ramp, window, etc.).
+        start (INT): Start sequence index for range/window modes.
+        end (INT): End sequence index for range/window modes.
+        fraction (FLOAT): Percentage point for fraction split mode.
+        ramp_len (INT): Duration of fade in/out slopes in sequence steps.
+        reverse (BOOLEAN): Inverts the entire calculated mask.
+        
+    Outputs:
+        MASK: A properly shaped `[1, N, 1]` temporal mask tensor.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

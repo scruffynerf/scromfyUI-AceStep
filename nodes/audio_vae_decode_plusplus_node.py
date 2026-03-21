@@ -7,6 +7,20 @@ class ScromfyAceStepAudioVAEDecodePlusPlus:
     Replicates the VAE decoding logic from the Sampler node, including
     latent shifts, rescaling, peak normalization, and voice boost.
     Supports local settings or an optional settings node input.
+    
+    Inputs:
+        samples (LATENT): Generated DiT latents.
+        vae (VAE): The loaded decoder model.
+        latent_shift (FLOAT): Pre-decode additive shift.
+        latent_rescale (FLOAT): Pre-decode multiplicative scaling.
+        normalize_peak (BOOLEAN): Peak limit the output to -0.0dB.
+        voice_boost (FLOAT): Add gain specifically tuned for vocal frequencies.
+        
+    Optional Inputs:
+        vae_decode_settings (SCROMFY_VAE_SETTINGS): External configuration bundle. Overrides local parameters if provided.
+        
+    Outputs:
+        audio (AUDIO): Standard audio dict {waveform, sample_rate}.
     """
 
     @classmethod

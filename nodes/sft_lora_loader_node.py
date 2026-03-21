@@ -8,6 +8,14 @@ class ScromfyAceStepLoraLoader:
     """Chainable LoRA loader for ScromfySFT.
     Accumulates LoRA specifications into a stack that is applied
     when the Model Loader loads its models.
+    
+    Inputs:
+        lora_name (STRING): Target LoRA (.safetensors).
+        strength_model (FLOAT): Diffusion network weight.
+        (Optional:) lora_stack (ACESTEP_LORA): Previous stack to append to.
+        
+    Outputs:
+        lora_stack (ACESTEP_LORA): Updated stack array.
     """
 
     @classmethod

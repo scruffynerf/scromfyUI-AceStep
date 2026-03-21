@@ -13,6 +13,14 @@ if LIBROSA_AVAILABLE:
 class ScromfyAceStepAudioAnalyzerNoLLM:
     """Analyze audio to extract BPM, key/scale, and duration (DSP-only).
     Includes ACE-Step theory overrides for key detection and torch-optimized audio handling.
+    
+    Inputs:
+        audio (AUDIO): Raw input audio dictionary.
+        
+    Outputs:
+        bpm (INT): Extracted tempo.
+        key_scale (STRING): Detected musical key.
+        duration (FLOAT): Seconds.
     """
     
     @classmethod

@@ -11,7 +11,20 @@ def get_timbre_files():
     return sorted(files) + ["none", "random"]
 
 class AceStepTimbreTensorLoader:
-    """Load a timbre conditioning tensor from disk"""
+    """Loads a primary continuous background/style guidance tensor from disk.
+    
+    Reads isolated `_timbre.safetensors` files from the `output/conditioning` 
+    directory. This is typically the foundational, un-pooled contextual embedding 
+    representing the overall genre/sound of the music piece.
+    
+    Inputs:
+        timbre_tensor_file (STRING): Filename of the target `_timbre.safetensors` file.
+        seed (INT): RNG seed used solely when file selection is set to 'random'.
+        
+    Outputs:
+        timbre_tensor (TENSOR): The dense continuous style embedding.
+        filename (STRING): The base name of the loaded file for downstream tagging.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

@@ -3,6 +3,31 @@ import cv2
 from .includes.visualizer_utils import FlexAudioVisualizerBase
 
 class ScromfyFlexLyricsNode(FlexAudioVisualizerBase):
+    """A passthrough node that overlays rendered lyrics onto a background video or image.
+    
+    This node serves as the final compositing step for the Flex Lyrics system. It accepts
+    structured lyric settings and timing data, and passes them to the BaseAudioProcessor
+    which handles the actual OpenCV text rendering.
+    
+    Inputs:
+        audio (AUDIO): Base waveform for synchronization and analysis.
+        frame_rate (FLOAT): Target FPS for the output sequence.
+        screen_width (INT): Output pixel width.
+        screen_height (INT): Output pixel height.
+        strength (FLOAT): Opacity scaling.
+        feature_param (STRING): Dynamic parameter mapped to the feature_mode logic.
+    
+    Optional Inputs:
+        opt_video (IMAGE): The underlying background sequence to overlay text onto.
+        lyric_settings (LYRIC_SETTINGS): Configuration dictionary defining font, color, and positioning.
+        
+    Outputs:
+        IMAGE: The fully composed lyrics sequence frames.
+        MASK: An alpha channel sequence (usually empty for pure lyrics text).
+        SETTINGS (STRING): A JSON-safe debug record of active parameters.
+        SOURCE_MASK: Not used.
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         # Keep audio, video, frame_rate, dimensions, and ALL lyric settings

@@ -174,7 +174,16 @@ async def serve_lrc(request: web.Request) -> web.Response:
 # ---------------------------------------------------------------------------
 
 class RadioPlayerNode:
-
+    """A ComfyUI node that spins up an interactive WebAmp radio player.
+    Polls a specifiable output directory for generated audio/lyrics and serves them.
+    
+    Inputs:
+        folder (STRING): Directory inside /output to monitor.
+        poll_interval_seconds (FLOAT): UI polling refresh rate.
+        
+    Outputs:
+        (None. Visual Web UI element only.)
+    """
     @classmethod
     def INPUT_TYPES(cls):
         return {

@@ -2,7 +2,26 @@
 import torch
 
 class AceStepTensorUnaryOp:
-    """Operations that transform a single input A with optional masking"""
+    """Applies isolated mathematical operations and masks to a single continuous tensor.
+    
+    Allows for temporal volume automation (scaling, fade outs), localized noise 
+    injection for variation, and precise gating of specific audio elements within 
+    the `timbre_tensor` or `lyrics_tensor`.
+    
+    Inputs:
+        tensor_A (TENSOR): The continuous embedding tensor to modify.
+        mode (STRING): Operation to perform (gate, fade_out, noise, etc.).
+        length_pct (FLOAT): Time-scaling multiplier for the sequence.
+        strength (FLOAT): Intensity of the applied math operation.
+        sigma (FLOAT): Variance of injected noise.
+        seed (INT): RNG seed for noise generation.
+        
+    Optional Inputs:
+        mask (MASK): Dictates precisely when the operation occurs temporally.
+        
+    Outputs:
+        TENSOR: The mathematically modified continuous tensor.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

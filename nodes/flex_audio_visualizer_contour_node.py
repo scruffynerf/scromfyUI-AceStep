@@ -7,6 +7,51 @@ from PIL import Image
 from .includes.visualizer_utils import FlexAudioVisualizerBase, BaseAudioProcessor, get_color_for_frequency, parse_color
 
 class ScromfyFlexAudioVisualizerContourNode(FlexAudioVisualizerBase):
+    """Generates an audio-reactive contour visualization driven by the Flex System.
+    
+    Reacts to audio parameters established by a visualizer settings node to render
+    bars or lines protruding from the edges of a reference mask or random preset mask.
+    Supports complex shape hierarchies and intelligent density scaling.
+    
+    Inputs:
+        audio (AUDIO): Base waveform for synchronization and analysis.
+        frame_rate (FLOAT): Target FPS for the output sequence.
+        screen_width (INT): Output pixel width.
+        screen_height (INT): Output pixel height.
+        strength (FLOAT): Opacity of the rendered visualizer overlay.
+        feature_param (STRING): Dynamic parameter mapped to the feature_mode logic.
+        feature_mode (STRING): Mathematical operation applied to feature_param.
+        feature_threshold (FLOAT): Activation gate for feature modulation.
+        installed_mask (STRING): Selection of internal mask presets, or 'random'.
+        mask_scale (FLOAT): Multiplier controlling the on-screen size of the mask.
+        mask_top_margin (FLOAT): Vertical offset for the mask (percentage of screen).
+        bar_length (FLOAT): Output length of the reacting segments.
+        bar_length_mode (STRING): Evaluate 'bar_length' as 'absolute' pixels or 'relative' to mask scale.
+        contour_smoothing (INT): Amount of geometric simplification applied to the mask edges.
+        ghost_mask_strength (FLOAT): Opacity of the underlying mask preview.
+        ghost_mode (STRING): Rendering style for the underlying mask preview.
+        adaptive_point_density (BOOLEAN): Auto-scale 'num_points' based on total perimeter length.
+        min_contour_area (FLOAT): Ignore mask shapes with an area smaller than this (noise reduction).
+        max_contours (INT): Hard limit on the number of shapes to trace.
+        distribute_by (STRING): How to spread rendering points across multiple contours ('area', 'perimeter', 'equal', 'angular').
+        contour_layers (STRING): Comma-separated list of target hierarchy depths, or 'all'.
+        contour_color_shift (FLOAT): Base hue offset stepping applied sequentially across multiple contours.
+        num_points (INT): Maximum density resolution for the geometry generation.
+    
+    Optional Inputs:
+        mask (MASK): Custom external reference mask passed downwards.
+        opt_feature (FLOAT): Injection array for specific feature parameters.
+        background (IMAGE): Optional underlying background overlay for blending.
+        settings (VISUALIZER_SETTINGS): The master configuration dictionary controlling colors and frequencies.
+        
+    Outputs:
+        IMAGE: The fully composed visualizer sequence frames.
+        MASK: An alpha channel sequence of the generated solid pixels.
+        SETTINGS (STRING): A JSON-safe debug record of all active parameters on the node.
+        SOURCE_MASK: The successfully captured and sized reference mask used for rendering.
+        LAYER_MAP: A diagrammatic representation showing hierarchical depths of the found contours.
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         base_inputs = super().INPUT_TYPES()

@@ -1,6 +1,29 @@
 import json
 
 class ScromfyLyricSettingsNode:
+    """Defines typographic and styling configuration for the Flex Lyrics system.
+    
+    Crawls the workspace 'fonts' directory to provide a list of available TrueType/OpenType
+    fonts, and outputs a LYRIC_SETTINGS dictionary used by the rendering engine to draw
+    synchronized karaoke-style text.
+    
+    Inputs:
+        lrc_text (STRING): Raw `.lrc` formatted lyric text with timestamp tags.
+        font_name (STRING): Selection from detected fonts in the local workspace.
+        font_size (INT): Base text size in pixels.
+        highlight_color (COLOR): Hex code for active/currently singing text.
+        normal_color (COLOR): Hex code for upcoming/past text.
+        background_alpha (FLOAT): Opacity of the dark backing box behind the text.
+        blur_radius (INT): Amount of Gaussian blur applied to inactive text.
+        active_blur (INT): Exaggerated blur applied precisely on the sung beat.
+        y_position (FLOAT): Vertical placement of the text block (percentage of screen).
+        max_lines (INT): Maximum number of visible lyric lines on screen at once.
+        line_spacing (FLOAT): Vertical padding multiplier between lines of text.
+        
+    Outputs:
+        lyric_settings (LYRIC_SETTINGS): A dictionary encapsulating the text rendering rules.
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         import os

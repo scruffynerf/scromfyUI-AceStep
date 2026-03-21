@@ -13,7 +13,29 @@ from .includes.fsq_utils import (
 logger = logging.getLogger(__name__)
 
 class AceStepAudioCodesUnaryOp:
-    """Operations that transform a single set of audio codes (A) in 6D FSQ space with optional masking"""
+    """Transforms a single list of audio codes using masks and mathematical operations.
+    
+    Operates on a single set of 5Hz tokens in continuous 6D FSQ space. Unique among 
+    nodes, it outputs a diagnostic visual representation of the tokens to help users 
+    "see" the audio structure (e.g., self-similarity, PCA ribbons).
+    
+    Inputs:
+        audio_codes (LIST): The structural token list to modify.
+        mode (STRING): Operation to perform (gate, fade_out, noise, etc.).
+        visualization_type (STRING): The style of diagnostic image to generate.
+        ssm_blur (FLOAT): Aesthetic blur applied to self-similarity matrix visuals.
+        length_pct (FLOAT): Time-scaling multiplier for the sequence.
+        strength (FLOAT): Intensity of the applied math operation.
+        sigma (FLOAT): Variance of injected noise.
+        seed (INT): RNG seed for noise generation.
+        
+    Optional Inputs:
+        mask (MASK): Dictates precisely when the operation occurs temporally.
+        
+    Outputs:
+        audio_codes (LIST): The modified structural tokens.
+        visualization (IMAGE): Rendered diagnostic representation of the tokens.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

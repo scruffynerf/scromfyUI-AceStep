@@ -1,7 +1,20 @@
 """AceStepMetadataBuilder node for ACE-Step"""
 
 class AceStepMetadataBuilder:
-    """Format music metadata for ACE-Step conditioning"""
+    """Format music metadata for ACE-Step conditioning.
+    
+    Inputs:
+        bpm (INT): 0-300.
+        duration (FLOAT): Length in seconds.
+        keyscale (STRING): E.g. "C major".
+        timesignature (INT): E.g. 4.
+        language (STRING): Target language format.
+        instrumental (BOOLEAN): Toggle instrumental mode.
+        
+    Outputs:
+        metadata (DICT): A dictionary mapping these properties, omitting any unused/empty defaults, 
+        suitable for downstream conditioning manipulation.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

@@ -5,6 +5,23 @@
 class ScromfyAceStepSamplerSettings:
     """Advanced sampling settings for ScromfyAceStepSampler.
     Encapsulates guidance modes, intervals, momentum, and scaling parameters.
+    
+    Inputs:
+        guidance_mode (STRING): Type of guidance ("apg", "adg", "standard_cfg").
+        guidance_interval (FLOAT): Centered interval applying guidance.
+        apg_momentum (FLOAT): Momentum buffer coefficient for APG.
+        apg_norm_threshold (FLOAT): Norm threshold for gradient clipping.
+        guidance_interval_decay (FLOAT): Decay strength inside active interval.
+        min_guidance_scale (FLOAT): Lowest bound for decayed guidance.
+        guidance_scale_text (FLOAT): Independent CFG for text branch (-1 inherits).
+        guidance_scale_lyric (FLOAT): Independent CFG for lyric branch (-1 inherits).
+        omega_scale (FLOAT): Emulates AceStep omega scaling.
+        erg_scale (FLOAT): Source energy reweighting.
+        cfg_interval_start (FLOAT): Legacy explicit schedule start.
+        cfg_interval_end (FLOAT): Legacy explicit schedule end.
+        
+    Outputs:
+        sampler_settings (SCROMFY_SAMPLER_SETTINGS): Encapsulated settings payload.
     """
 
     @classmethod

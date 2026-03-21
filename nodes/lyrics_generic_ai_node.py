@@ -5,7 +5,23 @@ import urllib.request
 from .includes.lyrics_utils import get_lyrics_messages, clean_markdown_formatting, load_api_key
 
 class AceStepGenericAILyrics:
-    """Generate lyrics using a generic OpenAI-compatible API (e.g. Ollama, LM Studio)"""
+    """Generate lyrics using a generic OpenAI-compatible API (e.g. Ollama, LM Studio).
+    
+    Constructs a chat payload requesting song lyrics matching the provided
+    style and theme, formatted with ACE-Step standard structural tags.
+    
+    Inputs:
+        api_url (STRING): The base URL of the OpenAI-compatible server.
+        style (STRING): Music style prompt.
+        theme (STRING): Song subject prompt.
+        model (STRING): Specific model string.
+        max_tokens (INT): Output length limit.
+        seed (INT): Deterministic seed.
+        api_key (STRING): Optional explicitly passed API key.
+        
+    Outputs:
+        lyrics (STRING): Generated raw lyrics.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

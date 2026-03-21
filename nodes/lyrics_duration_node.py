@@ -8,6 +8,18 @@ class AceStepLyricsBPMCalculator:
     Formula: BPM = (Bars × Beats_per_bar × 60) / Duration
     - Bars estimated from: Line Count × line2bar (Density)
     - Duration estimated from: Word Count / WPM
+    
+    Inputs:
+        lyrics (STRING): The lyric text.
+        timesignature (STRING): Dropdown of time signatures (e.g. 4/4).
+        wpm (INT): Expected words per minute (vocal pacing).
+        line2bar (FLOAT): Density setting for bars-per-line.
+        
+    Outputs:
+        duration (FLOAT): Estimated track duration (seconds).
+        bpm_low, bpm_mid, bpm_high (INT): Suggested tempo ranges.
+        word_count (INT): Total words.
+        line_count (INT): Total valid lines.
     """
 
     TIMESIG_MAP = {

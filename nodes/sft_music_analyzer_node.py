@@ -34,6 +34,30 @@ _ANALYSIS_MODELS = {
 class ScromfyAceStepMusicAnalyzer:
     """Analyzes audio to extract descriptive tags, BPM and key/scale.
     Full port of AceStepSFTMusicAnalyzer with all 9 supported models.
+    
+    Inputs:
+        audio (AUDIO): Raw input audio dictionary.
+        model (STRING): Dropdown of 9 HuggingFace audio LLMs (e.g. Qwen, MERT).
+        get_tags, get_bpm, get_keyscale (BOOLEAN): Toggles for analysis targets.
+        
+    Optional Inputs:
+        max_new_tokens (INT): Maximum tokens for the AI model to generate during tag extraction.
+        audio_duration (INT): Duration of audio in seconds to pass to the model.
+        unload_model (BOOLEAN): If True, unloads the analysis model from VRAM after completion.
+        use_flash_attn (BOOLEAN): If True, enables Flash Attention 2 for faster generation.
+        temperature (FLOAT): LLM generation temperature.
+        top_p (FLOAT): LLM Top-P sampling limit.
+        top_k (INT): LLM Top-K sampling limit.
+        repetition_penalty (FLOAT): LLM repetition penalty ratio.
+        seed (INT): LLM generation RNG seed.
+        model_directory (STRING): Base folder within models directory where analysis models are stored.
+        
+    Outputs:
+        tags (STRING): Derived musical labels.
+        bpm (INT): Estimated tempo.
+        keyscale (STRING): Detected key signature.
+        duration (FLOAT): Seconds.
+        music_infos (STRING): JSON text dump of all extracted data.
     """
 
     @classmethod

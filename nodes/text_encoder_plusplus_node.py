@@ -3,85 +3,44 @@ import math
 import torch
 from .includes.prompt_utils import get_keyscales
 from .includes.sampling_utils import zero_out
+from .includes.mapping_utils import TIMESIG_MAP, VALID_TIME_SIGNATURES, LANGUAGE_MAP, VALID_LANGUAGES
 
 class ScromfyAceStepTextEncoderPlusPlus:
     """Merged Text Encoder for ACE-Step 1.5.
     Combines SFT 'Enriched CoT' (Chain-of-Thought) formatting with granular base controls.
     Supports a toggle for enhanced prompting, trigger words/tags, and full LLM parameters.
+    
+    Inputs:
+        clip (CLIP): The loaded ACE15TEModel.
+        caption (STRING): The core description (genre, mood, instruments).
+        enhanced_prompt (BOOLEAN): If True, uses SFT-style 'Enriched CoT' (YAML) formatting.
+        generate_audio_codes (BOOLEAN): Enable LLM audio code generation (semantic structure).
+        instrumental (BOOLEAN): Force [Instrumental] as lyrics.
+        
+    Optional Inputs:
+        lyrics (STRING): Song lyrics or [Instrumental].
+        trigger_word (STRING): Model trigger word(s) prepended to caption.
+        style_tags (STRING): Tags appended to the end of the caption.
+        bpm (INT): Target beats per minute (-1 = auto decide).
+        duration (FLOAT): Track duration in seconds.
+        keyscale: Target musical key and scale.
+        timesignature: Target time signature.
+        language: Lyrics language ISO code.
+        seed (INT): RNG seed.
+        cfg_scale (FLOAT): SFT prompt CFG scale.
+        temperature (FLOAT): Generation temperature.
+        top_p (FLOAT): Top-p sampling limit.
+        top_k (INT): Top-k sampling limit.
+        min_p (FLOAT): Min-p sampling limit.
+        repetition_penalty (FLOAT): Repetition penalty ratio.
+        negative_prompt (STRING): Negative prompt for audio code generation.
+        
+    Outputs:
+        conditioning (CONDITIONING): The encoded positive conditioning data.
+        zero_conditioning (CONDITIONING): Automatically zeroed-out conditioning for negative input.
     """
 
     VALID_KEYSCALES = get_keyscales()
-
-    # Time signature mapping
-    TIMESIG_MAP = {
-        "Auto-decide": "0",
-        "2/4": "2",
-        "3/4": "3",
-        "4/4": "4",
-        "6/8": "6",
-        "0": "0",
-        "2": "2",
-        "3": "3",
-        "4": "4",
-        "6": "6",
-    }
-    VALID_TIME_SIGNATURES = list(TIMESIG_MAP.keys())
-
-    # Language display name -> ISO code mapping
-    LANGUAGE_MAP = {
-        "English": "en",
-        "Chinese": "zh",
-        "Japanese": "ja",
-        "Korean": "ko",
-        "Spanish": "es",
-        "French": "fr",
-        "German": "de",
-        "Italian": "it",
-        "Portuguese": "pt",
-        "Russian": "ru",
-        "Arabic": "ar",
-        "Hindi": "hi",
-        "Vietnamese": "vi",
-        "Thai": "th",
-        "Indonesian": "id",
-        "Malay": "ms",
-        "Tagalog": "tl",
-        "Dutch": "nl",
-        "Polish": "pl",
-        "Turkish": "tr",
-        "Swedish": "sv",
-        "Danish": "da",
-        "Norwegian": "no",
-        "Finnish": "fi",
-        "Czech": "cs",
-        "Slovak": "sk",
-        "Hungarian": "hu",
-        "Romanian": "ro",
-        "Bulgarian": "bg",
-        "Croatian": "hr",
-        "Serbian": "sr",
-        "Ukrainian": "uk",
-        "Greek": "el",
-        "Hebrew": "he",
-        "Persian": "fa",
-        "Bengali": "bn",
-        "Tamil": "ta",
-        "Telugu": "te",
-        "Punjabi": "pa",
-        "Urdu": "ur",
-        "Nepali": "ne",
-        "Swahili": "sw",
-        "Haitian Creole": "ht",
-        "Icelandic": "is",
-        "Lithuanian": "lt",
-        "Latin": "la",
-        "Azerbaijani": "az",
-        "Catalan": "ca",
-        "Sanskrit": "sa",
-        "Cantonese": "yue",
-        "Unknown": "unknown",
-    }
-    VALID_LANGUAGES = list(LANGUAGE_MAP.keys())
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -131,8 +90,8 @@ class ScromfyAceStepTextEncoderPlusPlus:
                     "tooltip": "Duration in seconds.",
                 }),
                 "keyscale": (cls.VALID_KEYSCALES, {"default": "Auto-decide"}),
-                "timesignature": (cls.VALID_TIME_SIGNATURES, {"default": "Auto-decide"}),
-                "language": (cls.VALID_LANGUAGES, {"default": "English"}),
+                "timesignature": (VALID_TIME_SIGNATURES, {"default": "Auto-decide"}),
+                "language": (VALID_LANGUAGES, {"default": "English"}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                 "cfg_scale": ("FLOAT", {"default": 2.0, "min": 0.0, "max": 100.0, "step": 0.1}),
                 "temperature": ("FLOAT", {"default": 0.85, "min": 0.0, "max": 2.0, "step": 0.01}),
@@ -182,8 +141,8 @@ class ScromfyAceStepTextEncoderPlusPlus:
             full_caption = f"{full_caption}, {style_tags.strip()}"
         
         actual_lyrics = "[Instrumental]" if instrumental else lyrics
-        language_iso = self.LANGUAGE_MAP.get(language, "en")
-        timesig_code = self.TIMESIG_MAP.get(timesignature, "0")
+        language_iso = LANGUAGE_MAP.get(language, "en")
+        timesig_code = TIMESIG_MAP.get(timesignature, "0")
         
         ks_val = "" if keyscale == "Auto-decide" else keyscale
         

@@ -7,7 +7,19 @@ from .includes.fsq_utils import parse_audio_codes, fsq_indices_to_quantized
 logger = logging.getLogger(__name__)
 
 class AceStepAudioCodesToSemanticHints:
-    """Convert 5Hz audio codes to 25Hz semantic hints for DiT conditioning."""
+    """Converts low-level 5Hz audio codes up to 25Hz semantic hints for specific VAE architectures.
+    
+    A structural bridge node that forces the LLM's discrete 5Hz choices back through 
+    the detokenizer network to generate continuous 25Hz embedding vectors.
+    
+    Inputs:
+        audio_codes (LIST): The 5Hz prompt tokens.
+        model (MODEL): Base model object containing the active tokenizer/detokenizer weights.
+        latent_scaling (FLOAT): Amplitude multiplier for the generated 25Hz tensor.
+        
+    Outputs:
+        semantic_hints (SEMANTIC_HINTS): 25Hz latent representation formatted for specific VAE routes.
+    """
 
     @classmethod
     def INPUT_TYPES(s):

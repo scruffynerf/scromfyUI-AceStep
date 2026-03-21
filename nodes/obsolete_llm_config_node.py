@@ -1,7 +1,18 @@
 """AceStep5HzLMConfig node for ACE-Step"""
 
 class AceStep5HzLMConfig:
-    """Configures Language Model parameters for ACE-Step generation"""
+    """Configures Language Model parameters for ACE-Step generation.
+    
+    Inputs:
+        temperature (FLOAT): Sampling temperature.
+        cfg_scale (FLOAT): Classifier-free guidance.
+        top_k (INT): Top-K sampling bounds.
+        top_p (FLOAT): Top-P (nucleus) sampling bounds.
+        negative_prompt (STRING): Text to steer away from.
+        
+    Outputs:
+        lm_config (DICT): Encapsulated parameter dictionary.
+    """
     
     @classmethod
     def INPUT_TYPES(s):
@@ -18,7 +29,7 @@ class AceStep5HzLMConfig:
     RETURN_TYPES = ("DICT",)
     RETURN_NAMES = ("lm_config",)
     FUNCTION = "build_config"
-    CATEGORY = "Scromfy/Ace-Step/LLM"
+    CATEGORY = "Scromfy/Ace-Step/obsolete"
 
     def build_config(self, temperature, cfg_scale, top_k, top_p, negative_prompt):
         return ({
@@ -35,5 +46,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStep5HzLMConfig": "5Hz LLM Config",
+    "AceStep5HzLMConfig": "5Hz LLM Config (OBSOLETE)",
 }

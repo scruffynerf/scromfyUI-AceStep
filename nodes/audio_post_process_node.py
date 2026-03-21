@@ -5,7 +5,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 class AceStepPostProcess:
-    """Post-process audio with de-esser and spectral smoothing"""
+    """Post-process generated audio with a tuned de-esser and spectral smoothing.
+    
+    Utilizes localized STFT to surgically reduce high-frequency harshness (6kHz+) 
+    and applies convolutional smoothing across frequency bands to reduce robotic artifacts.
+    
+    Inputs:
+        audio (AUDIO): The raw waveform dictionary.
+        de_esser_strength (FLOAT): Intensity of high-frequency attenuation.
+        spectral_smoothing (FLOAT): Intensity of convolutional smoothing.
+        
+    Outputs:
+        audio (AUDIO): The mastered waveform.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

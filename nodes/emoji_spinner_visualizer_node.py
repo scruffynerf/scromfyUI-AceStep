@@ -5,6 +5,30 @@ import torchaudio.transforms as T
 from .flex_audio_visualizer_contour_node import ScromfyFlexAudioVisualizerContourNode
 
 class ScromfyEmojiSpinnerVisualizerNode(ScromfyFlexAudioVisualizerContourNode):
+    """A hybrid visualizer that prepends an animated emoji sequence before dropping into a Contour Visualizer.
+    
+    Used to create TikTok-style intro hooks (e.g., a spinning record or pulsing emoji) that 
+    play once before seamlessly transitioning into a standard audio-reactive visualization.
+    Inherits all rendering capabilities from the ScromfyFlexAudioVisualizerContourNode.
+    
+    Inputs:
+        [Inherits all standard inputs from ScromfyFlexAudioVisualizerContourNode]
+        spinner_frames (IMAGE): A pre-rendered sequence of images (the "spinner") to play first.
+        spinner_audio (AUDIO): The specific sound effect or intro audio matching the spinner_frames.
+        spinner_mask (MASK): Custom mask passed directly to the underlying Contour visualizer.
+        
+    Optional Inputs:
+        [Inherits all standard optional inputs from ScromfyFlexAudioVisualizerContourNode]
+        
+    Outputs:
+        IMAGE: The fully composed sequence (Spinner phase + Visualizer phase).
+        MASK: The alpha mask for the sequence.
+        SETTINGS (STRING): Debug record of active parameters.
+        SOURCE_MASK: The successfully captured and sized reference mask.
+        LAYER_MAP: Diagram representing hierarchical depths of the mask contours.
+        AUDIO: The concatenated audio stream (spinner_audio + main audio).
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         base_inputs = super().INPUT_TYPES()

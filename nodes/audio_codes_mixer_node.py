@@ -11,9 +11,27 @@ from .includes.fsq_utils import (
 logger = logging.getLogger(__name__)
 
 class AceStepAudioCodesMixer:
-    """
-    Mix two sets of audio codes in 6d FSQ space.
-    Provides functionality equivalent to AceStepTensorMixer but for discrete tokens.
+    """A robust binary toolbox for mixing two sets of list-based audio codes in raw 6D FSQ space.
+    
+    Temporarily decodes 5Hz token IDs into continuous mathematical space, performs 
+    the selected blending math (lerp, inject, multiply, etc.), and re-quantizes 
+    them back to valid discrete IDs for the DiT.
+    
+    Inputs:
+        audio_codes_A (LIST): Primary structural token list.
+        audio_codes_B (LIST): Secondary structural token list.
+        mode (STRING): The mathematical blending operation to apply.
+        alpha (FLOAT): Primary blend weighting.
+        ratio (FLOAT): Secondary blend weighting.
+        weight (FLOAT): Strength multiplier for difference injections.
+        eps (FLOAT): Threshold for dominant/recessive blending.
+        scale_mode (STRING): Handling logic for sequences of mismatched lengths.
+        
+    Optional Inputs:
+        mask (MASK): Allows for temporal/spatial masking of the blend operation.
+        
+    Outputs:
+        audio_codes (LIST): The newly mixed structural tokens.
     """
     
     @classmethod

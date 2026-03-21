@@ -5,7 +5,21 @@ import torch
 from safetensors.torch import save_file
 
 class AceStepConditioningSave:
-    """Save conditioning components to separate files (safetensors for tensors, json for codes)"""
+    """Exports a full ACE-Step conditioning bundle into standardized on-disk components.
+    
+    Breaks down the complex CONDITIONING object (which contains the primary timbre tensor 
+    and a metadata dictionary of lyrics, pooled outputs, and structural codes) and saves 
+    each piece as a distinct file (`_timbre.safetensors`, `_lyrics.safetensors`, `_codes.json`) 
+    sharing a common filename prefix for easy loading later.
+    
+    Inputs:
+        conditioning (CONDITIONING): The fully assembled bundle to save.
+        save_path (STRING): The directory path to write to (default: `output/conditioning`).
+        filename_prefix (STRING): The base name for the generated files.
+        
+    Outputs:
+        (None) - This is an output node.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

@@ -26,7 +26,7 @@ class ScromfyMaskPickerNode:
 
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "pick"
-    CATEGORY = "Scromfy/Ace-Step/Visualizers"
+    CATEGORY = "Scromfy/Ace-Step/Misc"
 
     def pick(self, mask_name):
         if mask_name == "none":

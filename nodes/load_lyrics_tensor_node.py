@@ -11,7 +11,20 @@ def get_lyrics_files():
     return sorted(files) + ["none", "random"]
 
 class AceStepLyricsTensorLoader:
-    """Load a lyrics conditioning tensor from disk"""
+    """Loads a continuous 25Hz lyrics guidance tensor from disk.
+    
+    Reads isolated, pre-encoded vocal timing/guidance tensors from safetensors 
+    files located in the `output/conditioning` directory. Useful for explicitly 
+    pasting the vocal performance of one song onto the instrumental of another.
+    
+    Inputs:
+        lyrics_file (STRING): Filename of the target `_lyrics.safetensors` file.
+        seed (INT): RNG seed used solely when file selection is set to 'random'.
+        
+    Outputs:
+        lyrics_tensor (TENSOR): The dense 25Hz vocal guidance embedding.
+        filename (STRING): The base name of the loaded file for downstream tagging.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

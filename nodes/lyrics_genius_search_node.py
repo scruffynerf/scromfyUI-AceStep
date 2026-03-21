@@ -5,7 +5,16 @@ from lyricsgenius import Genius
 from .includes.lyrics_utils import load_lyrics_from_disk, save_lyrics_to_disk
 
 class AceStepGeniusLyricsSearch:
-    """Fetch lyrics from Genius.com using their API"""
+    """Fetch lyrics from Genius.com using their API based on specific artist/title.
+    
+    Inputs:
+        artist_name (STRING): Artist to search for.
+        song_title (STRING): Song to search for.
+        save_lyrics (BOOLEAN): Save hit to local /lyrics cache.
+        
+    Outputs:
+        lyrics (STRING): The raw lyrics.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

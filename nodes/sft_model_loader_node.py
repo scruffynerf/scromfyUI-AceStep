@@ -11,6 +11,20 @@ import torch
 class ScromfyAceStepModelLoader:
     """Specialized loader for AceStep 1.5 SFT model triplets.
     Handles loading the Diffusion model (DiT), dual CLIP encoders (Qwen), and VAE.
+    
+    Inputs:
+        diffusion_model (STRING): Path to DiT model.
+        text_encoder_1 (STRING): Path to text/lyrics Qwen.
+        text_encoder_2 (STRING): Path to audio tags Qwen.
+        vae_name (STRING): Path to audio VAE.
+        
+    Optional Inputs:
+        lora_stack (ACESTEP_LORA): Stack of LoRAs to merge sequentially upon loading the base models.
+        
+    Outputs:
+        model (MODEL): Base ACE-Step model.
+        clip (CLIP): Dual text encoders.
+        vae (VAE): Audio VAE.
     """
     @classmethod
     def INPUT_TYPES(cls):

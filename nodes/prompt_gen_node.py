@@ -2,32 +2,24 @@
 import random
 import re
 from .includes.prompt_utils import get_available_components, get_visible_components, get_component, expand_wildcards
-
-
-def _choices_for(items):
-    """Build the dropdown list: none, random, random2, then all items (deduplicated and friendly formatting)."""
-    if not items:
-        return ["none", "random", "random2"]
-        
-    if isinstance(items, dict):
-        items = items.keys()
-    
-    raw_set = set(items)
-    # Natural sort based on clean name
-    sorted_raw = sorted(list(raw_set), key=lambda x: str(x).strip("_").lower())
-    
-    choices = []
-    for item in sorted_raw:
-        s = str(item)
-        if s.startswith("__") and s.endswith("__") and len(s) > 4:
-            # Transform __WILDCARD__ to (wildcard) for UI (lowercase to match others)
-            choices.append(f"({s[2:-2].lower()})")
-        else:
-            choices.append(s)
-            
-    return ["none", "random", "random2"] + choices
+from .includes.mapping_utils import get_choices_for
 
 class ScromfyAceStepPromptGen:
+    """Dynamic multi-category prompt generator using weighted tags.
+    
+    Scans the prompt_components/ directory to expose dropdowns of musical features 
+    (genres, moods, instruments, setups) and allows for specific string selection or randomization.
+    
+    Inputs:
+        [Dynamic Categories]: Dropdowns for each visible component in prompt_utils.
+        
+    Optional Inputs:
+        seed (INT): Deterministic RNG seed for the randomization selections.
+        
+    Outputs:
+        combined_prompt (STRING): The full concatenated master string.
+        [category]_text (STRING): Individual outputs for each evaluated component.
+    """
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -35,7 +27,7 @@ class ScromfyAceStepPromptGen:
         # Only show visible components in the UI
         for name in get_visible_components():
             items = get_component(name)
-            inputs[name] = (_choices_for(items), {"default": "none"})
+            inputs[name] = (get_choices_for(items), {"default": "none"})
         inputs["seed"] = ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF})
         return {"required": inputs}
 

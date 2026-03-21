@@ -15,6 +15,16 @@ from .includes.whisper_utils import (
 )
 
 class AceStepLoadFasterWhisperModel:
+    """Loads a Faster-Whisper model for local audio transcription.
+    
+    Inputs:
+        model (STRING): Selected model size/name.
+        device (STRING): CPU/CUDA target.
+        compute_type (STRING): Quantization/precision.
+        
+    Outputs:
+        model (FASTER_WHISPER_MODEL): Loaded transcription model.
+    """
     @classmethod
     def INPUT_TYPES(s):
         models = list(collect_model_paths().keys())
@@ -47,6 +57,20 @@ class AceStepLoadFasterWhisperModel:
         return (whisper_model,)
 
 class AceStepFasterWhisperTranscription:
+    """Transcribes audio using a loaded Faster-Whisper model.
+    Supports subtitle generation, VAD filtering, and multi-language.
+    
+    Inputs:
+        model (FASTER_WHISPER_MODEL): Loader output.
+        audio (AUDIO): Target audio waveform.
+        (Optional variables: language, task, beam_size, vad_filter, etc.)
+        
+    Outputs:
+        transcriptions (TRANSCRIPTIONS): Raw segment dictionary array.
+        srt_text (STRING): SubRip formatted string.
+        vtt_text (STRING): WebVTT formatted string.
+        lrc_text (STRING): Lyric-sync formatted string.
+    """
     @classmethod
     def INPUT_TYPES(s):
         langs = ["auto"] + sorted(list(FULL_LANG_MAPPING.keys()))
@@ -221,6 +245,16 @@ class AceStepFasterWhisperTranscription:
         return (results, srt, vtt, lrc)
 
 class AceStepSaveSubtitleLyrics:
+    """Utility to save generated subtitle/lyrics strings to disk.
+    
+    Inputs:
+        text (STRING): The subtitle text content.
+        filepath_base (STRING): Absolute path without extension.
+        extension (STRING): Target format (.srt, .vtt, .lrc).
+        
+    Outputs:
+        filepath (STRING): Absolute path to the saved file.
+    """
     @classmethod
     def INPUT_TYPES(s):
         return {

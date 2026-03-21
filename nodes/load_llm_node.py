@@ -12,7 +12,16 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class AceStepLLMLoader:
-    """Load an ACE-Step 5Hz LM (Qwen) for standalone text generation"""
+    """Load an ACE-Step 5Hz LM (Qwen) for standalone text generation.
+    
+    Inputs:
+        model_name (STRING): Target model folder/file.
+        device (STRING): CPU/CUDA target.
+        precision (STRING): Float format (fp16, bf16, fp32).
+        
+    Outputs:
+        llm (ACE_LLM): Loaded HuggingFace pipeline dictionary.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

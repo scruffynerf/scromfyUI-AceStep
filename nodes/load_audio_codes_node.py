@@ -11,7 +11,20 @@ def get_codes_files():
     return sorted(files) + ["none", "random"]
 
 class AceStepAudioCodesLoader:
-    """Load audio codes from disk"""
+    """Loads a raw JSON list of 5Hz structural audio codes from disk.
+    
+    Reads pre-extracted or pre-generated structural prompt tokens from the 
+    `output/conditioning` directory, returning them as a native Python list 
+    ready for injection into a conditioning bundle.
+    
+    Inputs:
+        audio_codes_file (STRING): Filename of the target `_codes.json` file.
+        seed (INT): RNG seed used solely when file selection is set to 'random'.
+        
+    Outputs:
+        audio_codes (LIST): The loaded structural token IDs.
+        filename (STRING): The base name of the loaded file for downstream tagging.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

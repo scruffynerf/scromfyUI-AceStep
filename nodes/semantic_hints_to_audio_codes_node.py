@@ -7,7 +7,20 @@ from .includes.fsq_utils import fsq_encode_to_indices
 logger = logging.getLogger(__name__)
 
 class AceStepSemanticHintsToAudioCodes:
-    """Convert 25Hz semantic hints back to 5Hz audio codes (lossy)."""
+    """Downsamples 25Hz semantic hint tensors back to 5Hz explicit audio code token IDs.
+    
+    WARNING: This process is fundamentally lossy. It forces rich 25Hz continuous 
+    embeddings backwards through an attention pooler and quantization layer, 
+    resulting in significant fidelity loss. Use with caution.
+    
+    Inputs:
+        semantic_hints (SEMANTIC_HINTS): The 25Hz continuous embedding tensor.
+        model (MODEL): Base model object containing the active tokenizer/detokenizer weights.
+        latent_scaling (FLOAT): Input amplitude adjustment prior to downsampling.
+        
+    Outputs:
+        audio_codes (LIST): The newly derived, highly compressed 5Hz token IDs.
+    """
 
     @classmethod
     def INPUT_TYPES(s):

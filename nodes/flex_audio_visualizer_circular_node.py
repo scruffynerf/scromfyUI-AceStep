@@ -4,6 +4,38 @@ import torch
 from .includes.visualizer_utils import FlexAudioVisualizerBase, BaseAudioProcessor, get_color_for_frequency, parse_color
 
 class ScromfyFlexAudioVisualizerCircularNode(FlexAudioVisualizerBase):
+    """Generates an audio-reactive circular visualization driven by the Flex System.
+    
+    Reacts to audio parameters established by a visualizer settings node to render
+    expanding rings, sunbursts, or inward-collapsing circles of audio amplitude data.
+    
+    Inputs:
+        audio (AUDIO): Base waveform for synchronization and analysis.
+        frame_rate (FLOAT): Target FPS for the output sequence.
+        screen_width (INT): Output pixel width.
+        screen_height (INT): Output pixel height.
+        strength (FLOAT): Opacity of the rendered visualizer overlay.
+        feature_param (STRING): Dynamic parameter mapped to the feature_mode logic.
+        feature_mode (STRING): Mathematical operation applied to feature_param.
+        feature_threshold (FLOAT): Activation gate for feature modulation.
+        radius (FLOAT): Max absolute boundary limit in pixels for the circle.
+        base_radius (FLOAT): Minimum static resting size in pixels.
+        amplitude_scale (FLOAT): Multiplier determining how violently boundaries react to volume.
+        bar_length_mode (STRING): Controls whether amplitude maps to 'absolute' pixels or 'relative' scaling.
+    
+    Optional Inputs:
+        mask (MASK): Reference geometry mask passed downwards or used as a rendering bounds clipper.
+        opt_feature (FLOAT): Injection array for specific feature parameters.
+        background (IMAGE): Optional underlying background overlay for blending.
+        settings (VISUALIZER_SETTINGS): The master configuration dictionary controlling colors and frequencies.
+        
+    Outputs:
+        IMAGE: The fully composed visualizer sequence frames.
+        MASK: An alpha channel sequence of the generated solid pixels.
+        SETTINGS (STRING): A JSON-safe debug record of all active parameters on the node.
+        SOURCE_MASK: The passed-through or auto-generated reference mask.
+    """
+
     @classmethod
     def INPUT_TYPES(cls):
         base_inputs = super().INPUT_TYPES()

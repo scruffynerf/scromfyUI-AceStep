@@ -185,6 +185,20 @@ class WikipediaRandomNode:
     - Truly Random: Global random page.
     - Word Search: Search keywords and pick random result from top 50.
     - Category Search: Pick random page from a specific category.
+    
+    Inputs:
+        mode (STRING): Search methodology.
+        category (STRING): Target category if in Category Search mode.
+        search_keyword (STRING): Target keyword if in Word Search mode.
+        language (STRING): Wikipedia subdomain (e.g., "en").
+        user_agent (STRING): API identification header.
+        seed (INT): Deterministic RNG seed.
+        clean_content (BOOLEAN): Strips footers/references.
+        
+    Outputs:
+        title (STRING): Found page title.
+        content (STRING): Page body text.
+        url (STRING): Direct link to article.
     """
 
     @classmethod
@@ -204,7 +218,7 @@ class WikipediaRandomNode:
     RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("title", "content", "url")
     FUNCTION = "fetch"
-    CATEGORY = "Scromfy/Ace-Step/Lyrics/misc"
+    CATEGORY = "Scromfy/Ace-Step/Misc"
 
     def fetch(self, mode, category, search_keyword, language, user_agent, seed, clean_content=True):
         rng = random.Random(seed)

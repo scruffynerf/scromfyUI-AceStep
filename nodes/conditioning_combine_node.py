@@ -3,7 +3,25 @@ import torch
 import os
 
 class AceStepConditioningCombine:
-    """Assemble separate components into a full ACE-Step conditioning"""
+    """Assembles separate raw tensors and lists back into a single legal ComfyUI conditioning object.
+    
+    Acts as the counterpart to the Splitter. Missing inputs are automatically padded 
+    or backfilled according to the selected empty_mode, ensuring the resulting bundle 
+    is structurally sound for the Ace-Step sampler.
+    
+    Inputs:
+        empty_mode (STRING): Fill logic for missing tensors ('zeros', 'ones', 'random').
+        seed (INT): RNG seed for the 'random' empty_mode.
+        
+    Optional Inputs:
+        timbre_tensor (TENSOR): Custom background/style guidance.
+        pooled_output (TENSOR): Pooled sequence output guidance.
+        lyrics_tensor (TENSOR): Explicit vocal timing/guidance tensor.
+        audio_codes (LIST): Structural prompt token IDs.
+        
+    Outputs:
+        CONDITIONING: The fully assembled conditioning bundle.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

@@ -2,6 +2,42 @@ import numpy as np
 import os
 
 class ScromfyFlexVisualizerSettingsNode:
+    """Global configuration settings for the Flex Visualizer system.
+    
+    This node defines the audio analysis parameters (FFT vs waveform), color assignment logic,
+    global motion properties, and how the visualizer responds to audio frequencies. It outputs
+    a VISUALIZER_SETTINGS dictionary that drives the rendering of downstream visualizer nodes
+    (Circular, Line, Contour).
+    
+    Inputs:
+        randomize (BOOLEAN): Auto-vary parameters between batches.
+        seed (INT): RNG seed for randomization.
+        loop_background (BOOLEAN): Loop the background video (True) or clamp (False).
+        use_mask_as_visibility_filter (BOOLEAN): If True, restrict rendering strictly to the alpha of the reference mask.
+        visualization_feature (STRING): 'frequency' (FFT) or 'waveform' (raw amplitude).
+        num_points (INT): Resolution of the generated geometry.
+        smoothing (FLOAT): Temporal smoothing applied to the audio output.
+        fft_size (INT): Window size for frequency analysis.
+        min_frequency (FLOAT): Lower bound for bass response.
+        max_frequency (FLOAT): Upper bound for treble response.
+        visualization_method (STRING): Rendering style ('bar' or 'line').
+        color_mode (STRING): Determines how colors are assigned (e.g., 'spectrum', 'radial', 'schema').
+        color_schema (STRING): Base palette selection from local color_schemas folder.
+        custom_color (COLOR): Hex fallback color.
+        color_shift (FLOAT): Global hue offset sequence cycle.
+        saturation (FLOAT): Global intensity multiplier.
+        brightness (FLOAT): Global brightness multiplier.
+        line_width (INT): Thickness of rendered strokes in pixels.
+        direction (STRING): Vector flow (e.g., 'outward', 'inward', 'centroid').
+        sequence_direction (STRING): Data distribution around the geometry.
+        direction_skew (FLOAT): Global angular rotation offset for strokes (degrees).
+        centroid_offset_x (FLOAT): Focal offset along the X-axis for 'centroid' direction mode (percent).
+        centroid_offset_y (FLOAT): Focal offset along the Y-axis for 'centroid' direction mode (percent).
+        
+    Outputs:
+        settings (VISUALIZER_SETTINGS): A dictionary encapsulating the global configuration state.
+    """
+    
     @classmethod
     def _get_schema_names(cls):
         schemas_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "color_schemas")

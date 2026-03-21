@@ -1,7 +1,14 @@
 """AceStepLyricsFormatter node for ACE-Step"""
 
 class AceStepLyricsFormatter:
-    """Auto-format lyrics with ACE-Step required tags and line length limits"""
+    """Auto-format lyrics with ACE-Step required tags and line length limits.
+    
+    Inputs:
+        lyrics (STRING): Multiline raw lyrics text.
+        
+    Outputs:
+        formatted_lyrics (STRING): Lyrics parsed with proper line breaks and [Intro]/[Outro] tags.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

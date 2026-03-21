@@ -7,7 +7,16 @@ import hashlib
 from comfy.comfy_types import FileLocator
 
 class ScromfyLoadAudio:
-    """Load audio files (mp3, flac, wav, ogg)"""
+    """Load audio files (mp3, flac, wav, ogg) from the ComfyUI input directory.
+    
+    Automatically resamples to the expected 44.1kHz stereo geometry required by ACE-Step.
+    
+    Inputs:
+        audio (STRING): Dropdown of audio files located in the ComfyUI input directory.
+        
+    Outputs:
+        audio (AUDIO): Standard audio dict {waveform, sample_rate}.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

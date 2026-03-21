@@ -7,7 +7,18 @@ from .includes.lyrics_utils import get_random_cached_lyric, save_lyrics_to_disk
 
 
 class AceStepRandomLyrics:
-    """Pick a random song ID on Genius and return its lyrics. Retries until lyrics are found."""
+    """Pick a random song ID on Genius and return its lyrics. Retries until lyrics are found.
+    
+    Inputs:
+        seed (INT): Deterministic RNG seed.
+        mode (STRING): 'save' (fetch and cache), 'offline' (fetch from cache), 'no-save'.
+        max_retries (INT): Fetch attempts before failing.
+        
+    Outputs:
+        lyrics (STRING): The raw lyrics.
+        title (STRING): Detected song title.
+        artist (STRING): Detected artist name.
+    """
 
     MAX_RETRIES = 20
     MAX_SONG_ID = 1_000_000

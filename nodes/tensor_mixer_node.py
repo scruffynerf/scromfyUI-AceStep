@@ -3,7 +3,28 @@ import torch
 import torch.nn.functional as F
 
 class AceStepTensorMixer:
-    """Consolidated Binary Toolbox for mixing and combining two tensors with optional masking"""
+    """A comprehensive mathematical toolbox for blending, masking, and combining two continuous tensors.
+    
+    Operates on dense continuous embeddings (like the `timbre_tensor` or `lyrics_tensor`). 
+    Allows for complex audio algebra such as blending instruments, injecting vocal styles, 
+    or applying specific rhythmic masks.
+    
+    Inputs:
+        tensor_A (TENSOR): Primary continuous tensor.
+        tensor_B (TENSOR): Secondary continuous tensor.
+        mode (STRING): The mathematical blending operation to apply.
+        alpha (FLOAT): Primary blend weighting.
+        ratio (FLOAT): Secondary blend weighting.
+        weight (FLOAT): Strength multiplier for difference injections.
+        eps (FLOAT): Threshold for dominant/recessive blending.
+        scale_mode (STRING): Handling logic for sequences of mismatched lengths.
+        
+    Optional Inputs:
+        mask (MASK): Allows for temporal/spatial masking of the blend operation.
+        
+    Outputs:
+        TENSOR: The newly mathematically mixed tensor.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

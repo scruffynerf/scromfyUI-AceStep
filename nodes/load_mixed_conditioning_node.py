@@ -19,7 +19,24 @@ def get_conditioning_files(suffix):
     return ["random", "none"] + sorted(newfiles + inputfiles)
 
 class AceStepConditioningMixerLoader:
-    """Load and mix specific conditioning components from saved files (safetensors/json)"""
+    """Arbitrarily mixes and matches isolated conditioning components directly from disk.
+    
+    Allows for immediate "Frankenstein" conditioning generation at the loading stage. 
+    You can pick the lyrics tensor from Song A, the timbre tensor from Song B, and 
+    the structural codes from Song C, while automatically padding missing components 
+    with zeros, silence, or noise.
+    
+    Inputs:
+        timbre_tensor_file (STRING): Explicit `_timbre` file to load.
+        lyrics_file (STRING): Explicit `_lyrics` file to load.
+        audio_codes_file (STRING): Explicit `_codes` file to load.
+        empty_mode (STRING): Fill logic for unselected components ('silence', 'zeros', etc.).
+        seed (INT): RNG seed for random mode generation or file selection.
+        
+    Outputs:
+        conditioning (CONDITIONING): The custom assembled conditioning bundle.
+        conditioning_info (STRING): A concatenated text string detailing the chosen components.
+    """
     
     @classmethod
     def INPUT_TYPES(s):
@@ -104,35 +121,40 @@ class AceStepConditioningMixerLoader:
             # Check for explicit empty lyrics file if requested or as primary fallback for lyrics
             if is_lyrics or mode == "silence":
                 try:
-                    # Resolve path relative to this file
                     base_dir = os.path.dirname(__file__)
-                    if mode == "silence":
-                        filename = "silence.safetensors"
+                    if mode == "silence" and not is_lyrics:
+                        import comfy.ldm.ace.ace_step15
+                        # get_silence_latent returns [1, 64, L], we want [1, L, D] (where D is 64 here)
+                        loaded = comfy.ldm.ace.ace_step15.get_silence_latent(l, dev).permute(0, 2, 1)
                     else:
                         filename = "empty_lyrics.safetensors"
-                    empty_path = os.path.join(base_dir, "includes", "emptytensors", filename)
-                    if os.path.exists(empty_path):
-                        from safetensors.torch import load_file
-                        if filename == "silence.safetensors":
-                            loaded = load_file(empty_path).get("silence")
-                        else:
+                        empty_path = os.path.join(base_dir, "includes", "emptytensors", filename)
+                        if os.path.exists(empty_path):
+                            from safetensors.torch import load_file
                             loaded = load_file(empty_path).get("lyrics")
-                        if loaded is not None:
-                            # Ensure it has batch dim
-                            if loaded.dim() == 2:
-                                loaded = loaded.unsqueeze(0)
+                        else:
+                            loaded = None
                             
-                            # Interpolate to match target sequence length if different
-                            if loaded.shape[0] != b or loaded.shape[1] != l:
-                                # [B, L, D] -> [B, D, L] for interpolate
-                                loaded = loaded.permute(0, 2, 1)
-                                loaded = torch.nn.functional.interpolate(loaded, size=l, mode='linear', align_corners=False)
-                                # [B, D, L] -> [B, L, D]
-                                loaded = loaded.permute(0, 2, 1)
-                                
-                            return loaded.to(dev)
+                    if loaded is not None:
+                        # Ensure it has batch dim
+                        if loaded.dim() == 2:
+                            loaded = loaded.unsqueeze(0)
+                        
+                        # Fix batch size if needed
+                        if loaded.shape[0] != b:
+                            loaded = loaded.expand(b, -1, -1)
+                        
+                        # Interpolate to match target sequence length if different
+                        if loaded.shape[1] != l:
+                            # [B, L, D] -> [B, D, L] for interpolate
+                            loaded = loaded.permute(0, 2, 1)
+                            loaded = torch.nn.functional.interpolate(loaded, size=l, mode='linear', align_corners=False)
+                            # [B, D, L] -> [B, L, D]
+                            loaded = loaded.permute(0, 2, 1)
+                            
+                        return loaded.to(dev)
                 except Exception as e:
-                    print(f"AceStepMixerLoader: Failed to load safetensors from includes/emptytensors: {e}")
+                    print(f"AceStepMixerLoader: Failed to load emptytensor: {e}")
 
             if mode == "zeros":
                 return torch.zeros((b, l, d), device=dev)

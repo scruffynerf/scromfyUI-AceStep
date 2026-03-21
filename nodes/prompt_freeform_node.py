@@ -3,7 +3,18 @@ import random
 from .includes.prompt_utils import expand_wildcards
 
 class AceStepPromptFreeform:
-    """Resolve wildcards in freeform text using prompt components"""
+    """Resolve wildcards in freeform text using prompt components.
+    
+    Acts as a passthrough for raw string data, but scans for __WILDCARD__ syntax 
+    and replaces them dynamically with entries from the prompt_components/ dictionaries.
+    
+    Inputs:
+        text (STRING): The multiline raw text containing wildcards.
+        seed (INT): Deterministic seed for wildcard randomization.
+        
+    Outputs:
+        text (STRING): The resolved text string.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):

@@ -2,7 +2,24 @@
 import torch
 
 class AceStepAudioMask:
-    """Generate time-based audio mask for inpainting"""
+    """Generates a temporal mask (0.0 to 1.0) mathematically synchronized to an input audio file.
+    
+    Calculates the exact sequence length required for ACE-Step by analyzing the 
+    provided audio's sample rate and duration, ensuring the generated mask aligns 
+    perfectly with the model's 10.76Hz downsampled latent space.
+    
+    Inputs:
+        audio (AUDIO): The reference audio dictionary (from a Load Audio node).
+        mode (STRING): Masking shape (range, fraction, ramp, window, etc.).
+        start_seconds (FLOAT): Start time in seconds for range/window modes.
+        end_seconds (FLOAT): End time in seconds for range/window modes.
+        fraction (FLOAT): Percentage point for fraction split mode.
+        ramp_seconds (FLOAT): Duration of fade in/out slopes in window mode.
+        reverse (BOOLEAN): Inverts the entire calculated mask.
+        
+    Outputs:
+        MASK: A properly shaped `[1, N, 1]` temporal mask tensor.
+    """
     
     @classmethod
     def INPUT_TYPES(cls):
@@ -79,7 +96,8 @@ class AceStepAudioMask:
             mask = 1.0 - mask
             
         # Reshape to [1, N, 1] to match ACE-Step requirements
-        return (mask.clamp(0, 1)[None, :, None],)
+        # Use torch.clamp instead of mask.clamp to help the linter understand it's a tensor operation
+        return (torch.clamp(mask, 0.0, 1.0)[None, :, None],)
 
 
 NODE_CLASS_MAPPINGS = {

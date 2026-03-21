@@ -29,6 +29,34 @@ class ScromfyAceStepSampler:
     """Specialized KSampler for AceStep 1.5 SFT.
     Supports APG (Adaptive Projected Guidance), ADG (Angle-based Dynamic Guidance),
     Omega/ERG scaling, guidance intervals, split guidance, and reference audio.
+    
+    Inputs:
+        model (MODEL): Base ACE-Step model.
+        positive (CONDITIONING): Positive prompt conditioning.
+        negative (CONDITIONING): Negative prompt conditioning.
+        latent_image (LATENT): Starting input latent.
+        seed (INT): RNG seed.
+        steps (INT): Sampling steps (baseline uses 60 for SFT, 8 for Turbo).
+        cfg (FLOAT): Classifier-free guidance.
+        sampler_name (STRING): Diffuser sampler type.
+        scheduler (STRING): Step pacing.
+        denoise (FLOAT): Start strength (1.0 = from scratch).
+        
+    Optional Inputs:
+        vae (VAE): Audio VAE for immediate decoding.
+        source_audio (AUDIO): Starting audio for img2img style generation.
+        reference_audio (AUDIO): Target audio to learn style/timbre from, or remix.
+        reference_as_cover (BOOLEAN): If True, uses reference as base for remix/cover. If False, learns style.
+        audio_cover_strength (FLOAT): Blend strength when reference_as_cover is True (0=remix, 1=exact cover).
+        shift (FLOAT): Timestep schedule shift.
+        custom_timesteps (STRING): Custom comma-separated timesteps (overrides steps, shift and scheduler).
+        sampler_settings (SCROMFY_SAMPLER_SETTINGS): Complex sampler settings bundle.
+        vae_decode_settings (SCROMFY_VAE_SETTINGS): VAE decode settings bundle.
+        mask (MASK): Inpainting mask for partial generation.
+        
+    Outputs:
+        latent (LATENT): Sampled latent audio tensor.
+        audio (AUDIO): Decoded audio waveform (if VAE is connected).
     """
     @classmethod
     def INPUT_TYPES(cls):

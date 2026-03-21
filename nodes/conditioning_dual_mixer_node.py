@@ -2,7 +2,23 @@
 import torch
 
 class AceStepConditioningMixer:
-    """Mix components (timbre tensor, pooled output, lyrics, audio codes) from two conditioning inputs"""
+    """Selectively routes internal components from two different conditioning inputs.
+    
+    Allows for "Frankenstein" conditioning bundles by picking and choosing specific 
+    tensors from different source prompts (e.g., taking the lyrics guidance from Song A 
+    but the structural audio codes from Song B).
+    
+    Inputs:
+        conditioning_A (CONDITIONING): First source bundle.
+        conditioning_B (CONDITIONING): Second source bundle.
+        timbre_tensor_source (STRING): Source selection for style ('A', 'B', 'none').
+        pooled_output_source (STRING): Source selection for pooled features ('A', 'B', 'none').
+        lyrics_source (STRING): Source selection for vocal timing/content ('A', 'B', 'none').
+        audio_codes_source (STRING): Source selection for structural tokens ('A', 'B', 'none').
+        
+    Outputs:
+        CONDITIONING: The newly mixed conditioning bundle.
+    """
     
     @classmethod
     def INPUT_TYPES(s):

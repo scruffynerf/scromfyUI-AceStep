@@ -10,6 +10,18 @@ from comfy_api.latest import Input, InputImpl, Types
 from comfy.cli_args import args
 
 class ScromfySaveVideo(ComfyNodeABC):
+    """Saves the input video to your ComfyUI output directory and returns the absolute path.
+    
+    Inputs:
+        video (VIDEO): Animated frame sequence.
+        filename_prefix (STRING): Save path prefix.
+        format (STRING): Output container type (.mp4, .webm).
+        codec (STRING): Compression codec.
+        remove_extension (BOOLEAN): Whether to strip the extension from the output path.
+        
+    Outputs:
+        filepath (STRING): Absolute path to the saved video file.
+    """
     def __init__(self):
         self.output_dir = folder_paths.get_output_directory()
         self.type: Literal["output"] = "output"

@@ -3,7 +3,21 @@ import os
 from safetensors.torch import save_file
 
 class AceStepTensorSave:
-    """Save an individual conditioning tensor (timbre or lyrics) to disk"""
+    """Exports an isolated continuous guidance tensor (Timbre or Lyrics) to disk.
+    
+    Saves the provided continuous tensor directly to a `.safetensors` file. Useful 
+    for isolating specific styles or vocal performances from a complicated workflow 
+    to be reused as raw components in other generations.
+    
+    Inputs:
+        tensor (TENSOR): The raw continuous embedding.
+        save_type (STRING): Designates whether this is a 'timbre' or 'lyric' tensor.
+        save_path (STRING): The directory path to write to (default: `output/conditioning`).
+        filename_prefix (STRING): The base name for the generated file.
+        
+    Outputs:
+        (None) - This is an output node.
+    """
     
     @classmethod
     def INPUT_TYPES(s):
