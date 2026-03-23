@@ -209,7 +209,7 @@ class WikipediaRandomNode:
                 "category": (list(dict.fromkeys(WIKI_CATEGORIES)), {"default": "Music"}),
                 "search_keyword": ("STRING", {"default": "", "multiline": False, "placeholder": "Keyword for Word Search mode"}),
                 "language": (["en", "simple", "zh", "ja", "ko", "es", "fr", "de", "it", "pt", "ru"], {"default": "en"}),
-                "user_agent": ("STRING", {"default": "ScromfyAceStep/1.5 (comfyui)", "multiline": False}),
+                "user_agent": ("STRING", {"default": "ScromfyAce-Step/1.5 (comfyui)", "multiline": False}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffff}),
                 "clean_content": ("BOOLEAN", {"default": True}),
             }

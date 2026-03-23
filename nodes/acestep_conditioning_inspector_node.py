@@ -4,7 +4,7 @@ class AceStepConditioningInspector:
     """
     ACE-Step ▸ Conditioning Inspector — passthrough that prints the dict.
     """
-    CATEGORY = "Scromfy/AceStep/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning"
     FUNCTION = "inspect"
     RETURN_TYPES = ("CONDITIONING",)
     RETURN_NAMES = ("conditioning",)

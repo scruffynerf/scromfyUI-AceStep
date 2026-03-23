@@ -15,7 +15,7 @@ class MatcheringLimiterConfigNode:
     Configure the brickwall limiter used in the Matchering process.
     """
 
-    CATEGORY = "Scromfy/AceStep/Matchering"
+    CATEGORY = "Scromfy/Ace-Step/Matchering"
     FUNCTION = "configure"
     RETURN_TYPES = ("MATCHERING_LIMITER_CONFIG",)
     RETURN_NAMES = ("limiter_config",)

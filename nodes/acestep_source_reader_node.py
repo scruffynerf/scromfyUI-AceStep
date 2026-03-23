@@ -10,7 +10,7 @@ class AceStepSourceReader:
     Reads the prepare_condition method from ace_step15.py and also tries
     injecting VAE latents directly as precomputed_lm_hints_25Hz.
     """
-    CATEGORY = "Scromfy/AceStep/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning"
     FUNCTION = "read"
     RETURN_TYPES = ("CONDITIONING",)
     RETURN_NAMES = ("conditioning",)

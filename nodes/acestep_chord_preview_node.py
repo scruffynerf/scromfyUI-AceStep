@@ -16,7 +16,7 @@ class AceStepChordPreview:
     Renders the section-aware chord audio so you can hear exactly what
     harmonic structure is being injected before committing to a full generation.
     """
-    CATEGORY = "Scromfy/AceStep/Chords"
+    CATEGORY = "Scromfy/Ace-Step/Chords"
     FUNCTION = "preview"
     RETURN_TYPES = ("AUDIO",)
     RETURN_NAMES = ("chord_audio",)

@@ -27,7 +27,7 @@ class MatcheringNode:
     - Result (no limiter, normalized) : pre-limiter, peak-normalized
     """
 
-    CATEGORY = "Scromfy/AceStep/Matchering"
+    CATEGORY = "Scromfy/Ace-Step/Matchering"
     FUNCTION = "matchering"
     RETURN_TYPES = ("AUDIO", "AUDIO", "AUDIO")
     RETURN_NAMES = (

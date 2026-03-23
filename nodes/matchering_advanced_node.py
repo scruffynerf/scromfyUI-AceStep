@@ -18,7 +18,7 @@ class MatcheringAdvancedNode:
     Advanced Matchering node with full parameter control.
     """
 
-    CATEGORY = "Scromfy/AceStep/Matchering"
+    CATEGORY = "Scromfy/Ace-Step/Matchering"
     FUNCTION = "matchering_advanced"
     RETURN_TYPES = ("AUDIO", "AUDIO", "AUDIO")
     RETURN_NAMES = (

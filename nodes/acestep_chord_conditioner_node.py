@@ -23,7 +23,7 @@ class AceStepChordConditioner:
     encodes through the ACE-Step VAE and FSQ quantizer, and injects the
     resulting tokens into the conditioning dict.
     """
-    CATEGORY = "Scromfy/AceStep/Chords"
+    CATEGORY = "Scromfy/Ace-Step/Chords"
     FUNCTION = "generate"
     RETURN_TYPES = ("CONDITIONING",)
     RETURN_NAMES = ("conditioning",)
