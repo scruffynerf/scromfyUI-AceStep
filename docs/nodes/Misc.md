@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD024 -->
 # Misc Nodes
 
 A collection of system-level configs and helper tools for fetching external random data.

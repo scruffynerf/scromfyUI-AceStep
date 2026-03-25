@@ -119,7 +119,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 | `distribute_by` | Strategy for spreading points across the contour hierarchy. |
 | `contour_layers` | Comma-separated list of target layers (e.g. `0,1`). |
 | `contour_color_shift` | Hue variance between different layers (0.0 to 1.0). |
-| `adaptive_point_density`| If True, `num_points` is scaled by the mask perimeter length. |
+| `adaptive_point_density` | If True, `num_points` is scaled by the mask perimeter length. |
 | `min_contour_area` | Ignores shapes smaller than this area in **square pixels**. |
 | `max_contours` | Maximum number of individual shapes to process. |
 | `ghost_mask_strength` | Opacity of the original mask shape preview (0.0 to 1.0). |

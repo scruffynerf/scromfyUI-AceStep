@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD024 -->
 # Whisper Nodes
 
 The Faster Whisper implementation serves two distinct purposes: generating structural transcriptions (VTT, SRT, LRC) for music player visuals, and reverse-analyzing raw audio inputs so the LLM Prompt Generator nodes can have explicit lyrics to describe.

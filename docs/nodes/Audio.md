@@ -155,6 +155,7 @@ Ingests local audio files and safely resamples them to the expected sample rate 
 A powerful audio matching and mastering tool. It 'masters' a target audio track by matching its RMS, frequency response, and peak levels to a reference track.
 
 **Credits:**
+
 - **Matchering Library:** Created by [Sergree (Sergey Grishakov)](https://github.com/sergree/matchering) (GPLv3).
 - **ComfyUI Adaptation:** Originally developed by [MuziekMagie](https://github.com/MuziekMagie/ComfyUI-Matchering).
 
@@ -169,4 +170,3 @@ A powerful audio matching and mastering tool. It 'masters' a target audio track 
 - **`Result`**: Mastered audio with limiter and normalization.
 - **`Result (no limiter)`**: Raw matched audio before the final limiter stage.
 - **`Result (no limiter, normalized)`**: Matched audio with peak normalization but no compression/limiting.
-
