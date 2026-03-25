@@ -1,8 +1,11 @@
 import torch
+import torch.nn as nn
 import logging
 import re
 import json
 import comfy.model_management
+import comfy.utils
+from transformers.generation.streamers import BaseStreamer
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,47 @@ NON_JSON_METADATA_PATTERNS = {
     'language': re.compile(r'Language:\s*(.*)', re.IGNORECASE),
 }
 
+class ComfyStreamer(BaseStreamer):
+    """Bridges HuggingFace token streaming to ComfyUI's progress bar and interrupt checks."""
+
+    def __init__(self, pbar: comfy.utils.ProgressBar):
+        self.pbar = pbar
+
+    def put(self, value):
+        self.pbar.update(1)
+        comfy.model_management.throw_exception_if_processing_interrupted()
+
+    def end(self):
+        pass
+
+class DummyModule(nn.Module):
+    """Silences Qwen2.5-Omni audio-generation head to prevent OOM during text-only inference."""
+
+    def __init__(self, dtype, device):
+        super().__init__()
+        self._dtype = dtype
+        self._device = device
+
+    def forward(self, *args, **kwargs):
+        return torch.tensor([], device=self._device, dtype=self._dtype)
+
+    @property
+    def dtype(self):
+        return self._dtype
+
+    @property
+    def device(self):
+        return self._device
+
+
+def suppress_qwen_audio_output(model, device):
+    """Disable audio generation on a Qwen2.5-Omni model instance to save memory."""
+    if hasattr(model.config, "disable_audio_generation"):
+        model.config.disable_audio_generation = True
+    if hasattr(model, "generation_config") and hasattr(model.generation_config, "disable_audio_generation"):
+        model.generation_config.disable_audio_generation = True
+    if hasattr(model, "token2wav") and not isinstance(model.token2wav, DummyModule):
+        model.token2wav = DummyModule(model.dtype, device)
 
 def expand_prompt_native(model, tokenizer, query, temperature=0.7, top_k=50, top_p=0.9):
     """Natively expand a prompt query using the loaded LLM."""

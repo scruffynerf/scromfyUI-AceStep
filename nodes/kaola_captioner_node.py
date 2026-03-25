@@ -4,7 +4,7 @@ import librosa
 import logging
 import comfy.utils
 import comfy.model_management
-from .includes.qwen_utils import ComfyStreamer, DummyModule, suppress_qwen_audio_output
+from .includes.llm_utils import ComfyStreamer, DummyModule, suppress_qwen_audio_output
 from typing import Dict, Any, Tuple, Optional
 
 logger = logging.getLogger(__name__)

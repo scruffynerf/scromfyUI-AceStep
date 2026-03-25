@@ -7,7 +7,7 @@ The Faster Whisper implementation serves two distinct purposes: generating struc
 
 ## 1. Faster Whisper Loader
 
-*File: `nodes/transcribe_faster_whisper_node.py`*
+*File: `nodes/transcribe_faster_whisper_load_node.py`*
 
 Downloads (if necessary) and loads the optimized CTranslate2 Faster-Whisper models into VRAM.
 
@@ -42,7 +42,7 @@ Executes the loaded model against an `AUDIO` stream. Natively implements Voice A
 
 ## 3. Save Subtitle/Lyrics
 
-*File: `nodes/transcribe_faster_whisper_node.py`*
+*File: `nodes/transcribe_faster_whisper_save_node.py`*
 
 Interprets the JSON transcription blob and exports standard subtitle formats directly to the disk for playback.
 

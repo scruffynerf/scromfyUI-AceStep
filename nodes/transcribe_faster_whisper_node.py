@@ -1,60 +1,13 @@
-import os
 import torch
 import torchaudio
-import numpy as np
-import faster_whisper
-from typing import Union, BinaryIO, Dict, List, Tuple
+import logging
 from comfy.utils import ProgressBar
-import folder_paths
-
 from .includes.whisper_utils import (
-    collect_model_paths, 
     format_subtitles, 
-    AVAILABLE_SUBTITLE_FORMATS,
     FULL_LANG_MAPPING
 )
 
-class AceStepLoadFasterWhisperModel:
-    """Loads a Faster-Whisper model for local audio transcription.
-    
-    Inputs:
-        model (STRING): Selected model size/name.
-        device (STRING): CPU/CUDA target.
-        compute_type (STRING): Quantization/precision.
-        
-    Outputs:
-        model (FASTER_WHISPER_MODEL): Loaded transcription model.
-    """
-    @classmethod
-    def INPUT_TYPES(s):
-        models = list(collect_model_paths().keys())
-        return {
-            "required": {
-                "model": (models,),
-                "device": (['cuda', 'cpu', 'auto'],),
-                "compute_type": (['float16', 'float32', 'int8_float16', 'int8'], {"default": "float16"}),
-            },
-        }
-
-    RETURN_TYPES = ("FASTER_WHISPER_MODEL",)
-    RETURN_NAMES = ("model",)
-    FUNCTION = "load_model"
-    CATEGORY = "Scromfy/Ace-Step/Audio"
-
-    def load_model(self, model: str, device: str, compute_type: str):
-        from .includes.whisper_utils import faster_whisper_model_dir
-        
-        model_name_or_path = collect_model_paths()[model]
-        
-        # Load model
-        whisper_model = faster_whisper.WhisperModel(
-            model_size_or_path=model_name_or_path,
-            device=device,
-            compute_type=compute_type,
-            download_root=faster_whisper_model_dir,
-            local_files_only=False
-        )
-        return (whisper_model,)
+logger = logging.getLogger(__name__)
 
 class AceStepFasterWhisperTranscription:
     """Transcribes audio using a loaded Faster-Whisper model.
@@ -244,53 +197,10 @@ class AceStepFasterWhisperTranscription:
 
         return (results, srt, vtt, lrc)
 
-class AceStepSaveSubtitleLyrics:
-    """Utility to save generated subtitle/lyrics strings to disk.
-    
-    Inputs:
-        text (STRING): The subtitle text content.
-        filepath_base (STRING): Absolute path without extension.
-        extension (STRING): Target format (.srt, .vtt, .lrc).
-        
-    Outputs:
-        filepath (STRING): Absolute path to the saved file.
-    """
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "text": ("STRING", {"forceInput": True}),
-                "filepath_base": ("STRING", {"forceInput": True}),
-                "extension": (AVAILABLE_SUBTITLE_FORMATS, {"default": ".lrc"}),
-            }
-        }
-
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("filepath",)
-    FUNCTION = "save"
-    CATEGORY = "Scromfy/Ace-Step/Lyrics"
-    OUTPUT_NODE = True
-
-    def save(self, text: str, filepath_base: str, extension: str):
-        # Combine base path with chosen extension
-        full_path = filepath_base + extension
-        
-        # Ensure parent directory exists
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        
-        with open(full_path, "w", encoding="utf-8") as f:
-            f.write(text)
-            
-        return (full_path,)
-
 NODE_CLASS_MAPPINGS = {
-    "AceStepLoadFasterWhisperModel": AceStepLoadFasterWhisperModel,
     "AceStepFasterWhisperTranscription": AceStepFasterWhisperTranscription,
-    "AceStepSaveSubtitleLyrics": AceStepSaveSubtitleLyrics,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepLoadFasterWhisperModel": "Faster Whisper Loader",
     "AceStepFasterWhisperTranscription": "Faster Whisper Transcribe",
-    "AceStepSaveSubtitleLyrics": "Save Subtitle/Lyrics (Matched)",
 }

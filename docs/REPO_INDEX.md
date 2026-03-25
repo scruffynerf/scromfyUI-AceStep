@@ -102,7 +102,13 @@ AI interactions, BPM calculations, and formatters to properly align text.
 - `lyrics_genius_search_node.py` — **AceStepGeniusLyricsSearch**: Fetch particular lyrics from Genius.
 - `lyrics_genius_random_node.py` — **AceStepRandomLyrics**: Fetch random Genius lyrics.
 - `lyrics_duration_node.py` — **AceStepLyricsBPMCalculator**: BPM/Duration estimation for lyrics structure.
-- `lyrics_claude_node.py` / `lyrics_gemini_node.py` / `lyrics_groq_node.py` / `lyrics_openai_node.py` / `lyrics_perplexity_node.py` / `lyrics_generic_ai_node.py` — API integrations for procedural generation.
+- `lyrics_claude_node.py` — **AceStepClaudeLyrics**: Procedural generation via Anthropic Claude.
+- `lyrics_gemini_node.py` — **AceStepGeminiLyrics**: Procedural generation via Google Gemini.
+- `lyrics_groq_node.py` — **AceStepGroqLyrics**: Ultra-fast generation via Groq.
+- `lyrics_openai_node.py` — **AceStepOpenAILyrics**: Procedural generation via OpenAI GPT models.
+- `lyrics_perplexity_node.py` — **AceStepPerplexityLyrics**: Research-backed lyrics via Perplexity.
+- `lyrics_generic_ai_node.py` — **AceStepGenericAILyrics**: OpenAI-compatible model support for local/custom LLMs.
+- `lyrics_generic_model_list_node.py` — **AceStepGenericModelList**: Fetch model lists from remote providers.
 
 ### Radio & Playback ([Detailed Specs ➡](nodes/Radio.md))
 
@@ -118,7 +124,9 @@ In-UI playback experiences for Comfy.
 
 ### Whisper Transcription ([Detailed Specs ➡](nodes/Whisper.md))
 
-- `transcribe_faster_whisper_node.py` — Multi-purpose file hosting: **Faster Whisper Loader**, **Transcribe** (VAD-enabled), and **Save Subtitle/Lyrics** (SRT/VTT/LRC generation).
+- `transcribe_faster_whisper_load_node.py` — **Faster Whisper Loader**: Local weights manager.
+- `transcribe_faster_whisper_node.py` — **Faster Whisper Transcribe**: VAD-enabled transcription.
+- `transcribe_faster_whisper_save_node.py` — **Faster Whisper Save**: SRT/VTT/LRC exporter.
 
 ### Misc & Utilities ([Detailed Specs ➡](nodes/Misc.md))
 
@@ -128,7 +136,13 @@ In-UI playback experiences for Comfy.
 
 ### Visualizers ([Detailed Specs ➡](nodes/Visualizers.md))
 
-- `visualizer_circular_node.py`, `visualizer_contour_node.py`, `visualizer_line_node.py`, `visualizer_lyrics_node.py`, `visualizer_emoji_spinner_node.py`, `visualizer_lyric_settings_node.py`, `visualizer_global_settings_node.py`
+- `visualizer_circular_node.py` — **Circular Audio Visualizer**: Waveform rendered as a dynamic ring.
+- `visualizer_contour_node.py` — **Contour Audio Visualizer**: Advanced shape-based waveform outlines.
+- `visualizer_line_node.py` — **Line Audio Visualizer**: Traditional horizontal or vertical spectral waveforms.
+- `visualizer_lyrics_node.py` — **Lyrics Overlay**: Advanced text rendering over images with timing sync.
+- `visualizer_emoji_spinner_node.py` — **Emoji Spinner Visualizer**: Slot-machine style emoji animations for visual flair.
+- `visualizer_lyric_settings_node.py` — **Lyric Visualizer Settings**: Dedicated color, font, and animation config for lyrics.
+- `visualizer_global_settings_node.py` — **Visualizer Settings**: Shared canvas and style configurations for all flex-visualizers.
 
 ### Kaola High-Level Tasks ([Detailed Specs ➡](nodes/Kaola.md))
 
@@ -141,7 +155,7 @@ Specialized workflows for extraction, accompaniment, and AI-driven song building
 ### Shared Utility Modules (`nodes/includes/`)
 
 - `analysis_utils.py`: FSQ quantization logic and dependency checks.
-- `audio_utils.py`: FLAC metadata block generation, multi-format audio saving (`scromfy_save_audio`), and PCM format conversion. *(Merged from `audio_save_utils.py`)*
+- `audio_utils.py`: FLAC metadata block generation, multi-format audio saving, and PCM format conversion.
 - `emoji_utils.py`: Iconify fetching, SVG-to-Mask conversion (svglib), and caching.
 - `flex_utils.py`: Dynamic layout parsing and styling logic for visualizers.
 - `fsq_utils.py`: Low-level FSQ encoding/decoding math.
@@ -154,5 +168,4 @@ Specialized workflows for extraction, accompaniment, and AI-driven song building
 - `whisper_utils.py`: Model discovery, language mappings, and subtitle/LRC formatting logic.
 - `chord_utils.py`: Music theory, polyphonic chord synthesis, and ACE-Step conditioning injection logic.
 - `matchering_utils.py`: Adapter bridging ComfyUI AUDIO dicts and the file-path-based pip matchering API.
-- `llm_utils.py`: High-level orchestration for multi-track accompaniment.
-- `qwen_utils.py`: Text generation and prompt expansion adapter for Qwen 1.7B.
+- `llm_utils.py`: High-level orchestration for multi-track accompaniment, including Qwen text-generation and prompt expansion adapters.
