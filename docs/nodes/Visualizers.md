@@ -12,7 +12,7 @@ The Scromfy Flex Visualizer suite follows a strict **Global vs. Local** paramete
 
 ## 1. Global Settings
 
-*Located in the `Flex Visualizer Settings (Scromfy)` node.*
+*Located in the `visualizer_global_settings_node.py` node.*
 
 ### System
 
@@ -144,7 +144,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 
 ### Lyric Settings Node
 
-*A standalone master node for text styling.*
+*A standalone master node for text styling. Found in `visualizer_lyric_settings_node.py`.*
 
 | Parameter | Category | Description |
 | :--- | :--- | :--- |
@@ -162,7 +162,7 @@ The `color_mode` setting defines how colors are assigned to individual points or
 
 ### Flex Lyrics Node (The Overlay)
 
-*This node combines a background (image/video) with the styling from a Lyric Settings node.*
+*This node combines a background (image/video) with the styling from a Lyric Settings node. Found in `visualizer_lyrics_node.py`.*
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |

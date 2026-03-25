@@ -52,6 +52,9 @@ Raw tensor manipulation, 5Hz audio code editing, splitting, combining, and custo
 - `audio_codes_decode_node.py` — **AceStepAudioCodesUnderstand**: Reconstruct metadata and lyrics from 5Hz token IDs.
 - `conditioning_zero_out_node.py` — **AceStepConditioningZeroOut**: Zero out conditioning for negative/unconditional input.
 - `conditioning_view_node.py` — **AceStepConditioningExplore**: Deep introspection and debugging of conditioning data.
+- `conditioning_base_extract_node.py` — **AceStepBaseExtract**: Base-model stem separation.
+- `conditioning_base_lego_node.py` — **AceStepBaseLego**: Context-aware track generation.
+- `conditioning_base_complete_node.py` — **AceStepBaseComplete**: Automatic accompaniment filling.
 - `load_audio_codes_node.py` — **AceStepAudioCodesLoader**: Load 5Hz audio code tensors from disk.
 - `load_conditioning_node.py` — **AceStepConditioningLoad**: Load saved conditioning components.
 - `load_lyrics_tensor_node.py` — **AceStepLyricsTensorLoader**: Load lyrics conditioning tensors.
@@ -63,9 +66,9 @@ Raw tensor manipulation, 5Hz audio code editing, splitting, combining, and custo
 - `tensor_unary_op_node.py` — **AceStepTensorUnaryOp**: Transform single tensors.
 - `save_conditioning_node.py` — **AceStepConditioningSave**: Component saver.
 - `save_tensor_node.py` — **AceStepTensorSave**: Raw tensor saver.
-- `acestep_conditioning_inspector_node.py` — **AceStepConditioningInspector**: Deep introspection and debugging of conditioning data.
-- `acestep_chord_conditioner_node.py` — **AceStepChordConditioner**: Synthesize and inject chord progressions into conditioning.
-- `acestep_chord_preview_node.py` — **AceStepChordPreview**: Preview chord audio before generation.
+- `conditioning_inspector_node.py` — **AceStepConditioningInspector**: Deep introspection and debugging of conditioning data.
+- `conditioning_add_chords_node.py` — **AceStepChordConditioner**: Synthesize and inject chord progressions into conditioning.
+- `audio_chord_preview_node.py` — **AceStepChordPreview**: Preview chord audio before generation.
 - `acestep_source_reader_node.py` — **AceStepSourceReader**: Developer tool for source inspection and latent injection testing.
 
 ### Audio & Post-Processing ([Detailed Specs ➡](nodes/Audio.md))
@@ -73,20 +76,23 @@ Raw tensor manipulation, 5Hz audio code editing, splitting, combining, and custo
 Decoding latents with extended VAE features, analyzing external audio, and post-processing tools.
 
 - `audio_analyzer_node.py` — **Audio Analyzer (No LLM)**: DSP-based BPM, key, and duration extraction.
-- `sft_music_analyzer_node.py` — **ScromfyAceStepMusicAnalyzer**: AI-powered analyzer (Whisper/Qwen) for tags and theory.
+- `llm_music_analyzer_node.py` — **ScromfyAceStepMusicAnalyzer**: AI-powered analyzer (Whisper/Qwen) for tags and theory.
 - `audio_post_process_node.py` — **AceStepPostProcess**: Audio enhancement (de-esser, spectral smoothing).
 - `audio_vae_decode_plusplus_node.py` — **Scromfy Audio VAE Decode PLUSPLUS**: Advanced VAE decoder with local logic overrides.
-- `save_audio_node.py` — **Scromfy Save Audio**: High-fidelity multi-format audio saver (handles metadata).
+- `audio_vae_decode_settings_node.py` — **AceStepVAEDecodeSettings**: Configure VAE decoding parameters (boost, normalize, shift).
+- `audio_vae_encode_node.py` — **AceStepVAEEncode**: Encode audio to latents.
+- `save_audio_flac_node.py` / `save_audio_mp3_node.py` / `save_audio_opus_node.py` — **Scromfy Save Audio**: High-fidelity multi-format audio saver (handles metadata).
 - `load_audio_node.py` — **AceStepLoadAudio**: Audio loader with auto-resampling.
-- `matchering_node.py` — **Matchering**: Simple two-input matching/mastering.
-- `matchering_advanced_node.py` — **Matchering (Advanced)**: Full parameter control for matching.
-- `matchering_limiter_config_node.py` — **Matchering Limiter Config**: Detail configuration for the brickwall limiter.
+- `audio_matchering_node.py` — **Matchering**: Simple two-input matching/mastering.
+- `audio_matchering_advanced_node.py` — **Matchering (Advanced)**: Full parameter control for matching.
+- `audio_matchering_limiter_config_node.py` — **Matchering Limiter Config**: Detail configuration for the brickwall limiter.
 
 ### Samplers ([Detailed Specs ➡](nodes/Sampler.md))
 
 Overriding core implementations for specific features like masking.
 
-- `sft_sampler_node.py` — **ScromfyAceStepSampler**: The primary sampler with APG/ADG guidance and native mask-based inpainting.
+- `sampler_node.py` — **ScromfyAceStepSampler**: The primary sampler with APG/ADG guidance and native mask-based inpainting.
+- `sampler_settings_node.py` — **ScromfySamplerSettings**: Aggregated sampler configuration (guidance, momentum, decay).
 
 ### Lyrics Generation & Formatting ([Detailed Specs ➡](nodes/Lyrics.md))
 
@@ -102,27 +108,34 @@ AI interactions, BPM calculations, and formatters to properly align text.
 
 In-UI playback experiences for Comfy.
 
-- `webamp_node.py` — **AceStepWebAmpRadio**: Full Winamp integration.
-- `radio_node.py` — **RadioPlayer**: Lightweight in-UI player.
+- `audio_player_webamp_node.py` — **AceStepWebAmpRadio**: Full Winamp integration.
+- `audio_player_radio_node.py` — **RadioPlayer**: Lightweight in-UI player.
 
 ### LoRA Loading ([Detailed Specs ➡](nodes/Lora.md))
 
 - `load_lora_node.py` — **AceStepLoRALoader**: Standard ACE-Step 1.5 LoRA loader.
-- `sft_lora_loader_node.py` — **Scromfy AceStep Lora Stack**: Advanced multi-LoRA stacking.
+- `lora_loader_node.py` — **Scromfy AceStep Lora Stack**: Advanced multi-LoRA stacking.
 
 ### Whisper Transcription ([Detailed Specs ➡](nodes/Whisper.md))
 
-- `faster_whisper_node.py` — Multi-purpose file hosting: **Faster Whisper Loader**, **Transcribe** (VAD-enabled), and **Save Subtitle/Lyrics** (SRT/VTT/LRC generation).
+- `transcribe_faster_whisper_node.py` — Multi-purpose file hosting: **Faster Whisper Loader**, **Transcribe** (VAD-enabled), and **Save Subtitle/Lyrics** (SRT/VTT/LRC generation).
 
 ### Misc & Utilities ([Detailed Specs ➡](nodes/Misc.md))
 
-- `wikipedia_node.py` — **WikipediaRandomNode**: Pull random page content.
-- `emoji_spinner_node.py` — **ScromfyEmojiSpinner**: Iconify/SVG rendering to masks.
+- `wikipedia_random_entry_node.py` — **WikipediaRandomNode**: Pull random page content.
+- `build_emoji_spinner_node.py` — **ScromfyEmojiSpinner**: Iconify/SVG rendering to masks.
 - `mask_picker_node.py` — **ScromfyMaskPicker**: Recursive mask directory browser.
-
 ### Visualizers ([Detailed Specs ➡](nodes/Visualizers.md))
 
-- `flex_audio_visualizer_circular_node.py`, `flex_audio_visualizer_contour_node.py`, `flex_audio_visualizer_line_node.py`, `flex_lyrics_node.py`, `emoji_spinner_visualizer_node.py`, `lyric_settings_node.py`, `visualizer_settings_node.py`
+- `visualizer_circular_node.py`, `visualizer_contour_node.py`, `visualizer_line_node.py`, `visualizer_lyrics_node.py`, `visualizer_emoji_spinner_node.py`, `visualizer_lyric_settings_node.py`, `visualizer_global_settings_node.py`
+
+### Kaola High-Level Tasks ([Detailed Specs ➡](nodes/Kaola.md))
+
+Specialized workflows for extraction, accompaniment, and AI-driven song building.
+
+- `kaola_prompt_multiplier_node.py` — **KaolaAceStepPromptMultiplier**: Intelligent prompt expander using a 1.7B LLM.
+- `kaola_captioner_node.py` — **KaolaAceStepCaptioner**: Whole-song audio captioning.
+- `kaola_transcriber_node.py` — **KaolaAceStepTranscriber**: Music-tuned lyrics extraction.
 
 ### Shared Utility Modules (`nodes/includes/`)
 
@@ -140,3 +153,5 @@ In-UI playback experiences for Comfy.
 - `whisper_utils.py`: Model discovery, language mappings, and subtitle/LRC formatting logic.
 - `chord_utils.py`: Music theory, polyphonic chord synthesis, and ACE-Step conditioning injection logic.
 - `matchering_utils.py`: Adapter bridging ComfyUI AUDIO dicts and the file-path-based pip matchering API.
+- `llm_utils.py`: High-level orchestration for multi-track accompaniment.
+- `qwen_utils.py`: Text generation and prompt expansion adapter for Qwen 1.7B.

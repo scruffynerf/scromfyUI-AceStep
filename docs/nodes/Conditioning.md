@@ -186,7 +186,7 @@ Reverses the initial LM logic, parsing existing 5Hz token IDs back into readable
 
 ### 20. AceStepConditioningInspector
 
-*File: `nodes/acestep_conditioning_inspector_node.py`*
+*File: `nodes/conditioning_inspector_node.py`*
 
 A more advanced version of the standard view node that provides a detailed, formatted dump of all tensors and metadata keys within an ACE-Step conditioning object.
 
@@ -219,34 +219,46 @@ Saves an isolated raw tensor object to `.safetensors` format. Useful when interc
 
 ---
 
-## Part 8: Harmonic Injection (Chords)
+---
 
-Built-in support for injecting explicit chord progressions into the ACE-Step generation process.
+## Part 9: Base Model Tasks
 
-### 22. AceStepChordConditioner
+These nodes prepare conditioning specifically for the **ACE-Step 1.5 Base** (non-turbo) model to perform specialized audio tasks like stem extraction and contextual generation.
 
-*File: `nodes/acestep_chord_conditioner_node.py`*
+### 25. AceStepBaseExtract
 
-The main harmonic injection node. It synthesizes a reference polyphonic audio stream from a chord map, encodes it through the VAE and FSQ quantizer, and injects the resulting 5Hz tokens into the conditioning object.
+*File: `nodes/conditioning_base_extract_node.py`*
 
-- **Inputs**: `conditioning`, `vae`, `model`, `chord_map` (`STRING`), `lyrics` (`STRING`), `bpm` (`INT`), `beats_per_chord` (`FLOAT`), `duration` (`FLOAT`), `synth_type` (`piano`, `organ`, `pad`).
-- **Options**: `velocity`.
+Prepares conditioning to extract a specific solo track from a mixed audio source.
+
+- **Inputs**:
+  - `conditioning` (`CONDITIONING`): The base conditioning bundle.
+  - `track_name`: The specific instrument/track to extract (e.g., `vocals`, `drums`).
 - **Outputs**: `conditioning` (`CONDITIONING`).
 
-### 23. AceStepChordPreview
+### 26. AceStepBaseLego
 
-*File: `nodes/acestep_chord_preview_node.py`*
+*File: `nodes/conditioning_base_lego_node.py`*
 
-Renders the section-aware chord audio without running the full generation, allowing you to hear the harmonic structure first.
+Prepares conditioning for "lego" style generation, where a new track is generated to fit the musical context of existing audio.
 
-- **Inputs**: `chord_map`, `lyrics`, `bpm`, `beats_per_chord`, `duration`, `synth_type`.
-- **Outputs**: `chord_audio` (`AUDIO`).
+- **Inputs**:
+  - `conditioning` (`CONDITIONING`): The base conditioning bundle.
+  - `latent_image` (`LATENT`): The contextual audio latents to build upon.
+  - `track_name`: The instrument/track to generate.
+- **Optional**:
+  - `region_start_s` / `region_end_s`: Define a specific time window for generation (0 for full).
+- **Outputs**:
+  - `conditioning` (`CONDITIONING`)
+  - `latent_image` (`LATENT`)
+  - `mask` (`MASK`): A temporal mask for the sampler.
 
-### 24. AceStepSourceReader
+### 27. AceStepBaseComplete
 
-*File: `nodes/acestep_source_reader_node.py`*
+*File: `nodes/conditioning_base_complete_node.py`*
 
-An advanced developer tool that inspects the internal `ace_step15.py` source code and tests direct latent injection paths.
+Prepares conditioning for multi-track accompaniment completion. It automatically injects instructions to add several missing instruments at once.
 
-- **Inputs**: `conditioning`, `vae`, `model`.
+- **Inputs**: `conditioning` (`CONDITIONING`).
+- **Options**: Boolean flags for every supported track class (drums, bass, vocals, etc.).
 - **Outputs**: `conditioning` (`CONDITIONING`).

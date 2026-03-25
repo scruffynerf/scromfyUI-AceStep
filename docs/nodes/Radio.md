@@ -5,7 +5,7 @@ The Radio suite provides persistent GUI audio players within the ComfyUI workspa
 ---
 
 ## 1. AceStepWebAmpRadio
-*File: `nodes/webamp_node.py`*
+*File: `nodes/audio_player_webamp_node.py`*
 
 A fully functional, in-browser port of Winamp 2.9 (powered by WebAmp) directly embedded as a ComfyUI node. It natively supports `.wsz` skin injection from the `webamp_skins/` directory and plays queued `AUDIO` outputs seamlessly.
 
@@ -19,7 +19,7 @@ A fully functional, in-browser port of Winamp 2.9 (powered by WebAmp) directly e
 ---
 
 ## 2. RadioPlayer
-*File: `nodes/radio_node.py`*
+*File: `nodes/audio_player_radio_node.py`*
 
 A lightweight, minimal HTML5 audio player widget. Useful for quick A/B testing or when WebAmp is unnecessarily heavy for the workflow.
 

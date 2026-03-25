@@ -27,12 +27,35 @@ An enhanced replacement for standard VAE Decode nodes. It perfectly replicates t
 ### Outputs
 
 - **`audio`** (`AUDIO`): The standard ComfyUI audio dictionary (waveform and sample rate).
+- **`latent`** (`LATENT`): The original latent tensor (passthrough).
+
+---
+
+## 2. AceStepVAEDecodeSettings
+
+*File: `nodes/audio_vae_decode_settings_node.py`*
+
+A settings aggregator for the VAE decoder. Allows users to define a "global" decoding style that can be reused across multiple sampler or decoder nodes.
+
+- **Options**: `latent_shift`, `latent_rescale`, `normalize_peak`, `voice_boost`.
+- **Outputs**: `vae_decode_settings` (`SCROMFY_VAE_SETTINGS`).
+
+---
+
+## 3. AceStepVAEEncode
+
+*File: `nodes/audio_vae_encode_node.py`*
+
+The inverse of the decoder. Encodes raw audio into the DiT latent space for tasks like Extract, Lego, or Cover/Repaint.
+
+- **Inputs**: `audio` (`AUDIO`), `vae` (`VAE`).
+- **Outputs**: `latent` (`LATENT`).
 
 ---
 
 ## 2. Scromfy AceStep Music Analyzer (LLM)
 
-*File: `nodes/sft_music_analyzer_node.py`*
+*File: `nodes/llm_music_analyzer_node.py`*
 
 AI-powered audio analysis. Uses massive language models (like Qwen2.5 Omni, MERT, AST, or Whisper) to 'listen' to an audio input and generate descriptive musical tags. It also automatically estimates BPM and keyscale.
 
@@ -96,7 +119,7 @@ A mastering macro node specifically tuned for generated audio. It applies Short-
 
 ## 5. Scromfy Save Audio
 
-*Files: `nodes/save_audio_node.py`, `nodes/save_audio_mp3_node.py`, `nodes/save_audio_opus_node.py`*
+*Files: `nodes/save_audio_flac_node.py`, `nodes/save_audio_mp3_node.py`, `nodes/save_audio_opus_node.py`*
 
 High-fidelity multi-format export nodes. Crucially, these nodes natively embed your ComfyUI generation `prompt` and `metadata` directly into the file's ID3/metadata tags.
 
@@ -127,7 +150,7 @@ Ingests local audio files and safely resamples them to the expected sample rate 
 
 ## 7. Matchering (Audio Matching & Mastering)
 
-*Files: `nodes/matchering_node.py`, `nodes/matchering_advanced_node.py`, `nodes/matchering_limiter_config_node.py`*
+*Files: `nodes/audio_matchering_node.py`, `nodes/audio_matchering_advanced_node.py`, `nodes/audio_matchering_limiter_config_node.py`*
 
 A powerful audio matching and mastering tool. It 'masters' a target audio track by matching its RMS, frequency response, and peak levels to a reference track.
 
@@ -146,3 +169,4 @@ A powerful audio matching and mastering tool. It 'masters' a target audio track 
 - **`Result`**: Mastered audio with limiter and normalization.
 - **`Result (no limiter)`**: Raw matched audio before the final limiter stage.
 - **`Result (no limiter, normalized)`**: Matched audio with peak normalization but no compression/limiting.
+

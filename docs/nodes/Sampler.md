@@ -5,13 +5,15 @@ The Sampler category contains the core execution engine for ACE-Step generation,
 ---
 
 ## 1. ScromfyAceStepSampler
-*File: `nodes/sft_sampler_node.py`*
+
+*File: `nodes/sampler_node.py`*
 
 The Scromfy-exclusive sampler node. While it functions similarly to standard ComfyUI KSampler under the hood, it intercepts the `MODEL` and our assembled `CONDITIONING` bundles to parse `audio_codes`, `timbre_tensor`, and `lyrics_tensor` mathematically before executing semantic diffusion.
 
 Crucially, it is natively aware of `audio_mask` attributes attached to the conditioning objects, allowing for perfect audio **inpainting** out-of-the-box (e.g. replacing seconds 15-20 of a song while freezing the rest).
 
 ### Inputs
+
 - **`model`** *(Required, MODEL)*: Base DiT model from CheckpointLoader.
 - **`positive`** *(Required, CONDITIONING)*: Full positive tensor bundle.
 - **`negative`** *(Optional, CONDITIONING)*: Negative prompt bundle (usually zeroed-out).
@@ -19,6 +21,7 @@ Crucially, it is natively aware of `audio_mask` attributes attached to the condi
 - **`latent_image`** *(Optional, LATENT)*: Optional input latents for Img2Img or continuation geometry.
 
 ### Options
+
 - **`seed`**
 - **`steps`**: Number of diffusion steps (typically 50-100 for audio).
 - **`cfg`**: Classifier-free guidance.
@@ -27,4 +30,16 @@ Crucially, it is natively aware of `audio_mask` attributes attached to the condi
 - **`denoise`**: Strength of noise added to `latent_image` if present. Default `1.0`.
 
 ### Outputs
+
 - **`samples`** (`LATENT`): The raw generated latents, ready to be passed to an Audio VAE Decode node.
+
+---
+
+## 2. ScromfySamplerSettings
+
+*File: `nodes/sampler_settings_node.py`*
+
+A standalone container for advanced sampling parameters. Allows for cleaner workflows by separating model logic from noise schedule tuning.
+
+- **Options**: `omega` (ERG intensity), `shift` (noise schedule bias), `custom_timesteps` (overrides steps), `denoise`.
+- **Outputs**: `sampler_settings` (`SCROMFY_SAMPLER_SETTINGS`).
