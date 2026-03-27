@@ -61,7 +61,7 @@ A robust binary toolbox for mixing two sets of list-based audio codes in raw 6D 
 - **Inputs**: `audio_codes_A`, `audio_codes_B`, `mask` (Optional).
 - **Options**:
   - `mode`: (`blend`, `lerp`, `inject`, `difference_injection`, `replace`, `concatenate`, etc.)
-  - `scale_mode`: Handle sequence length mismatches (`scale_B_to_A`, `loop_match`, `pad_to_match`).
+  - `scale_mode`: Handle sequence length mismatches (`scale_B_to_A`, `scale_A_to_B`, `loop_match`, `pad_to_match`, `none`).
   - `alpha`, `ratio`, `weight`: Tuning variables for the respective blend modes.
 - **Outputs**: `audio_codes` (`LIST`).
 
@@ -98,19 +98,38 @@ Downsamples 25Hz semantic hint tensors back to 5Hz explicit audio code token IDs
 
 ---
 
+### 9. AceStepZeroQuadraticMixer
+
+*File: `nodes/conditioning_zeroquadratic_mixer_node.py`*
+
+Pair-is-seed deterministic audio code mixing via Zero-Quadratic hashing. The relationship between tracks is computed from their coordinate pair hash, making the seed the unique "recipe" for the blend.
+
+- **Inputs**: `audio_codes_A`, `audio_codes_B`, `mask` (Optional), `section_map` (Optional).
+- **Options**:
+  - `seed`: Deterministic seed for the pair-hash relationship.
+  - `relationship_mode`: (`mutual`, `call_response`, `tension`, `echo`, `complement`, `interference`).
+  - `affinity`, `asymmetry`, `dim_coupling`: Tuning variables for the hash-based blending.
+  - `scale_mode`: Handle sequence length mismatches (`scale_B_to_A`, `scale_A_to_B`, `loop_match`, `pad_to_match`, `none`).
+- **Outputs**: `audio_codes` (`LIST`), `blend_map` (`STRING`).
+
+---
+
 ## Part 3: Tensor Math (Continuous Tensors)
 
-### 9. AceStepTensorMixer
+### 10. AceStepTensorMixer
 
 *File: `nodes/tensor_mixer_node.py`*
 
 The continuous tensor equivalent to the Audio Codes Mixer. Mixes `lyrics_tensor` or `timbre_tensor` inputs using spatial or scalar masking.
 
 - **Inputs**: `tensor_A`, `tensor_B`, `mask` (Optional).
-- **Options**: `mode` (`blend`, `lerp`, etc.), scaling, and weighting.
+- **Options**:
+  - `mode`: (`blend`, `lerp`, `inject`, `difference_injection`, `replace`, `concatenate`, etc.)
+  - `scale_mode`: Handle sequence length mismatches (`scale_B_to_A`, `scale_A_to_B`, `loop_match`, `pad_to_match`, `none`).
+  - `alpha`, `ratio`, `weight`: Tuning variables for the respective blend modes.
 - **Outputs**: `mixed_tensor` (`TENSOR`).
 
-### 10. AceStepTensorUnaryOp
+### 11. AceStepTensorUnaryOp
 
 *File: `nodes/tensor_unary_op_node.py`*
 
@@ -123,7 +142,7 @@ Single-tensor operations (zeroing, noising, fading) applied directly to conditio
 
 ## Part 4: Mask Generation
 
-### 11. AceStepAudioMask
+### 12. AceStepAudioMask
 
 *File: `nodes/audio_mask_node.py`*
 
@@ -132,7 +151,7 @@ Generates ComfyUI `MASK` objects specifically structured for time-series audio d
 - **Inputs**: None required.
 - **Outputs**: `MASK`.
 
-### 12. AceStepTensorMaskGenerator
+### 13. AceStepTensorMaskGenerator
 
 *File: `nodes/tensor_mask_node.py`*
 
@@ -147,19 +166,19 @@ A primitive masking toolbox creating fractions, hard ranges, or smoothed window 
 
 *A collection of nodes designed to ingest saved tensors directly from the disk. Found bridging standard checkpoint loaders into Scromfy modularity.*
 
-1. **AceStepAudioCodesLoader** (`load_audio_codes_node.py`): Loads `.json` or `.safetensors` lists of audio code IDs.
+14. **AceStepAudioCodesLoader** (`load_audio_codes_node.py`): Loads `.json` or `.safetensors` lists of audio code IDs.
     - **Options**: `codes_file` (Dropdown), `none_action` (What to do if file fails).
     - **Outputs**: `audio_codes` (`LIST`).
-2. **AceStepLyricsTensorLoader** (`load_lyrics_tensor_node.py`): Loads compiled 1024-dim vocal guidance tensors.
+15. **AceStepLyricsTensorLoader** (`load_lyrics_tensor_node.py`): Loads compiled 1024-dim vocal guidance tensors.
     - **Options**: `tensor_file` (Dropdown), `none_action`.
     - **Outputs**: `lyrics_tensor` (`TENSOR`).
-3. **AceStepTimbreTensorLoader** (`load_timbre_tensor_node.py`): Loads compiled background/timbre guidance tensors.
+16. **AceStepTimbreTensorLoader** (`load_timbre_tensor_node.py`): Loads compiled background/timbre guidance tensors.
     - **Options**: `tensor_file` (Dropdown), `none_action`.
     - **Outputs**: `timbre_tensor` (`TENSOR`).
-4. **AceStepConditioningLoad** (`load_conditioning_node.py`): Helper to load full metadata bundles.
+17. **AceStepConditioningLoad** (`load_conditioning_node.py`): Helper to load full metadata bundles.
     - **Options**: `mixed_file` (Dropdown prefix).
     - **Outputs**: `conditioning` (`CONDITIONING`).
-5. **AceStepConditioningMixerLoader** (`load_mixed_conditioning_node.py`): Advanced loader capable of ingesting multiple components and pre-mixing them according to predefined ratios.
+18. **AceStepConditioningMixerLoader** (`load_mixed_conditioning_node.py`): Advanced loader capable of ingesting multiple components and pre-mixing them according to predefined ratios.
     - **Options**: `timbre_source`, `lyrics_source`, `codes_source` (Dropdowns), and `none_action`s.
     - **Outputs**: `conditioning` (`CONDITIONING`).
 
@@ -167,7 +186,7 @@ A primitive masking toolbox creating fractions, hard ranges, or smoothed window 
 
 ## Part 6: Introspection & Tools
 
-### 18. AceStepConditioningExplore
+### 19. AceStepConditioningExplore
 
 *File: `nodes/conditioning_view_node.py`*
 A diagnostic tool that safely prints shape data, dimension layouts, and metadata keys inside a conditioning object directly to the terminal for debugging graph connections.
@@ -175,7 +194,7 @@ A diagnostic tool that safely prints shape data, dimension layouts, and metadata
 - **Inputs**: `text_cond` (`CONDITIONING`).
 - **Outputs**: `json_text` (`STRING`).
 
-### 19. AceStepAudioCodesUnderstand
+### 20. AceStepAudioCodesUnderstand
 
 *File: `nodes/audio_codes_decode_node.py`*
 Reverses the initial LM logic, parsing existing 5Hz token IDs back into readable lyrics hints or generated musical tags if the LLM encoded them linearly.
@@ -184,7 +203,7 @@ Reverses the initial LM logic, parsing existing 5Hz token IDs back into readable
 - **Options**: `temperature`, `top_k`, `top_p`, `max_new_tokens`.
 - **Outputs**: `full_output` (`STRING`), `lyrics` (`STRING`), `metadata` (`DICT`).
 
-### 20. AceStepConditioningInspector
+### 21. AceStepConditioningInspector
 
 *File: `nodes/conditioning_inspector_node.py`*
 
@@ -199,7 +218,7 @@ A more advanced version of the standard view node that provides a detailed, form
 
 A small suite of nodes dedicated to bridging generation sessions by saving mathematically intact conditioning bundles and raw tensors to the disk.
 
-### 20. AceStepConditioningSave
+### 22. AceStepConditioningSave
 
 *File: `nodes/save_conditioning_node.py`*
 
@@ -208,7 +227,7 @@ Takes a full `CONDITIONING` object and safely serializes all internal tensors (`
 - **Inputs**: `conditioning` (`CONDITIONING`).
 - **Outputs**: None.
 
-### 21. AceStepTensorSave
+### 23. AceStepTensorSave
 
 *File: `nodes/save_tensor_node.py`*
 
@@ -219,13 +238,57 @@ Saves an isolated raw tensor object to `.safetensors` format. Useful when interc
 
 ---
 
+## Part 8: Procedural Generation (ZeroCond)
+
+The ZeroCond suite implements the "Zerobyte Family" of procedural generation algorithms. It allows for creating structured, deterministic audio codes without the need for an LLM or any iterative modeling. The coordinate (song, section, measure, beat) IS the seed.
+
+### 27. AceStepZerobytesConditioningSectionMap
+
+*File: `nodes/conditioning_zerocond_section_map_node.py`*
+
+Builds a structured JSON section map defining the high-level form of a song (e.g., AABA, ABABCB).
+
+- **Inputs**: `duration` (FLOAT), `form` (AABA, ABAB, etc.).
+- **Optional**: `intro_seconds`, `outro_seconds`, `verse_weight`, `chorus_weight`.
+- **Outputs**: `section_map` (STRING).
+
+### 28. AceStepZerobytesConditioningGenerator
+
+*File: `nodes/conditioning_zerocond_generator_node.py`*
+
+The core worker that procedurally hashes song coordinates into 5Hz audio codes. It uses hierarchical hashing (Zerobytes) and relational blending (Zero-Quadratic) to ensure musical coherence. Optimized with vectorized PyTorch operations for high performance.
+
+- **Inputs**: `seed`, `duration`, `bpm`, `time_signature`, `coherence_fine`, `coherence_coarse`, `section_mode`.
+- **Optional**: `section_map`, `energy`, `density`, `crossfade_beats`.
+- **Outputs**: `audio_codes` (LIST), `section_map_info` (STRING).
+
+### 29. AceStepZerobytesConditioningInspector
+
+*File: `nodes/conditioning_zerocond_inspector_node.py`*
+
+A diagnostic visualization tool specifically tuned for ZeroCond outputs. It renders heatmaps of the 6D FSQ dimensions, coherence plots, and distribution histograms. Now uses vectorized rendering for faster updates.
+
+- **Inputs**: `audio_codes` (LIST).
+- **Optional**: `visualization` (heatmap_6d, coherence_plot, histogram, section_overlay), `section_map`.
+- **Outputs**: `visualization` (IMAGE), `stats_json` (STRING).
+
+### 30. AceStepZeroFieldTimbre
+
+*File: `nodes/conditioning_zerofield_timbre_node.py`*
+
+Generates a continuous `timbre_tensor` in 1024D latent space entirely procedurally, without a text prompt. Instruments act as independent scalar fields that evolve over time using coherent noise layers. Highly optimized using PyTorch tensor vectorization to compute sequence steps in parallel.
+
+- **Inputs**: `seed`, `seq_length`, `instrument_mode`, `primary_instrument`.
+- **Optional**: `secondary_instrument`, `reference_timbre`, `instrument_blend`, `field_scale_macro`, `field_scale_micro`, `field_intensity`, `warmth`, `brightness`.
+- **Outputs**: `timbre_tensor` (TENSOR), `field_stats` (STRING).
+
 ---
 
 ## Part 9: Base Model Tasks
 
 These nodes prepare conditioning specifically for the **ACE-Step 1.5 Base** (non-turbo) model to perform specialized audio tasks like stem extraction and contextual generation.
 
-### 25. AceStepBaseExtract
+### 24. AceStepBaseExtract
 
 *File: `nodes/conditioning_base_extract_node.py`*
 
@@ -236,7 +299,7 @@ Prepares conditioning to extract a specific solo track from a mixed audio source
   - `track_name`: The specific instrument/track to extract (e.g., `vocals`, `drums`).
 - **Outputs**: `conditioning` (`CONDITIONING`).
 
-### 26. AceStepBaseLego
+### 25. AceStepBaseLego
 
 *File: `nodes/conditioning_base_lego_node.py`*
 
@@ -253,7 +316,7 @@ Prepares conditioning for "lego" style generation, where a new track is generate
   - `latent_image` (`LATENT`)
   - `mask` (`MASK`): A temporal mask for the sampler.
 
-### 27. AceStepBaseComplete
+### 26. AceStepBaseComplete
 
 *File: `nodes/conditioning_base_complete_node.py`*
 

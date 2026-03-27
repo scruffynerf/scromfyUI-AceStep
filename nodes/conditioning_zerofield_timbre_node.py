@@ -67,7 +67,7 @@ class AceStepZeroFieldTimbre:
     RETURN_TYPES = ("TENSOR", "STRING")
     RETURN_NAMES = ("timbre_tensor", "field_stats")
     FUNCTION = "generate"
-    CATEGORY = "Scromfy/Ace-Step/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning/Zerobytes"
 
     def generate(self, seed, seq_length, instrument_mode, primary_instrument,
                  secondary_instrument="strings", reference_timbre=None,
@@ -176,10 +176,10 @@ class AceStepZeroFieldTimbre:
             micro_seeds = [seed + dim_salt + 500] * seq_length
             micro_vals = coherent_field(micro_xs, micro_ys, micro_seeds, octaves=2)
 
-            # Combine and write entire dimension column at once
-            for pos in range(seq_length):
-                field[0, pos, dim] = (macro_vals[pos] * 0.65 +
-                                      micro_vals[pos] * 0.35 + bias) * intensity
+            # Combine and write entire dimension column at once using tensors
+            macro_t = torch.tensor(macro_vals, dtype=torch.float32)
+            micro_t = torch.tensor(micro_vals, dtype=torch.float32)
+            field[0, :, dim] = (macro_t * 0.65 + micro_t * 0.35 + bias) * intensity
 
         return field
 

@@ -1,15 +1,16 @@
-"""AceStepZeroConditioningInspector node for ACE-Step"""
+"""AceStepZerobytesConditioningInspector node for ACE-Step"""
 import torch
 import json
 import logging
 
 from .includes.fsq_utils import parse_audio_codes, fsq_decode_indices, get_fsq_levels
 from .includes.zerobytes_utils import parse_section_map
+from .includes.color_utils import hsv_to_rgb
 
 logger = logging.getLogger(__name__)
 
 
-class AceStepZeroConditioningInspector:
+class AceStepZerobytesConditioningInspector:
     """Visualize ZeroConditioning output for debugging and tuning.
 
     Renders diagnostic images of audio code sequences: per-dimension heatmaps,
@@ -33,7 +34,7 @@ class AceStepZeroConditioningInspector:
     RETURN_TYPES = ("IMAGE", "STRING")
     RETURN_NAMES = ("visualization", "stats_json")
     FUNCTION = "inspect"
-    CATEGORY = "Scromfy/Ace-Step/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning/Zerobytes"
 
     def inspect(self, audio_codes, visualization, section_map=""):
         levels = get_fsq_levels(None)
@@ -81,35 +82,51 @@ class AceStepZeroConditioningInspector:
 
     def _render_heatmap(self, codes_6d, levels):
         """Render 6-row heatmap. Each row = one FSQ dimension over time."""
+        import torch.nn.functional as F
         T = codes_6d.shape[1]
         row_height = 60
         H = row_height * 6
         W = min(max(T * 4, 256), 1920)
 
-        img = torch.zeros(H, W, 3)
+        # Normalize dim values from [-1, 1] to [0, 1]
+        vals = (codes_6d[0] + 1.0) / 2.0  # [T, 6]
+        
+        rows = []
+        hues = [0.0, 0.15, 0.3, 0.55, 0.7, 0.85]
+        s = 0.7
 
         for d in range(6):
-            # Normalize dim values from [-1, 1] to [0, 1]
-            vals = (codes_6d[0, :, d] + 1.0) / 2.0  # [T]
-
-            # Color: use distinct hue per dimension
-            hues = [0.0, 0.15, 0.3, 0.55, 0.7, 0.85]
-            hue = hues[d]
-
-            for t_idx in range(T):
-                x_start = int(t_idx / T * W)
-                x_end = int((t_idx + 1) / T * W)
-                if x_end <= x_start:
-                    x_end = x_start + 1
-                y_start = d * row_height
-                y_end = y_start + row_height
-
-                val = vals[t_idx].item()
-                r, g, b = self._hsv_to_rgb(hue, 0.7, val)
-                img[y_start:y_end, x_start:min(x_end, W), 0] = r
-                img[y_start:y_end, x_start:min(x_end, W), 1] = g
-                img[y_start:y_end, x_start:min(x_end, W), 2] = b
-
+            h = hues[d]
+            v = vals[:, d]  # [T]
+            
+            # Simplified vectorized HSV to RGB for constant H, S
+            hi = int(h * 6) % 6
+            f = (h * 6) - int(h * 6)
+            p = v * (1 - s)
+            q = v * (1 - s * f)
+            t = v * (1 - s * (1 - f))
+            
+            if hi == 0: r, g, b = v, t, p
+            elif hi == 1: r, g, b = q, v, p
+            elif hi == 2: r, g, b = p, v, t
+            elif hi == 3: r, g, b = p, q, v
+            elif hi == 4: r, g, b = t, p, v
+            else: r, g, b = v, p, q
+            
+            # Stack into [T, 3]
+            row_colors = torch.stack([r, g, b], dim=-1).clamp(0, 1) # [T, 3]
+            
+            # Upsample T to W
+            # [T, 3] -> [1, 3, T] -> interpolate -> [1, 3, W] -> [W, 3]
+            row_colors_t = row_colors.transpose(0, 1).unsqueeze(0) # [1, 3, T]
+            row_colors_t = F.interpolate(row_colors_t, size=W, mode='nearest')
+            row_colors_final = row_colors_t.squeeze(0).transpose(0, 1) # [W, 3]
+            
+            # Repeat to row_height
+            row_img = row_colors_final.unsqueeze(0).expand(row_height, -1, -1) # [60, W, 3]
+            rows.append(row_img)
+            
+        img = torch.cat(rows, dim=0) # [H, W, 3]
         return img.unsqueeze(0)  # [1, H, W, 3]
 
     def _overlay_sections(self, img, sections, T):
@@ -180,29 +197,12 @@ class AceStepZeroConditioningInspector:
 
         return img.unsqueeze(0)
 
-    @staticmethod
-    def _hsv_to_rgb(h, s, v):
-        """Simple HSV to RGB conversion."""
-        if s == 0:
-            return v, v, v
-        i = int(h * 6)
-        f = (h * 6) - i
-        p = v * (1 - s)
-        q = v * (1 - s * f)
-        t = v * (1 - s * (1 - f))
-        i %= 6
-        if i == 0: return v, t, p
-        if i == 1: return q, v, p
-        if i == 2: return p, v, t
-        if i == 3: return p, q, v
-        if i == 4: return t, p, v
-        return v, p, q
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepZeroConditioningInspector": AceStepZeroConditioningInspector,
+    "AceStepZerobytesConditioningInspector": AceStepZerobytesConditioningInspector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepZeroConditioningInspector": "Zero Conditioning Inspector",
+    "AceStepZerobytesConditioningInspector": "Zerobytes Conditioning Inspector",
 }

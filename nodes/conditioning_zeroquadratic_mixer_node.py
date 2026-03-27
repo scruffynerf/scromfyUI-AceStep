@@ -14,6 +14,7 @@ from .includes.zerobytes_utils import (
     pair_hash, asymmetric_pair_hash, hash_to_float,
     DIM_SALTS, parse_section_map, lookup_section,
 )
+from .includes.mixer_utils import match_lengths
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class AceStepZeroQuadraticMixer:
     RETURN_TYPES = ("LIST", "STRING")
     RETURN_NAMES = ("audio_codes", "blend_map")
     FUNCTION = "mix"
-    CATEGORY = "Scromfy/Ace-Step/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning/Zerobytes"
 
     @classmethod
     def IS_CHANGED(s, audio_codes_A, audio_codes_B, seed, relationship_mode,
@@ -92,7 +93,7 @@ class AceStepZeroQuadraticMixer:
             torch.tensor(ids_B, dtype=torch.long, device=device).unsqueeze(0), levels)
 
         # Match lengths
-        codes_A, codes_B = self._match_lengths(codes_A, codes_B, scale_mode)
+        codes_A, codes_B = match_lengths(codes_A, codes_B, scale_mode)
         T = codes_A.shape[1]
 
         # Compute per-timestep, per-dimension blend weights
@@ -167,48 +168,6 @@ class AceStepZeroQuadraticMixer:
 
             weights.append(max(0.0, min(1.0, w)))
         return weights
-
-    def _match_lengths(self, A, B, scale_mode):
-        """Match tensor sequence lengths."""
-        len_A, len_B = A.shape[1], B.shape[1]
-        if len_A == len_B:
-            return A, B
-
-        if scale_mode == "scale_B_to_A":
-            B = self._interpolate(B, len_A)
-        elif scale_mode == "scale_A_to_B":
-            A = self._interpolate(A, len_B)
-        elif scale_mode == "pad_to_match":
-            target = max(len_A, len_B)
-            A = self._pad(A, target)
-            B = self._pad(B, target)
-        elif scale_mode == "loop_match":
-            target = max(len_A, len_B)
-            A = self._loop(A, target)
-            B = self._loop(B, target)
-        else:
-            B = self._interpolate(B, len_A)
-        return A, B
-
-    def _interpolate(self, t, target_len):
-        t = t.transpose(1, 2)
-        t = F.interpolate(t, size=target_len, mode='linear', align_corners=False)
-        return t.transpose(1, 2)
-
-    def _pad(self, t, target_len):
-        if t.shape[1] >= target_len:
-            return t
-        pad_size = target_len - t.shape[1]
-        padding = torch.zeros(t.shape[0], pad_size, t.shape[2],
-                              device=t.device, dtype=t.dtype)
-        return torch.cat([t, padding], dim=1)
-
-    def _loop(self, t, target_len):
-        if t.shape[1] >= target_len:
-            return t[:, :target_len, :]
-        reps = (target_len + t.shape[1] - 1) // t.shape[1]
-        out = t.repeat(1, reps, 1)
-        return out[:, :target_len, :]
 
 
 NODE_CLASS_MAPPINGS = {

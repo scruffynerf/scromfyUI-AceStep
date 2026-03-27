@@ -1,9 +1,9 @@
-"""AceStepZeroConditioningSectionMap node for ACE-Step"""
+"""AceStepZerobytesConditioningSectionMap node for ACE-Step"""
 import json
 from .includes.zerobytes_utils import build_default_section_map
 
 
-class AceStepZeroConditioningSectionMap:
+class AceStepZerobytesConditioningSectionMap:
     """Build a section map for ZeroConditioning generation.
 
     Defines song structure (verse, chorus, bridge, etc.) with timing boundaries.
@@ -39,7 +39,7 @@ class AceStepZeroConditioningSectionMap:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("section_map",)
     FUNCTION = "build"
-    CATEGORY = "Scromfy/Ace-Step/Conditioning"
+    CATEGORY = "Scromfy/Ace-Step/Conditioning/Zerobytes"
 
     def build(self, duration, form, intro_seconds=8.0, outro_seconds=8.0,
               verse_weight=1.0, chorus_weight=1.0, custom_form=""):
@@ -57,9 +57,9 @@ class AceStepZeroConditioningSectionMap:
 
 
 NODE_CLASS_MAPPINGS = {
-    "AceStepZeroConditioningSectionMap": AceStepZeroConditioningSectionMap,
+    "AceStepZerobytesConditioningSectionMap": AceStepZerobytesConditioningSectionMap,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "AceStepZeroConditioningSectionMap": "Zero Conditioning Section Map",
+    "AceStepZerobytesConditioningSectionMap": "Zerobytes Conditioning Section Map",
 }

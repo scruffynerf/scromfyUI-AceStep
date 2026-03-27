@@ -7,16 +7,18 @@ import comfy.model_management
 from .includes.fsq_utils import (
     parse_audio_codes, fsq_decode_indices, fsq_encode_to_indices, get_fsq_levels
 )
+from .includes.mixer_utils import match_lengths
 
 logger = logging.getLogger(__name__)
 
+
 class AceStepAudioCodesMixer:
     """A robust binary toolbox for mixing two sets of list-based audio codes in raw 6D FSQ space.
-    
-    Temporarily decodes 5Hz token IDs into continuous mathematical space, performs 
-    the selected blending math (lerp, inject, multiply, etc.), and re-quantizes 
+
+    Temporarily decodes 5Hz token IDs into continuous mathematical space, performs
+    the selected blending math (lerp, inject, multiply, etc.), and re-quantizes
     them back to valid discrete IDs for the DiT.
-    
+
     Inputs:
         audio_codes_A (LIST): Primary structural token list.
         audio_codes_B (LIST): Secondary structural token list.
@@ -26,14 +28,14 @@ class AceStepAudioCodesMixer:
         weight (FLOAT): Strength multiplier for difference injections.
         eps (FLOAT): Threshold for dominant/recessive blending.
         scale_mode (STRING): Handling logic for sequences of mismatched lengths.
-        
+
     Optional Inputs:
         mask (MASK): Allows for temporal/spatial masking of the blend operation.
-        
+
     Outputs:
         audio_codes (LIST): The newly mixed structural tokens.
     """
-    
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -42,8 +44,8 @@ class AceStepAudioCodesMixer:
                 "audio_codes_B": ("LIST",),
                 #"model": ("MODEL",),
                 "mode": ([
-                    "blend", "lerp", "inject", "average", "difference_injection", 
-                    "dominant_recessive", "replace", "concatenate", "add", 
+                    "blend", "lerp", "inject", "average", "difference_injection",
+                    "dominant_recessive", "replace", "concatenate", "add",
                     "multiply", "maximum", "minimum"
                 ], {"default": "blend"}),
                 "alpha": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -56,7 +58,7 @@ class AceStepAudioCodesMixer:
                 "mask": ("MASK",),
             }
         }
-    
+
     RETURN_TYPES = ("LIST",)
     RETURN_NAMES = ("audio_codes",)
     FUNCTION = "mix"
@@ -101,23 +103,17 @@ class AceStepAudioCodesMixer:
         codes_6d_B = fsq_decode_indices(torch.tensor(ids_B, dtype=torch.long, device=device).unsqueeze(0), levels)
 
         # Handle scaling / matching
-        len_A = codes_6d_A.shape[1]
-        len_B = codes_6d_B.shape[1]
-
-        if len_A != len_B:
-            if scale_mode == "scale_B_to_A":
-                codes_6d_B = self.interpolate_6d(codes_6d_B, len_A)
-            elif scale_mode == "scale_A_to_B":
-                codes_6d_A = self.interpolate_6d(codes_6d_A, len_B)
-            elif scale_mode == "pad_to_match":
-                codes_6d_A, codes_6d_B = self.pad_6d(codes_6d_A, codes_6d_B)
-            elif scale_mode == "loop_match":
-                target_len = max(len_A, len_B)
-                codes_6d_A = self.loop_6d(codes_6d_A, target_len)
-                codes_6d_B = self.loop_6d(codes_6d_B, target_len)
-            elif scale_mode == "none" and mode != "concatenate":
-                # Default to scaling B to A for safety
-                codes_6d_B = self.interpolate_6d(codes_6d_B, len_A)
+        # If mode is concatenate, we don't scale by default unless user asked for it? 
+        # Actually concat usually just appends, but our utilities can match if requested.
+        # Original code had a special check for concat: `elif scale_mode == "none" and mode != "concatenate":`
+        # Safe to just use match_lengths which handles "none" as "scale_B_to_A" fallback if not concat.
+        
+        # We need to preserve the special behavior for concatenate:
+        if mode == "concatenate" and scale_mode == "none":
+            # Don't match lengths, just concat later
+            pass
+        else:
+            codes_6d_A, codes_6d_B = match_lengths(codes_6d_A, codes_6d_B, scale_mode)
 
         # Prepare mask
         target_len = codes_6d_A.shape[1]
@@ -183,34 +179,6 @@ class AceStepAudioCodesMixer:
         result_ids = fsq_encode_to_indices(out, levels)[0].tolist()
 
         return ([result_ids],)
-
-    def interpolate_6d(self, t, target_len):
-        # [1, T, 6] -> [1, 6, T]
-        t = t.transpose(1, 2)
-        t = F.interpolate(t, size=target_len, mode='linear', align_corners=False)
-        return t.transpose(1, 2)
-
-    def pad_6d(self, A, B):
-        len_A = A.shape[1]
-        len_B = B.shape[1]
-        max_len = max(len_A, len_B)
-        
-        def pad_one(tensor, current_len, target_len):
-            if current_len >= target_len:
-                return tensor
-            pad_size = target_len - current_len
-            padding = torch.zeros((tensor.shape[0], pad_size, tensor.shape[2]), device=tensor.device, dtype=tensor.dtype)
-            return torch.cat([tensor, padding], dim=1)
-
-        return pad_one(A, len_A, max_len), pad_one(B, len_B, max_len)
-
-    def loop_6d(self, tensor, target_len):
-        current_len = tensor.shape[1]
-        if current_len >= target_len:
-            return tensor[:, :target_len, :]
-        reps = (target_len + current_len - 1) // current_len
-        out = tensor.repeat(1, reps, 1)
-        return out[:, :target_len, :]
 
 NODE_CLASS_MAPPINGS = {
     "AceStepAudioCodesMixer": AceStepAudioCodesMixer,
