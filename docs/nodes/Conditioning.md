@@ -166,19 +166,19 @@ A primitive masking toolbox creating fractions, hard ranges, or smoothed window 
 
 *A collection of nodes designed to ingest saved tensors directly from the disk. Found bridging standard checkpoint loaders into Scromfy modularity.*
 
-14. **AceStepAudioCodesLoader** (`load_audio_codes_node.py`): Loads `.json` or `.safetensors` lists of audio code IDs.
+1. **AceStepAudioCodesLoader** (`load_audio_codes_node.py`): Loads `.json` or `.safetensors` lists of audio code IDs.
     - **Options**: `codes_file` (Dropdown), `none_action` (What to do if file fails).
     - **Outputs**: `audio_codes` (`LIST`).
-15. **AceStepLyricsTensorLoader** (`load_lyrics_tensor_node.py`): Loads compiled 1024-dim vocal guidance tensors.
+2. **AceStepLyricsTensorLoader** (`load_lyrics_tensor_node.py`): Loads compiled 1024-dim vocal guidance tensors.
     - **Options**: `tensor_file` (Dropdown), `none_action`.
     - **Outputs**: `lyrics_tensor` (`TENSOR`).
-16. **AceStepTimbreTensorLoader** (`load_timbre_tensor_node.py`): Loads compiled background/timbre guidance tensors.
+3. **AceStepTimbreTensorLoader** (`load_timbre_tensor_node.py`): Loads compiled background/timbre guidance tensors.
     - **Options**: `tensor_file` (Dropdown), `none_action`.
     - **Outputs**: `timbre_tensor` (`TENSOR`).
-17. **AceStepConditioningLoad** (`load_conditioning_node.py`): Helper to load full metadata bundles.
+4. **AceStepConditioningLoad** (`load_conditioning_node.py`): Helper to load full metadata bundles.
     - **Options**: `mixed_file` (Dropdown prefix).
     - **Outputs**: `conditioning` (`CONDITIONING`).
-18. **AceStepConditioningMixerLoader** (`load_mixed_conditioning_node.py`): Advanced loader capable of ingesting multiple components and pre-mixing them according to predefined ratios.
+5. **AceStepConditioningMixerLoader** (`load_mixed_conditioning_node.py`): Advanced loader capable of ingesting multiple components and pre-mixing them according to predefined ratios.
     - **Options**: `timbre_source`, `lyrics_source`, `codes_source` (Dropdowns), and `none_action`s.
     - **Outputs**: `conditioning` (`CONDITIONING`).
 
